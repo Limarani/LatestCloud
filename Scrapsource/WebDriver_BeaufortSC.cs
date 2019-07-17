@@ -28,7 +28,7 @@ namespace ScrapMaricopa.Scrapsource
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
         MySqlParameter[] mParam;
-        public string FTP_BeaufortSC(string address, string unitnumber, string parcelNumber, string searchType, string ownername, string orderNumber)
+        public string FTP_BeaufortSC(string sno, string sname, string direction, string sttype, string unitnumber, string parcelNumber, string searchType, string ownername, string orderNumber)
         {
             GlobalClass.global_orderNo = orderNumber;
             HttpContext.Current.Session["orderNo"] = orderNumber;
@@ -36,6 +36,7 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_parcelNo = parcelNumber;
             List<string> taxinformation = new List<string>();
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
+            string address = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             //driver = new PhantomJSDriver();
@@ -46,13 +47,28 @@ namespace ScrapMaricopa.Scrapsource
             {
                 try
                 {
+                    if (direction != "")
+                    {
+                        address = sno + " " + direction + " " + sname + " " + sttype + " " + unitnumber;
+                    }
+                    else
+                    {
+                        address = sno + " " + sname + " " + sttype + " " + unitnumber;
+                    }
+
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", "", address, "SC", "Beaufort");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_BeaufortSC"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -84,6 +100,37 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr[2]/td/input")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "Parcel Enter After ", driver, "SC", "Beaufort");
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr/td/table/tbody/tr[2]/td/font/i/span")).Text;
+                            if (nodata.Contains("No Records Found"))
+                            {
+                                HttpContext.Current.Session["Nodata_BeaufortSC"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
+                    }
+                    if (searchType == "account")
+                    {
+                        driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[1]/td[1]/table/tbody/tr[2]/td/table/tbody/tr[4]/td/a")).Click();
+                        Thread.Sleep(2000);
+                        gc.CreatePdf_WOP(orderNumber, "AlternateID search Input ", driver, "SC", "Beaufort");
+                        driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr[2]/td/font/input")).SendKeys(unitnumber);
+                        gc.CreatePdf_WOP(orderNumber, "AlternateID search Result ", driver, "SC", "Beaufort");
+                        driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr[3]/td/input")).SendKeys(Keys.Enter);
+                        Thread.Sleep(5000);
+                        gc.CreatePdf_WOP(orderNumber, "AlternateID Enter After ", driver, "SC", "Beaufort");
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr/td/table/tbody/tr[2]/td[1]/font/b/a")).Click();
+                            Thread.Sleep(5000);
+                            gc.CreatePdf_WOP(orderNumber, "AlternateID Enter After All Datas Showed ", driver, "SC", "Beaufort");
+
+                        }
+                        catch { }
                         try
                         {
                             //No Data Found
@@ -236,13 +283,16 @@ namespace ScrapMaricopa.Scrapsource
                     foreach (IWebElement description in IProDescRow)
                     {
                         IproDecTD = description.FindElements(By.TagName("td"));
-                        if (IproDecTD.Count == 4 && IproDecTD.Count != 0 && !description.Text.Contains("Property ID (PIN)"))
+                        if (IproDecTD.Count >= 4 && IproDecTD.Count != 0 && !description.Text.Contains("Property ID (PIN)") && !description.Text.Contains("Parcel ID"))
                         {
                             ParcelID = IproDecTD[0].Text;
                             AlternateID = IproDecTD[1].Text;
                             Propertyaddress = IproDecTD[2].Text;
                         }
                     }
+
+
+
                     IWebElement IProDescription1 = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[1]/tbody/tr[2]/td[1]/table/tbody"));
                     IList<IWebElement> IProDescRow1 = IProDescription1.FindElements(By.TagName("tr"));
                     IList<IWebElement> IproDecTD1;
@@ -290,7 +340,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
-                    string Propertydetails = AlternateID + "~" + OwnerName + "~" + Propertyaddress + "~" + Mailingaddress + "~" + Legaldescription + "~" + Propertyclass + "~" + Acreage + "~" + Yearbuilt + "~" + Taxauthority;
+                    string Propertydetails = AlternateID + "~" + OwnerName + "~" + Propertyaddress + "~" + Mailingaddress + "~" + Legaldescription + "~" + Propertyclass + "~" + Yearbuilt + "~" + Taxauthority;
                     gc.insert_date(orderNumber, ParcelID, 1756, Propertydetails, 1, DateTime.Now);
 
                     //Assessment Details
@@ -341,21 +391,21 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[1]/td[1]/table/tbody/tr[2]/td/table/tbody/tr[8]/td/a")).Click();
-                        Thread.Sleep(9000);
+                        Thread.Sleep(20000);
                         gc.CreatePdf(orderNumber, ParcelID, "Tax Information Details Pdf", driver, "SC", "Beaufort");
                     }
                     catch { }
                     string Parcel = "", Alternateparcel = "", Propertycls = "", Currentowner = "", Ownerofrecord = "", Lender = "", Taxyer = "", Billnum = "", Taxbillid = "", Period = "";
                     string Duedate = "", Taxamt = "", Penaltyfee = "", Interest = "", Totaldue = "", Payinfltitle = "", Payinfll = "", Comments = "", Delinquentcomments = "";
 
-
+                    Thread.Sleep(2000);
                     IWebElement IProTaxinfo = driver.FindElement(By.XPath("//*[@id='form1']/table/tbody/tr[1]/td/table[2]/tbody"));
                     IList<IWebElement> IProTaxinfoRow = IProTaxinfo.FindElements(By.TagName("tr"));
                     IList<IWebElement> IproTaxinfoTD;
                     foreach (IWebElement Taxinfo in IProTaxinfoRow)
                     {
                         IproTaxinfoTD = Taxinfo.FindElements(By.TagName("td"));
-                        if (IproTaxinfoTD.Count != 0 && IproTaxinfoTD.Count == 3 && !Taxinfo.Text.Contains("PIN"))
+                        if (IproTaxinfoTD.Count != 0 && IproTaxinfoTD.Count == 3 && !Taxinfo.Text.Contains("PIN") && Taxinfo.Text.Trim() !="")
                         {
                             Parcel = IproTaxinfoTD[0].Text.Trim();
                             Alternateparcel = IproTaxinfoTD[1].Text.Trim();
@@ -368,7 +418,7 @@ namespace ScrapMaricopa.Scrapsource
                     foreach (IWebElement Taxinfo1 in IProTaxinfoRow1)
                     {
                         IproTaxinfoTD1 = Taxinfo1.FindElements(By.TagName("td"));
-                        if (IproTaxinfoTD1.Count != 0 && IproTaxinfoTD1.Count == 3 && !Taxinfo1.Text.Contains("Current Owner"))
+                        if (IproTaxinfoTD1.Count != 0 && IproTaxinfoTD1.Count == 3 && !Taxinfo1.Text.Contains("Current Owner") && Taxinfo1.Text.Trim() !="")
                         {
                             Currentowner = IproTaxinfoTD1[0].Text.Trim();
                             Ownerofrecord = IproTaxinfoTD1[1].Text.Trim();
@@ -385,69 +435,80 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
-                    IWebElement IProTaxinfo2 = driver.FindElement(By.XPath("//*[@id='tabsummary']/table/tbody/tr[1]/td/table/tbody"));
-                    IList<IWebElement> IProTaxinfoRow2 = IProTaxinfo2.FindElements(By.TagName("tr"));
-                    IList<IWebElement> IproTaxinfoTD2;
-                    foreach (IWebElement Taxinfo2 in IProTaxinfoRow2)
+                    try
                     {
-                        IproTaxinfoTD2 = Taxinfo2.FindElements(By.TagName("td"));
-                        if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 3 && Taxinfo2.Text.Contains("Tax Year"))
+                        IWebElement IProTaxinfo2 = driver.FindElement(By.XPath("//*[@id='tabsummary']/table/tbody/tr[1]/td/table/tbody"));
+                        IList<IWebElement> IProTaxinfoRow2 = IProTaxinfo2.FindElements(By.TagName("tr"));
+                        IList<IWebElement> IproTaxinfoTD2;
+                        foreach (IWebElement Taxinfo2 in IProTaxinfoRow2)
                         {
-                            Taxyer = IproTaxinfoTD2[0].Text.Replace("Tax Year:", "").Trim();
-                            Billnum = IproTaxinfoTD2[1].Text.Replace("Bill Number:", "").Trim();
-                            Taxbillid = IproTaxinfoTD2[2].Text.Replace("TaxBillID:", "").Trim();
+                            IproTaxinfoTD2 = Taxinfo2.FindElements(By.TagName("td"));
+                            if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 3 && Taxinfo2.Text.Contains("Tax Year") && Taxinfo2.Text.Trim() !="")
+                            {
+                                Taxyer = IproTaxinfoTD2[0].Text.Replace("Tax Year:", "").Trim();
+                                Billnum = IproTaxinfoTD2[1].Text.Replace("Bill Number:", "").Trim();
+                                Taxbillid = IproTaxinfoTD2[2].Text.Replace("TaxBillID:", "").Trim();
+                            }
+                            if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 1 && Taxinfo2.Text.Contains("Paid") && Taxinfo2.Text.Trim() != "")
+                            {
+                                Comments = IproTaxinfoTD2[0].Text.Trim();
+                            }
+                            if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 2 && Taxinfo2.Text.Trim() != "")
+                            {
+                                Payinfltitle = IproTaxinfoTD2[0].Text.Trim();
+                                Payinfll = IproTaxinfoTD2[1].Text.Trim();
+                            }
+                            if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 6 && !Taxinfo2.Text.Contains("Period") && Taxinfo2.Text.Trim() != "")
+                            {
+                                Period = IproTaxinfoTD2[0].Text.Trim();
+                                Duedate = IproTaxinfoTD2[1].Text.Trim();
+                                Taxamt = IproTaxinfoTD2[2].Text.Trim();
+                                Penaltyfee = IproTaxinfoTD2[3].Text.Trim();
+                                Interest = IproTaxinfoTD2[4].Text.Trim();
+                                Totaldue = IproTaxinfoTD2[5].Text.Trim();
+                            }
                         }
-                        if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 1 && Taxinfo2.Text.Contains("Paid"))
-                        {
-                            Comments = IproTaxinfoTD2[0].Text.Trim();
-                        }
-                        if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 2)
-                        {
-                            Payinfltitle = IproTaxinfoTD2[0].Text.Trim();
-                            Payinfll = IproTaxinfoTD2[1].Text.Trim();
-                        }
-                        if (IproTaxinfoTD2.Count != 0 && IproTaxinfoTD2.Count == 6 && !Taxinfo2.Text.Contains("Period"))
-                        {
-                            Period = IproTaxinfoTD2[0].Text.Trim();
-                            Duedate = IproTaxinfoTD2[1].Text.Trim();
-                            Taxamt = IproTaxinfoTD2[2].Text.Trim();
-                            Penaltyfee = IproTaxinfoTD2[3].Text.Trim();
-                            Interest = IproTaxinfoTD2[4].Text.Trim();
-                            Totaldue = IproTaxinfoTD2[5].Text.Trim();
-                        }
+                        string Taxinfordetails = Alternateparcel.Trim() + "~" + Propertycls.Trim() + "~" + Currentowner.Trim() + "~" + Ownerofrecord.Trim() + "~" + Lender.Trim() + "~" + Taxyer.Trim() + "~" + Billnum + "~" + Taxbillid + "~" + Period + "~" + Duedate + "~" + Taxamt + "~" + Penaltyfee + "~" + Interest + "~" + Totaldue + "~" + Comments + "~" + Delinquentcomments;
+                        gc.insert_date(orderNumber, Parcel, 1760, Taxinfordetails, 1, DateTime.Now);
                     }
-                    string Taxinfordetails = Alternateparcel.Trim() + "~" + Propertycls.Trim() + "~" + Currentowner.Trim() + "~" + Ownerofrecord.Trim() + "~" + Lender.Trim() + "~" + Taxyer.Trim() + "~" + Billnum + "~" + Taxbillid + "~" + Period + "~" + Duedate + "~" + Taxamt + "~" + Penaltyfee + "~" + Interest + "~" + Totaldue + "~" + Comments + "~" + Delinquentcomments;
-                    gc.insert_date(orderNumber, Parcel, 1760, Taxinfordetails, 1, DateTime.Now);
-
-                    string Taxinfordetails1 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + Payinfltitle + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + Totaldue + "~" + Comments + "~" + Delinquentcomments;
-                    gc.insert_date(orderNumber, Parcel, 1760, Taxinfordetails1, 1, DateTime.Now);
+                    catch { }
+                    if (Delinquentcomments != "NO DELINQUENT TAXES")
+                    {
+                        string Taxinfordetails1 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + Payinfltitle + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + Totaldue + "~" + Comments + "~" + Delinquentcomments;
+                        gc.insert_date(orderNumber, Parcel, 1760, Taxinfordetails1, 1, DateTime.Now);
+                    }
                     //Delinquent Details
+
                     string Totaldelinquent = "", Totaldelinquenttitle = "";
-                    IWebElement IProTaxinfo3 = driver.FindElement(By.XPath("//*[@id='tabsummary']/table/tbody/tr[2]/td/table/tbody"));
-                    IList<IWebElement> IProTaxinfoRow3 = IProTaxinfo3.FindElements(By.TagName("tr"));
-                    IList<IWebElement> IproTaxinfoTD3;
-                    foreach (IWebElement Taxinfo3 in IProTaxinfoRow3)
+                    try
                     {
-                        IproTaxinfoTD3 = Taxinfo3.FindElements(By.TagName("td"));
-                        if (IproTaxinfoTD3.Count != 0 && IproTaxinfoTD3.Count == 6 && !Taxinfo3.Text.Contains("Year"))
+                        IWebElement IProTaxinfo3 = driver.FindElement(By.XPath("//*[@id='tabsummary']/table/tbody/tr[2]/td/table/tbody"));
+                        IList<IWebElement> IProTaxinfoRow3 = IProTaxinfo3.FindElements(By.TagName("tr"));
+                        IList<IWebElement> IproTaxinfoTD3;
+                        foreach (IWebElement Taxinfo3 in IProTaxinfoRow3)
                         {
-                            Period = IproTaxinfoTD3[0].Text.Trim();
-                            Duedate = IproTaxinfoTD3[1].Text.Trim();
-                            Taxamt = IproTaxinfoTD3[2].Text.Trim();
-                            Penaltyfee = IproTaxinfoTD3[3].Text.Trim();
-                            Interest = IproTaxinfoTD3[4].Text.Trim();
-                            Totaldue = IproTaxinfoTD3[5].Text.Trim();
-                            string Taxdelinquentdetails1 = Period + "~" + Duedate + "~" + Taxamt + "~" + Penaltyfee + "~" + Interest + "~" + Totaldue;
-                            gc.insert_date(orderNumber, Parcel, 1761, Taxdelinquentdetails1, 1, DateTime.Now);
-                        }
-                        if (IproTaxinfoTD3.Count != 0 && IproTaxinfoTD3.Count == 2)
-                        {
-                            Totaldelinquenttitle = IproTaxinfoTD3[0].Text.Trim();
-                            Totaldelinquent = IproTaxinfoTD3[1].Text.Trim();
-                            string Taxdelinquentdetails2 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + Totaldelinquenttitle + "~" + Totaldelinquent;
-                            gc.insert_date(orderNumber, Parcel, 1761, Taxdelinquentdetails2, 1, DateTime.Now);
+                            IproTaxinfoTD3 = Taxinfo3.FindElements(By.TagName("td"));
+                            if (IproTaxinfoTD3.Count != 0 && IproTaxinfoTD3.Count == 6 && !Taxinfo3.Text.Contains("Year") && Taxinfo3.Text.Trim() != "")
+                            {
+                                Period = IproTaxinfoTD3[0].Text.Trim();
+                                Duedate = IproTaxinfoTD3[1].Text.Trim();
+                                Taxamt = IproTaxinfoTD3[2].Text.Trim();
+                                Penaltyfee = IproTaxinfoTD3[3].Text.Trim();
+                                Interest = IproTaxinfoTD3[4].Text.Trim();
+                                Totaldue = IproTaxinfoTD3[5].Text.Trim();
+                                string Taxdelinquentdetails1 = Period + "~" + Duedate + "~" + Taxamt + "~" + Penaltyfee + "~" + Interest + "~" + Totaldue;
+                                gc.insert_date(orderNumber, Parcel, 1761, Taxdelinquentdetails1, 1, DateTime.Now);
+                            }
+                            if (IproTaxinfoTD3.Count != 0 && IproTaxinfoTD3.Count == 2 && Taxinfo3.Text.Trim() != "")
+                            {
+                                Totaldelinquenttitle = IproTaxinfoTD3[0].Text.Trim();
+                                Totaldelinquent = IproTaxinfoTD3[1].Text.Trim();
+                                string Taxdelinquentdetails2 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + Totaldelinquenttitle + "~" + Totaldelinquent;
+                                gc.insert_date(orderNumber, Parcel, 1761, Taxdelinquentdetails2, 1, DateTime.Now);
+                            }
                         }
                     }
+                    catch { }
                     //Tax Distribution Details
                     try
                     {
@@ -465,7 +526,7 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement Distribution in IProDistributionRow1)
                         {
                             IproDistributionTD1 = Distribution.FindElements(By.TagName("td"));
-                            if (IproDistributionTD1.Count != 0 && IproDistributionTD1.Count == 5 && !Distribution.Text.Contains("Authority"))
+                            if (IproDistributionTD1.Count != 0 && IproDistributionTD1.Count == 5 && !Distribution.Text.Contains("Authority") && Distribution.Text.Trim() != "")
                             {
                                 Taxingauthority = IproDistributionTD1[0].Text.Trim();
                                 Grosstax = IproDistributionTD1[1].Text.Trim();
@@ -476,11 +537,18 @@ namespace ScrapMaricopa.Scrapsource
                                 gc.insert_date(orderNumber, Parcel, 1762, TaxDistribution, 1, DateTime.Now);
 
                             }
-                            if (IproDistributionTD1.Count != 0 && IproDistributionTD1.Count == 1 && !Distribution.Text.Contains("Authority") && !Distribution.Text.Contains("Assessment Information"))
+                            if (IproDistributionTD1.Count != 0 && IproDistributionTD1.Count == 1 && !Distribution.Text.Contains("Authority") && !Distribution.Text.Contains("Assessment Information") && Distribution.Text.Trim() != "")
                             {
                                 Taxingauthority = IproDistributionTD1[0].Text.Trim();
                                 string TaxDistribution = Taxingauthority + "~" + "" + "~" + "" + "~" + "" + "~" + "";
                                 gc.insert_date(orderNumber, Parcel, 1762, TaxDistribution, 1, DateTime.Now);
+                            }
+                            if (IproDistributionTD1.Count != 0 && IproDistributionTD1.Count == 2 && Distribution.Text.Contains("Total Net Tax:") && Distribution.Text.Trim() != "")
+                            {
+                                string Totalnettitle = IproDistributionTD1[0].Text.Trim();
+                                string Totaltax = IproDistributionTD1[1].Text.Trim();
+                                string TaxDistribution1 = "" + "~" + "" + "~" + "" + "~" + Totalnettitle + "~" + Totaltax;
+                                gc.insert_date(orderNumber, Parcel, 1762, TaxDistribution1, 1, DateTime.Now);
                             }
                         }
                     }
@@ -529,10 +597,10 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
 
                     //Tax Bill Download
-                    driver.Navigate().GoToUrl("https://www.beaufortcountytreasurer.com/tax-bill-lookup");
-                    driver.FindElement(By.XPath("//*[@id='child']/div/div/div[1]/div[1]/div/a")).Click();
-                    Thread.Sleep(2000);
-                    driver.FindElement(By.XPath("//*[@id='myModal']/div/div/a")).Click();
+                    driver.Navigate().GoToUrl("https://www.beaufortcountytreasurer.com/tax-bill-lookup-rpp-2018");
+                    //driver.FindElement(By.XPath("//*[@id='child']/div/div/div[1]/div[1]/div/a")).Click();
+                    //Thread.Sleep(2000);
+                    // driver.FindElement(By.XPath("//*[@id='myModal']/div/div/a")).Click();
                     Thread.Sleep(5000);
                     gc.CreatePdf(orderNumber, ParcelID, "Tax Bill Details Pdf", driver, "SC", "Beaufort");
                     List<string> billinfo = new List<string>();
@@ -591,6 +659,7 @@ namespace ScrapMaricopa.Scrapsource
                                     if (row.Text.Contains("DOWNLOAD TAX BILL"))
                                     {
                                         td[0].Click();
+                                        Thread.Sleep(5000);
                                         gc.CreatePdf(orderNumber, Parcel, "Download bill1", chDriver, "SC", "Beaufort");
                                         l++;
                                     }
@@ -601,11 +670,29 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(5000);
                             fileName1 = latestfilename();
                             Thread.Sleep(2000);
-                            gc.AutoDownloadFile(orderNumber, ParcelID, "Beaufort", "SC", fileName1);
+                            gc.AutoDownloadFileSpokane(orderNumber, ParcelID, "Beaufort", "SC", fileName1);
                             chDriver.Quit();
                         }
                         catch { }
                     }
+                    int bill = 0;
+                    foreach (string assessmentclick1 in billinfo)
+                    {
+
+                        driver.Navigate().GoToUrl(assessmentclick1);
+                        Thread.Sleep(2000);
+                        driver.SwitchTo().Window(driver.WindowHandles.Last());
+                       // Thread.Sleep(2000);
+                        IWebElement element1 = driver.FindElement(By.XPath("//*[@id='CAT_Custom_1']"));
+                        element1.GetAttribute("href");
+                        element1.Clear();
+                        element1.SendKeys(Parcel);
+                        driver.FindElement(By.XPath("//*[@id='child']/div[1]/div/div/div/form/table/tbody/tr[2]/td/input")).Click();
+                        Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, Parcel, "Tax Bill Inputshowpage Result1"+bill, driver, "SC", "Beaufort");
+                        bill++;
+                    }
+
 
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");

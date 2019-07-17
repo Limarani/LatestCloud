@@ -66,7 +66,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "SC", "York");
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_YorkSC"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -249,16 +256,20 @@ namespace ScrapMaricopa.Scrapsource
                         driver.Navigate().GoToUrl("https://www.yorkcountygov.com/Directory.aspx?did=28");
                         Taxauthority1 = driver.FindElement(By.Id("CityDirectoryLeftMargin")).Text.Trim();
                         Taxauthority = gc.Between(Taxauthority1.Replace("\r\n", " "), "Mailing Address:", "Fax:").Trim();
+                        gc.CreatePdf(orderNumber, ParcelNumber, "Tax Authority Details", driver, "SC", "York");
                     }
                     catch { }
                     //Tax Information Details
 
                     driver.Navigate().GoToUrl("https://onlinetaxes.yorkcountygov.com/taxes#/");
                     Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Tax main page", driver, "SC", "York");
                     try
                     {//*[@id="cc5f8c90dc-b4cb-431b-90ee-10648f8df655"]/div/div/p[3]/button[1]
+                        //*[@id="cc5f8c90dc-b4cb-431b-90ee-10648f8df655"]/div/div/p[3]/button[1]
                         driver.FindElement(By.XPath("//*[@id='cc5f8c90dc-b4cb-431b-90ee-10648f8df655']/div/div/p[3]/button[1]")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, ParcelNumber, "Tax accept click", driver, "SC", "York");
                     }
                     catch
                     { }
@@ -268,11 +279,21 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                     }
                     catch { }
+                    ////*[@id="searchBox"]
+                    //try { 
+                    //driver.Navigate().GoToUrl("https://onlinetaxes.yorkcountygov.com/taxes#/WildfireSearch");
+                    //Thread.Sleep(3000);
+                    //}catch { }
                     driver.FindElement(By.Id("searchBox")).SendKeys(ParcelNumber);
                     //driver.FindElement(By.XPath("//*[@id='searchBox']")).SendKeys(ParcelNumber);
                     Thread.Sleep(4000);
-                    //*[@id="searchForm"]/div[1]/div/span/button
-                    driver.FindElement(By.XPath("//*[@id='searchForm']/div[1]/div/span/button")).SendKeys(Keys.Enter);
+                    try
+                    {
+                        //*[@id="searchForm"]/div[1]/div/span/button
+                        driver.FindElement(By.XPath("//*[@id='searchForm']/div[1]/div/span/button")).SendKeys(Keys.Enter);
+
+                    }
+                    catch { }
                     Thread.Sleep(2000);
                     gc.CreatePdf(orderNumber, ParcelNumber, "Payment Details Pdf", driver, "SC", "York");
                     //Tax History Details Table
@@ -280,7 +301,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     try
                     {
-                        IWebElement PaymentTB = driver.FindElement(By.XPath("//*[@id='cc5f8c90dc-b4cb-431b-90ee-10648f8df655']/div/div/div[3]/div[2]/table"));
+                        IWebElement PaymentTB = driver.FindElement(By.XPath("//*[@id='cc5f8c90dc-b4cb-431b-90ee-10648f8df655']/div/div/div[4]/div[2]/table")); //Working on div[3]/div[2] Previously
                         IList<IWebElement> PaymentTR = PaymentTB.FindElements(By.TagName("tr"));
                         IList<IWebElement> PaymentTD;
 
@@ -313,7 +334,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         try
                         {
-                            IWebElement Receipttable1 = driver.FindElement(By.XPath("//*[@id='cc5f8c90dc-b4cb-431b-90ee-10648f8df655']/div/div/div[3]/div[2]/table/tbody/tr[" + i + "]/td[9]/button"));
+                            IWebElement Receipttable1 = driver.FindElement(By.XPath("//*[@id='cc5f8c90dc-b4cb-431b-90ee-10648f8df655']/div/div/div[4]/div[2]/table/tbody/tr[" + i + "]/td[9]/button")); //Working on div[3]/div[2] Previously
                             Receipttable1.Click();
                             Thread.Sleep(5000);
                             ////View Delinquent Details                            

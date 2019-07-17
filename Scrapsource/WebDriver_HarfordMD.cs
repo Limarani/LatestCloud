@@ -133,7 +133,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, titleaddress, "MD", "Harford");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_HarfordMD"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         searchType = "parcel";
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
@@ -167,6 +174,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Assessment search ", driver, "MD", "Harford");
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_lblErr"));
+                        if(INodata.Text.Contains("There are no records that match your criteria for county"))
+                        {
+                            HttpContext.Current.Session["Nodata_HarfordMD"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property_details
 
                     // string  Account_id_number_city = driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_wzrdRealPropertySearch_ucDetailsSearch_dlstDetaisSearch_lblDetailsStreetHeader_0")).Text.Trim();

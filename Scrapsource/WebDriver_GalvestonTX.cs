@@ -62,10 +62,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + sname + " " + stype + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TX", "Galveston");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_GalvestonTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -150,22 +156,36 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     else
                     {
-                        string type = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[4]")).Text.Replace("\r\n", " ");
-                        if (type == "Real")
+                        try
                         {
-                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
-                            Thread.Sleep(2000);
-                        }
-                        else
-                        {
-                            HttpContext.Current.Session["alert_msg"] = "Yes";
+                            string type = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[4]")).Text.Replace("\r\n", " ");
+                            if (type == "Real")
+                            {
+                                driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                                Thread.Sleep(2000);
+                            }
+                            else
+                            {
+                                HttpContext.Current.Session["alert_msg"] = "Yes";
 
-                            driver.Quit();
-                            return "MultiParcel";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
                         }
-
+                        catch { }
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
+                        if (INodata.Text.Contains("None found"))
+                        {
+                            HttpContext.Current.Session["Nodata_GalvestonTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
                     List<string> entity = new List<string>();
                     entity.AddRange(new string[] { "S17", "W02", "S16", "D08", "S12", "M08", "M13", "M16", "M20", "M22", "M27", "M30", "M31", "M32", "M33", "M43", "M44", "M45", "M46", "M52", "M54", "M55", "M56", "M57", "M58", "M59", "M66", "P09", "M14", "M15", "P05", "P06", "P07", "P08", "P10", "P12", "S18", "M100", "(E1)141" });
@@ -1351,7 +1371,7 @@ namespace ScrapMaricopa.Scrapsource
                                         string Downloadhref = downloadMud.GetAttribute("href");
                                         string fileName = "Statement.pdf";
                                         var chromeOptions = new ChromeOptions();
-                                        var downloadDirectory = "F:\\AutoPdf\\";
+                                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -1923,7 +1943,7 @@ namespace ScrapMaricopa.Scrapsource
                                 //PID Statement Details Table:
                                 string tableassess = "";
                                 var chromeOptions = new ChromeOptions();
-                                var downloadDirectory = "F:\\AutoPdf\\";
+                                var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                                 chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                                 chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                                 chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

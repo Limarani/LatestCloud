@@ -62,7 +62,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "AL", "Jefferson");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_JeffersonAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -185,7 +192,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("TotalRecFound"));
+                        if (Inodata.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_JeffersonAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     IWebElement taxyear = driver.FindElement(By.XPath("//*[@id='TaxYear']"));
                     string Tax_Year = "", Land_Value = "", Improvement_Value = "", Tax_Year1 = "", Total_Value = "";
                     Tax_Year = taxyear.Text;

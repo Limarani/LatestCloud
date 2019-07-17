@@ -60,12 +60,19 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         string titleaddress = houseno + " " + sname + " " + housedir + " " + unitno;
-
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "OH", "Stark");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_OHStark"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -87,38 +94,42 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(4000);
 
                         gc.CreatePdf_WOP(orderNumber, "Address search result", driver, "OH", "Stark");
-                        mul = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text.Trim();
-                        mul = WebDriverTest.Before(mul, " Results");
-                        if (mul != "1")
+                        try
                         {
-                            //multi parcel
-                            IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
-                            IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
-                            IList<IWebElement> TDmulti;
-                            foreach (IWebElement row in TRmulti)
+                            mul = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text.Trim();
+                            mul = WebDriverTest.Before(mul, " Results");
+                            if (mul != "1")
                             {
-                                if (!row.Text.Contains("Parcel"))
+                                //multi parcel
+                                IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
+                                IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
+                                IList<IWebElement> TDmulti;
+                                foreach (IWebElement row in TRmulti)
                                 {
-                                    TDmulti = row.FindElements(By.TagName("td"));
-                                    if (TDmulti.Count != 0)
+                                    if (!row.Text.Contains("Parcel"))
                                     {
-                                        string multi1 = TDmulti[1].Text + "~" + TDmulti[2].Text + "~" + TDmulti[3].Text;
-                                        gc.insert_date(orderNumber, TDmulti[0].Text, 302, multi1, 1, DateTime.Now);
+                                        TDmulti = row.FindElements(By.TagName("td"));
+                                        if (TDmulti.Count != 0)
+                                        {
+                                            string multi1 = TDmulti[1].Text + "~" + TDmulti[2].Text + "~" + TDmulti[3].Text;
+                                            gc.insert_date(orderNumber, TDmulti[0].Text, 302, multi1, 1, DateTime.Now);
+                                        }
                                     }
                                 }
+                                HttpContext.Current.Session["multiparcel_Stark"] = "Yes";
+
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            HttpContext.Current.Session["multiparcel_Stark"] = "Yes";
+                            else
+                            {
 
-                            driver.Quit();
-                            return "MultiParcel";
+                                driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                                gc.CreatePdf_WOP(orderNumber, "Address search result1", driver, "OH", "Stark");
+                                Thread.Sleep(4000);
+                            }
                         }
-                        else
-                        {
-
-                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                            gc.CreatePdf_WOP(orderNumber, "Address search result1", driver, "OH", "Stark");
-                            Thread.Sleep(4000);
-                        }
+                        catch { }
                     }
                     if (searchType == "parcel")
                     {
@@ -140,47 +151,55 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "OH", "Stark");
 
-                        mul = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_lblNumberOfResults']")).Text.Trim();
-
-                        mul = WebDriverTest.Before(mul, " Results");
-                        if (mul != "1")
+                        try
                         {
-                            //multi parcel
-                            IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
-                            IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
+                            mul = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_lblNumberOfResults']")).Text.Trim();
 
-                            IList<IWebElement> TDmulti;
-                            foreach (IWebElement row in TRmulti)
+                            mul = WebDriverTest.Before(mul, " Results");
+                            if (mul != "1")
                             {
-                                if (!row.Text.Contains("Parcel"))
+                                //multi parcel
+                                IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
+                                IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
+
+                                IList<IWebElement> TDmulti;
+                                foreach (IWebElement row in TRmulti)
                                 {
-                                    TDmulti = row.FindElements(By.TagName("td"));
-                                    if (TDmulti.Count != 0)
+                                    if (!row.Text.Contains("Parcel"))
                                     {
-                                        string multi1 = TDmulti[1].Text + "~" + TDmulti[2].Text + "~" + TDmulti[3].Text;
-                                        gc.insert_date(orderNumber, TDmulti[0].Text, 302, multi1, 1, DateTime.Now);
+                                        TDmulti = row.FindElements(By.TagName("td"));
+                                        if (TDmulti.Count != 0)
+                                        {
+                                            string multi1 = TDmulti[1].Text + "~" + TDmulti[2].Text + "~" + TDmulti[3].Text;
+                                            gc.insert_date(orderNumber, TDmulti[0].Text, 302, multi1, 1, DateTime.Now);
+                                        }
                                     }
                                 }
+                                HttpContext.Current.Session["multiparcel_Stark"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            HttpContext.Current.Session["multiparcel_Stark"] = "Yes";
-                            driver.Quit();
-                            return "MultiParcel";
-                        }
-                        else
-                        {
-                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                            gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "OH", "Stark");
-                            Thread.Sleep(3000);
+                            else
+                            {
+                                driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                                gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "OH", "Stark");
+                                Thread.Sleep(3000);
 
+                            }
                         }
+                        catch { }
                     }
                     else if (searchType == "ownername")
                     {
                         string s = ownername;
                         string[] words = s.Split(' ');
                         string lastname = "", firstname = "";
-                        lastname = words[0];
-                        firstname = words[1];
+                        try
+                        {
+                            lastname = words[0];
+                            firstname = words[1];
+                        }
+                        catch { }
 
 
                         driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(lastname);
@@ -190,40 +209,54 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
                         gc.CreatePdf_WOP(orderNumber, "Owner search result", driver, "OH", "Stark");
 
-
-                        mul = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text.Trim();
-                        mul = WebDriverTest.Before(mul, " Results");
-                        if (mul != "1")
+                        try
                         {
-                            //multi parcel
-                            IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
-                            IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
-
-                            IList<IWebElement> TDmulti;
-                            foreach (IWebElement row in TRmulti)
+                            mul = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text.Trim();
+                            mul = WebDriverTest.Before(mul, " Results");
+                            if (mul != "1")
                             {
-                                if (!row.Text.Contains("Parcel"))
+                                //multi parcel
+                                IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
+                                IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
+
+                                IList<IWebElement> TDmulti;
+                                foreach (IWebElement row in TRmulti)
                                 {
-                                    TDmulti = row.FindElements(By.TagName("td"));
-                                    if (TDmulti.Count != 0)
+                                    if (!row.Text.Contains("Parcel"))
                                     {
-                                        string multi1 = TDmulti[1].Text + "~" + TDmulti[2].Text + "~" + TDmulti[3].Text;
-                                        gc.insert_date(orderNumber, TDmulti[0].Text, 302, multi1, 1, DateTime.Now);
+                                        TDmulti = row.FindElements(By.TagName("td"));
+                                        if (TDmulti.Count != 0)
+                                        {
+                                            string multi1 = TDmulti[1].Text + "~" + TDmulti[2].Text + "~" + TDmulti[3].Text;
+                                            gc.insert_date(orderNumber, TDmulti[0].Text, 302, multi1, 1, DateTime.Now);
+                                        }
                                     }
                                 }
+                                HttpContext.Current.Session["multiparcel_Stark"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            HttpContext.Current.Session["multiparcel_Stark"] = "Yes";
-                            driver.Quit();
-                            return "MultiParcel";
+                            else
+                            {
+                                driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                                gc.CreatePdf_WOP(orderNumber, "Owner search result1", driver, "OH", "Stark");
+                                Thread.Sleep(3000);
+                            }
                         }
-                        else
-                        {
-                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                            gc.CreatePdf_WOP(orderNumber, "Owner search result1", driver, "OH", "Stark");
-                            Thread.Sleep(3000);
-                        }
+                        catch { }
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults"));
+                        if(INodata.Text.Contains("No results"))
+                        {
+                            HttpContext.Current.Session["Nodata_OHStark"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property details
 

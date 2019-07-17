@@ -64,12 +64,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         //string address = houseno + " " + direction + " " + streetname + " " + streettype;
                         gc.TitleFlexSearch(orderNumber, "", "", Address.Trim(), "NV", "Lyon");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LyonNV"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
-
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -188,6 +194,19 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='body']/form[2]/table/tbody/tr[3]/td/table"));
+                        if(INodata.Text.Contains("No results found"))
+                        {
+                            HttpContext.Current.Session["Nodata_LyonNV"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     //property detail
                     gc.CreatePdf_WOP(orderNumber, "After click", driver, "NV", "Lyon");
                     IWebElement parcelnumweb = driver.FindElement(By.XPath("//*[@id='body']/form[2]/table[2]/tbody/tr[1]/td/div"));

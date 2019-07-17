@@ -18,6 +18,7 @@ using OpenQA.Selenium.Support.Extensions;
 using System.Net;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ScrapMaricopa.Scrapsource
 {
@@ -60,7 +61,13 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
-
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CAYolo"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -139,6 +146,18 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "CA", "Yolo");
                         driver.FindElement(By.XPath("/html/body/form/center/p/input[1]")).SendKeys(Keys.Enter);
                     }
+
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("/html/body/form/center/table/tbody"));
+                        if(Inodata.Text.Contains("Field") && Inodata.Text.Contains("Search Type") && Inodata.Text.Contains("Value") && Inodata.Text.Contains("Assessor Inquiry: Please enter search criteria"))
+                        {
+                            HttpContext.Current.Session["Nodata_CAYolo"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     IWebElement runButton = driver.FindElement(By.XPath("/html/body/form/center/table/tbody/tr[2]/td[1]/a"));
                     runButton.Click();
                     Thread.Sleep(4000);
@@ -245,15 +264,31 @@ namespace ScrapMaricopa.Scrapsource
                         string pdfyear = driver.FindElement(By.XPath("/html/body/div[2]/section/div/div/div/div[6]/div/div[1]/div[3]/div[2]")).Text;
                         string pdf = pdfassess + " " + pdfyear;
                         string fulltabletextTax1 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[1]/dl")).Text.Trim().Replace("\r\n", "");
-                        First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Delinq. Date").Trim();
-                        First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Delinq. Date", "Total Due").Trim();
+                        if(fulltabletextTax1.Contains("Delinq. Date"))
+                        {
+                            First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Delinq. Date").Trim();
+                            First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Delinq. Date", "Total Due").Trim();
+                        }
+                        else
+                        {
+                            First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Paid Date").Trim();
+                            First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Paid Date", "Total Due").Trim();
+                        }
                         First_Installment_Total_Due = gc.Between(fulltabletextTax1, "Total Due", "Total Paid").Trim();
                         First_Installment_Total_Paid = gc.Between(fulltabletextTax1, "Total Paid", "Balance").Trim();
                         First_Installment_Balance = WebDriverTest.After(fulltabletextTax1, "Balance");
 
                         string fulltabletextTax2 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[2]/dl")).Text.Trim().Replace("\r\n", "");
-                        Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Delinq. Date").Trim();
-                        Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Delinq. Date", "Total Due").Trim();
+                        if (fulltabletextTax2.Contains("Delinq. Date"))
+                        {
+                            Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Delinq. Date").Trim();
+                            Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Delinq. Date", "Total Due").Trim();
+                        }
+                        else
+                        {
+                            Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Paid Date").Trim();
+                            Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Paid Date", "Total Due").Trim();
+                        }
                         Second_Installment_Total_Due = gc.Between(fulltabletextTax2, "Total Due", "Total Paid").Trim();
                         Second_Installment_Total_Paid = gc.Between(fulltabletextTax2, "Total Paid", "Balance").Trim();
                         Second_Installment_Balance = WebDriverTest.After(fulltabletextTax2, "Balance");
@@ -278,17 +313,20 @@ namespace ScrapMaricopa.Scrapsource
                         //      Assessment~Roll Category~Address~Tax year~First Installment Paid Status~First Installment Paid Date~First Installment Total Due~First Installment Total Paid~First Installment Balance~Second Installment Paid Status~Second Installment Paid Date~Second Installment Total Due~Second Installment Total Paid~Second Installment Balance~First and Second Installment Total Due~First and Second Installment Total Paid~First and Second Installment Total Balance
 
                         //download taxbill
-
-                        IWebElement Itaxbill = driver.FindElement(By.XPath("/html/body/div[2]/section/div/div[1]/div/div[6]/div/div[1]/div[4]/div/a"));
-                        string URL1 = Itaxbill.GetAttribute("href");
-                        gc.downloadfile(URL1, orderNumber, Parcel_id, "TaxBill" + pdf, "CA", "Yolo");
-
+                        try
+                        {
+                            IWebElement Itaxbill = driver.FindElement(By.XPath("/html/body/div[2]/section/div/div[1]/div/div[6]/div/div[1]/div[4]/div/a"));
+                            string URL1 = Itaxbill.GetAttribute("href");
+                            gc.downloadfile(URL1, orderNumber, Parcel_id, "TaxBill" + pdf, "CA", "Yolo");
+                            gc.CreatePdf(orderNumber, Parcel_id, "TaxBill Tax code" + pdf, driver, "CA", "Yolo");
+                        }
+                        catch { }
                         //Taxcode Info
 
                         driver.FindElement(By.XPath("/html/body/div[2]/section/div/div[1]/div/div[6]/ul/li[3]/a")).Click();
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, Parcel_id, "Tax code" + pdf, driver, "CA", "Yolo");
-
+                        driver.SwitchTo().Window(driver.WindowHandles.Last());
                         int count = driver.FindElements(By.XPath("//*[@id='h2tab3']/div")).Count;
                         int divCount2 = count + 1;
                         string[] TaxCode = new string[divCount2];

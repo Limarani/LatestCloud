@@ -51,10 +51,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", "", address, "TX", "Williamson");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_WilliamsonTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -85,45 +91,59 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Williamson");
                     }
-
-                    int trCount = driver.FindElements(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr")).Count;
-                    if (trCount > 1)
+                    try
                     {
-                        int maxCheck = 0;
-                        IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody"));
-                        IList<IWebElement> TRmulti5 = tbmulti.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TDmulti5;
-                        foreach (IWebElement row in TRmulti5)
+                        int trCount = driver.FindElements(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr")).Count;
+                        if (trCount > 1)
                         {
-                            if (maxCheck <= 25)
+                            int maxCheck = 0;
+                            IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody"));
+                            IList<IWebElement> TRmulti5 = tbmulti.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TDmulti5;
+                            foreach (IWebElement row in TRmulti5)
                             {
-                                TDmulti5 = row.FindElements(By.TagName("td"));
-                                if (TDmulti5.Count != 0)
+                                if (maxCheck <= 25)
                                 {
-                                    string multi1 = TDmulti5[1].Text + "~" + TDmulti5[3].Text + "~" + TDmulti5[4].Text;
-                                    gc.insert_date(orderNumber, TDmulti5[0].Text, 727, multi1, 1, DateTime.Now);
+                                    TDmulti5 = row.FindElements(By.TagName("td"));
+                                    if (TDmulti5.Count != 0)
+                                    {
+                                        string multi1 = TDmulti5[1].Text + "~" + TDmulti5[3].Text + "~" + TDmulti5[4].Text;
+                                        gc.insert_date(orderNumber, TDmulti5[0].Text, 727, multi1, 1, DateTime.Now);
+                                    }
+                                    maxCheck++;
                                 }
-                                maxCheck++;
                             }
-                        }
-                        if (TRmulti5.Count > 25)
-                        {
-                            HttpContext.Current.Session["multiParcel_Williamson_Multicount"] = "Maximum";
+                            if (TRmulti5.Count > 25)
+                            {
+                                HttpContext.Current.Session["multiParcel_Williamson_Multicount"] = "Maximum";
+                            }
+                            else
+                            {
+                                HttpContext.Current.Session["multiparcel_Williamson"] = "Yes";
+                            }
+
+                            driver.Quit();
+                            return "MultiParcel";
                         }
                         else
                         {
-                            HttpContext.Current.Session["multiparcel_Williamson"] = "Yes";
+                            driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr/td[1]")).Click();
+                            Thread.Sleep(2000);
                         }
-
-                        driver.Quit();
-                        return "MultiParcel";
                     }
-                    else
+                    catch { }
+
+                    try
                     {
-                        driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr/td[1]")).Click();
-                        Thread.Sleep(2000);
+                        string nodata = driver.FindElement(By.Id("grid")).Text;
+                        if (nodata.Contains("No properties found"))
+                        {
+                            HttpContext.Current.Session["Nodata_WilliamsonTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                     }
-
+                    catch { }
                     //property details
                     string ParcelID = "", OwnerName = "", PropertyAddress = "", PropertyStatus = "", PropertyType = "", LegalDescription = "", Neighborhood = "", Account = "", MapNumber = "", OwnerID = "", Exemptions = "", PercentOwnership = "", MailingAddress = "";
 

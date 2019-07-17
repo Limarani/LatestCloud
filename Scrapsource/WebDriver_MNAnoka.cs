@@ -73,7 +73,7 @@ namespace ScrapMaricopa.Scrapsource
                                     if (!row.Text.Contains("Parcel Number"))
                                     {
                                         TDmulti2 = row.FindElements(By.TagName("td"));
-                                        if (TDmulti2.Count != 0)
+                                        if (TDmulti2.Count != 0 && TDmulti2.Count > 1)
                                         {
                                             if (p == 0)
                                             {
@@ -103,6 +103,9 @@ namespace ScrapMaricopa.Scrapsource
                             if (TRmulti2.Count > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Anoka_Multicount"] = "Maximum";
+                                driver.Quit();
+                                gc.mergpdf(orderNumber, "MN", "Anoka");
+                                return "Maximum";
                             }
                             else
                             {
@@ -128,7 +131,7 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                 }
 
-                                else
+                                else if (maxCheck > 2)
                                 {
                                     HttpContext.Current.Session["multiparcel_Anoka"] = "Yes";
                                     driver.Quit();
@@ -151,10 +154,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, address, "MN", "Anoka");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
-                        searchType = "parcel";
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MNAnoka"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
+                        searchType = "parcel";
                     }
                     if (searchType == "parcel")
                     {
@@ -192,7 +202,7 @@ namespace ScrapMaricopa.Scrapsource
                                         if (!row.Text.Contains("Parcel Number"))
                                         {
                                             TDmulti2 = row.FindElements(By.TagName("td"));
-                                            if (TDmulti2.Count != 0)
+                                            if (TDmulti2.Count != 0 && (TDmulti2.Count > 1))
                                             {
                                                 string multi1 = TDmulti2[1].Text + "~" + TDmulti2[2].Text;
                                                 gc.insert_date(orderNumber, TDmulti2[0].Text, 283, multi1, 1, DateTime.Now);
@@ -204,8 +214,11 @@ namespace ScrapMaricopa.Scrapsource
                                 if (TRmulti2.Count > 25)
                                 {
                                     HttpContext.Current.Session["multiParcel_Anoka_Multicount"] = "Maximum";
+                                    driver.Quit();
+                                    gc.mergpdf(orderNumber, "MN", "Anoka");
+                                    return "Maximum";
                                 }
-                                else
+                                else if ((TRmulti2.Count > 2) && (TRmulti2.Count <= 25))
                                 {
                                     HttpContext.Current.Session["multiparcel_Anoka"] = "Yes";
                                     driver.Quit();
@@ -217,6 +230,26 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("Table1"));
+                        if(INodata.Text.Contains("0 records returned") && INodata.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_MNAnoka"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        IWebElement Ino = driver.FindElement(By.Id("mSearchControl_mSearchFieldsValidator"));
+                        if (INodata.Text.Contains("does not exist"))
+                        {
+                            HttpContext.Current.Session["Nodata_MNAnoka"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     //property details
                     string Property_ID = "", Situs_Address = "", Property_Description = "", Status = "", Abstract_Torrens = "", Owner = "", Lot_Size = "", Year_Built = "", City_Name = "", School_District_Number_Name = "", Property_classification_2018 = "", Property_classification_2017;
                     Property_ID = driver.FindElement(By.XPath("//*[@id='mGeneralInformation_mGrid_RealDataGrid']/tbody/tr[1]/td[2]/a")).Text.Trim();

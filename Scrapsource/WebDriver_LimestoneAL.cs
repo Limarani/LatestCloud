@@ -63,7 +63,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "AL", "Limestone");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LimestoneAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -144,7 +151,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
-
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("TotalRecFound"));
+                        if(INodata.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_LimestoneAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     // Property Details
 

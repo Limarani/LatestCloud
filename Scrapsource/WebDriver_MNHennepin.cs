@@ -68,9 +68,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "MN", "Hennepin");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Hennepin"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -154,6 +161,17 @@ namespace ScrapMaricopa.Scrapsource
 
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='TABLE1']"));
+                        if(INodata.Text.Contains("No records found"))
+                        {
+                            HttpContext.Current.Session["Nodata_Hennepin"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property details
                     //*[@id="TABLE_DETAILS"]

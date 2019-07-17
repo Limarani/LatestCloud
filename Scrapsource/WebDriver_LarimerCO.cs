@@ -54,9 +54,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + sname + " " + stype + " " + account;
                         gc.TitleFlexSearch(orderNumber, "", ownername, address, "CO", "Larimer");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LarimerCO"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -203,7 +210,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
-
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='main']/div[3]/div/div[2]/div/div/div/div/div[2]/table-results/div[2]"));
+                        if(INodata.Text.Contains("search returned no results"))
+                        {
+                            HttpContext.Current.Session["Nodata_LarimerCO"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property Details                               
                     driver.SwitchTo().Window(driver.WindowHandles.Last());
                     Thread.Sleep(2000);

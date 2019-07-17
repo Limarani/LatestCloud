@@ -63,7 +63,14 @@ namespace ScrapMaricopa
                         gc.TitleFlexSearch(orderNumber, "", ownername, address, "ID", "Ada");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_AdaID"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -504,7 +511,7 @@ namespace ScrapMaricopa
                     {
                         var chromeOptions = new ChromeOptions();
 
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);

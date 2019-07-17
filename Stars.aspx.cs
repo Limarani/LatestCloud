@@ -133,14 +133,35 @@ namespace ScrapMaricopa
         protected void dropCounty_SelectedIndexChanged(object sender, EventArgs e)
         {
             SelectAddressSearchType();
-            DropDownList2.Text = dropState.Text + " " + dropCounty.Text;
+            if (GlobalClass.sname == "NJ" || GlobalClass.sname == "CT")
+            {
+                dropTownship.Visible = true;
+                labelTown.Visible = true;
+            }
+            BindTownshipName();
+            DropDownList2.Text = dropState.SelectedItem.Text + " " + dropCounty.Text;
         }
-
+        private void BindTownshipName()
+        {
+            DataSet ds = new DataSet();
+            MySqlConnection con = new MySqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString);
+            string query = "select DISTINCT(Township) from tbl_njtownshipmaster where State_County_Id='" + statecountyid + "'  order by Township asc";
+            con.Open();
+            MySqlCommand cmd = new MySqlCommand(query, con);
+            MySqlDataAdapter da = new MySqlDataAdapter();
+            da.SelectCommand = cmd;
+            da.Fill(ds);
+            dropTownship.DataSource = ds.Tables[0];
+            dropTownship.DataTextField = "Township";
+            dropTownship.DataBind();
+            dropTownship.Items.Insert(0, "--select--");
+            con.Close();
+        }
 
         protected void DropDownList2_SelectedIndexChanged(object sender, EventArgs e)
         {
             string str = DropDownList2.SelectedItem.Text;
-            if (!str.Contains("County List ▼") && !str.Contains("━━━━━━━━━━━━━━━━━━━━━"))
+            if (!str.Contains("County List ?") && !str.Contains("?????????????????????"))
             {
                 string state = str.Substring(0, str.IndexOf(' '));
                 string county = str.Substring(str.IndexOf(' ') + 1);
@@ -148,6 +169,12 @@ namespace ScrapMaricopa
                 dropCounty.Items.Clear();
                 dropCounty.Items.Insert(0, county);
                 SelectAddressSearchType();
+                if (GlobalClass.sname == "NJ" || GlobalClass.sname == "CT")
+                {
+                    dropTownship.Visible = true;
+                    labelTown.Visible = true;
+                    BindTownshipName();
+                }
             }
             else
             {
@@ -227,6 +254,8 @@ namespace ScrapMaricopa
                 return;
             }
 
+
+
             mylabel.Text = txtAddress.Text + " " + txtstreetno.Text + " " + txtdirection.Text + " " + txtstreetname.Text + " " + txtstreettype.Text + " " + txtunitnumber.Text + " " + txtcity.Text;
 
             string today = DateTime.Now.ToString("ddMMyyyy hhmmss");
@@ -275,6 +304,11 @@ namespace ScrapMaricopa
                     dierctSearch = "Yes";
                 }
                 string type = dropCounty.Text;
+                string townshipcode = "";
+                if (GlobalClass.sname == "CT")
+                {
+                    townshipcode = dbconn.ExecuteScalar("SELECT Township_Code FROM tbl_njtownshipmaster where State_County_Id='" + statecountyid + "'and Township='" + dropTownship.SelectedItem.Text + "'");
+                }
 
                 if (statecountyid == "4")
                 {
@@ -284,6 +318,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_DuvalFL duval = new WebDriver_DuvalFL();
                     duval.FTP_Duval(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_DuvalFL"] != null && HttpContext.Current.Session["Nodata_DuvalFL"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_DuvalFL"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_duval"] != null && HttpContext.Current.Session["multiparcel_duval"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_duval"] = null;
@@ -326,6 +366,12 @@ namespace ScrapMaricopa
                     }
 
                     PalmBeach.FTP_FLPalmBeach(txtAddress.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLPalmBeach"] != null && HttpContext.Current.Session["Nodata_FLPalmBeach"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLPalmBeach"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_FLPalmBeach"] != null && HttpContext.Current.Session["multiParcel_FLPalmBeach"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_FLPalmBeach"] = null;
@@ -380,6 +426,12 @@ namespace ScrapMaricopa
 
                     WebDriver_NVClark Clark = new WebDriver_NVClark();
                     Clark.FTP_NVClark(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_NVClark"] != null && HttpContext.Current.Session["Nodata_NVClark"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_NVClark"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_NVClark"] != null && HttpContext.Current.Session["multiparcel_NVClark"].ToString() == "Yes")
                     {
                         string strMultiparcelNVClark = HttpContext.Current.Session["multiparcel_NVClark"].ToString();
@@ -398,6 +450,12 @@ namespace ScrapMaricopa
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Nodata_NVClark"] != null && HttpContext.Current.Session["Nodata_NVClark"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_NVClark"] = "";
+                        MessageBox("No Data Found");
                         return;
                     }
                     Label7.Text = "Property Details";
@@ -429,13 +487,13 @@ namespace ScrapMaricopa
 
                 else if (statecountyid == "2")
                 {
-                    if (txtstreettype.Text != "" && txtstreetname.Text == "")
+                    if (txtstreettype.Text != "" && txtstreetname.Text == "" && txtunitnumber.Text != "")
                     {
-                        searchType = "block";
+                        searchType = "titleflex";
                     }
                     if (txtunitnumber.Text != "")
                     {
-                        searchType = "titleflex";
+                        searchType = "block";
                     }
 
                     WebDriver_FLHillsborough hillborough = new WebDriver_FLHillsborough();
@@ -482,6 +540,10 @@ namespace ScrapMaricopa
                     BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label11.Text = "Due Date Details:";
                     BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label12.Text = "Certificate Details:";
+                    BindGrid(GridView12, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+
                     MessageBox("Data Inserted Successfully....");
 
                 }
@@ -496,6 +558,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_FLMiamiDade FL = new WebDriver_FLMiamiDade();
                     FL.FTP_MiamiDade(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLMiamidade"] != null && HttpContext.Current.Session["Nodata_FLMiamidade"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLMiamidade"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -553,7 +621,7 @@ namespace ScrapMaricopa
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
                         Label3.Text = "Multi Parcel Details:";
-                        BindGrid(GridView3, "select order_no , parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        BindGrid(GridView3, "select order_no , parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
                         return;
                     }
@@ -586,6 +654,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_MDBaltimore baltimore = new WebDriver_MDBaltimore();
                     baltimore.FTP_Baltimore(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_MDBaltimore"] != null && HttpContext.Current.Session["Nodata_MDBaltimore"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MDBaltimore"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -631,6 +705,12 @@ namespace ScrapMaricopa
 
                     WebDriver_CAMonterey Mon = new WebDriver_CAMonterey();
                     Mon.FTP_CAMonterey(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch, dropState.Text, dropCounty.Text);
+                    if (HttpContext.Current.Session["Nodata_CAMonterey"] != null && HttpContext.Current.Session["Nodata_CAMonterey"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CAMonterey"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -659,6 +739,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_CASanJaquin SanJaquin = new Scrapsource.WebDriver_CASanJaquin();
                     SanJaquin.FTP_CASanJoaquin(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text, searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_CASanJauin"] != null && HttpContext.Current.Session["Nodata_CASanJauin"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CASanJauin"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_CASanJoaquin"] != null && HttpContext.Current.Session["multiparcel_CASanJoaquin"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_CASanJoaquin"] = "";
@@ -692,6 +778,12 @@ namespace ScrapMaricopa
 
                     WebDriver_IAPolk polk = new WebDriver_IAPolk();
                     polk.FTP_IAPolk(txtstreetno.Text.Trim(), txtdirection.Text, txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_IAPlok"] != null && HttpContext.Current.Session["Nodata_IAPlok"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_IAPlok"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -745,6 +837,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_FlPasco FL = new WebDriver_FlPasco();
                     FL.FTP_FLPasco(txtstreetno.Text.Trim(), txtdirection.Text, txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLPasco"] != null && HttpContext.Current.Session["Nodata_FLPasco"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLPasco"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Pasco"] != null && HttpContext.Current.Session["multiparcel_Pasco"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Pasco"] = null;
@@ -808,6 +906,12 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_MDCaroll"] != null && HttpContext.Current.Session["Nodata_MDWashington"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MDCaroll"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     else
                     {
                         Label7.Text = "Property Details";
@@ -829,6 +933,12 @@ namespace ScrapMaricopa
 
                         WebDriver_harrison har = new WebDriver_harrison();
                         har.FTP_Harrison(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch, account);
+                        if (HttpContext.Current.Session["Nodata_HarrisonMS"] != null && HttpContext.Current.Session["Nodata_HarrisonMS"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_HarrisonMS"] = "";
+                            MessageBox("No Data Found");
+                            return;
+                        }
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                         {
                             HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -897,6 +1007,12 @@ namespace ScrapMaricopa
                         searchType = "address";
                     }
                     or.FTP_ORClackamas(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_ORClackmas"] != null && HttpContext.Current.Session["Nodata_ORClackmas"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ORClackmas"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -952,7 +1068,7 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["TN_Shelby_Count"] != null && HttpContext.Current.Session["TN_Shelby_Count"].ToString() == "Yes")
+                    if (HttpContext.Current.Session["TN_Shelby_Count"] != null && HttpContext.Current.Session["TN_Shelby_Count"].ToString() == "Maximum")
                     {
                         HttpContext.Current.Session["TN_Shelby_Count"] = null;
                         Label3.Text = "Multi Parcel Details:";
@@ -967,6 +1083,12 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["ShelBy_Zero"] != null && HttpContext.Current.Session["ShelBy_Zero"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["ShelBy_Zero"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     else
                     {
                         if (HttpContext.Current.Session["CHKMunicipalJurisdiction"] != null && HttpContext.Current.Session["CHKMunicipalJurisdiction"].ToString() == "M")
@@ -974,82 +1096,104 @@ namespace ScrapMaricopa
                             HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label6.Text = "Payment Details:";
-                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            //City Details
+                            Label8.Text = "City Tax Information Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "Payment Information Details:";
+                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         }
                         else if (HttpContext.Current.Session["CHKMunicipalJurisdiction"] != null && HttpContext.Current.Session["CHKMunicipalJurisdiction"].ToString() == "B")
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label9.Text = "Payment Details:";
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            //City Details
+                            Label8.Text = "City Tax Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "Tax Payment Information Details:";
                             BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
                             HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                         }
                         else if (HttpContext.Current.Session["CHKMunicipalJurisdiction"] != null && HttpContext.Current.Session["CHKMunicipalJurisdiction"].ToString() == "C")
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label6.Text = "Bill Details:";
-                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            //City Details
+                            Label8.Text = "City Tax Payment Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "City Tax Information Details:";
+                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label10.Text = "City Tax Payment History Details:";
+                            BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 12 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
                             HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                         }
                         else if (HttpContext.Current.Session["CHKMunicipalJurisdiction"] != null && HttpContext.Current.Session["CHKMunicipalJurisdiction"].ToString() == "G")
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label6.Text = "Account Details:";
-                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 15 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            //City Details
+                            Label8.Text = "City Tax Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "City Tax Payment History:";
+                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 15 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
                             HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                         }
                         else
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         }
 
                         MessageBox("Data Inserted Successfully....");
                     }
 
                 }
-
                 else if (statecountyid == "12")
                 {
 
@@ -1183,6 +1327,12 @@ namespace ScrapMaricopa
 
                     WebDriver_GAGwinnet gagwinnett = new WebDriver_GAGwinnet();
                     gagwinnett.FTP_GAGwinnett(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_GAGwinnet"] != null && HttpContext.Current.Session["Nodata_GAGwinnet"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_GAGwinnet"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -1252,10 +1402,10 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_Multnomah"] != null && HttpContext.Current.Session["Zero_Multnomah"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_ORMultnomah"] != null && HttpContext.Current.Session["Nodata_ORMultnomah"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_Multnomah"] = "";
-                        MessageBox("NO Record Found");
+                        HttpContext.Current.Session["Nodata_ORMultnomah"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -1280,6 +1430,12 @@ namespace ScrapMaricopa
                     }
                     Scrapsource.WebDriver_NVWashoe nvwashoe = new Scrapsource.WebDriver_NVWashoe();
                     nvwashoe.FTP_NVWashoe(txtAddress.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_NVWashoe"] != null && HttpContext.Current.Session["Nodata_NVWashoe"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_NVWashoe"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1331,6 +1487,12 @@ namespace ScrapMaricopa
 
                     WebDriver_DCdistofcolumbia DC = new Scrapsource.WebDriver_DCdistofcolumbia();
                     DC.FTP_WADC(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_DCDC"] != null && HttpContext.Current.Session["Nodata_DCDC"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_DCDC"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -1365,6 +1527,12 @@ namespace ScrapMaricopa
 
                         Scrapsource.WebDriver_StLouis louis = new Scrapsource.WebDriver_StLouis();
                         louis.FTP_STLouis(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                        if (HttpContext.Current.Session["Nodata_StLouis"] != null && HttpContext.Current.Session["Nodata_StLouis"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_StLouis"] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
                             HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1417,6 +1585,12 @@ namespace ScrapMaricopa
 
                     WebDriver_JohnsonKS Johnson = new WebDriver_JohnsonKS();
                     Johnson.FTP_JohnsonKS(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), txtdirection.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_JohnsonKS"] != null && HttpContext.Current.Session["Nodata_JohnsonKS"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_JohnsonKS"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Johnson"] != null && HttpContext.Current.Session["multiParcel_Johnson"].ToString() == "Yes")
                     {
                         string strJohnsonMultiparcel = HttpContext.Current.Session["multiParcel_Johnson"].ToString();
@@ -1472,6 +1646,12 @@ namespace ScrapMaricopa
 
                     Scrapsource.WebDriver_ORDeschutes Deschu = new Scrapsource.WebDriver_ORDeschutes();
                     Deschu.FTP_ORDeschutes(txtAddress.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_ORDeschutes"] != null && HttpContext.Current.Session["Nodata_ORDeschutes"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ORDeschutes"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1525,7 +1705,12 @@ namespace ScrapMaricopa
 
                     WebDriver_GADekalp deKalp = new WebDriver_GADekalp();
                     deKalp.FTP_Dekalb(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_GADekalb"] != null && HttpContext.Current.Session["Nodata_GADekalb"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_GADekalb"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1598,6 +1783,13 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_CAMecklenburg"] != null && HttpContext.Current.Session["Nodata_CAMecklenburg"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_CAMecklenburg"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
+
                     else
                     {
                         Label7.Text = "Property Details:";
@@ -1637,6 +1829,13 @@ namespace ScrapMaricopa
                     Scrapsource.WebDriver_CAKern kern = new Scrapsource.WebDriver_CAKern();
                     kern.FTP_CAKern(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
                     //}
+
+                    if (HttpContext.Current.Session["Nodata_CAKern"] != null && HttpContext.Current.Session["Nodata_CAKern"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CAKern"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1687,6 +1886,12 @@ namespace ScrapMaricopa
                         searchType = "titleflex";
                     }
                     Frank.FTP_OHFranklin(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), txtunitnumber.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_OHFranklin"] != null && HttpContext.Current.Session["Nodata_OHFranklin"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_OHFranklin"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1746,6 +1951,12 @@ namespace ScrapMaricopa
 
                     Scrapsource.Webdriver_SanFrancisco ke = new Scrapsource.Webdriver_SanFrancisco();
                     ke.FTP_SanFrancisco(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SanFrascisco"] != null && HttpContext.Current.Session["Nodata_SanFrascisco"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SanFrascisco"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1791,6 +2002,13 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_CAFresno"] != null && HttpContext.Current.Session["Nodata_CAFresno"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CAFresno"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["result_CAfreshno"] != null)
                     {
                         string result = HttpContext.Current.Session["result_CAfreshno"].ToString();
@@ -1821,6 +2039,12 @@ namespace ScrapMaricopa
 
                     WebDriver_NMBernalillio nm = new WebDriver_NMBernalillio();
                     nm.FTP_NMBernalillo(txtstreetno.Text, txtstreetname.Text, "", txtparcelno.Text, searchType, txtorderno.Text, "", "");
+                    if (HttpContext.Current.Session["Nodata_NMBernalillio"] != null && HttpContext.Current.Session["Nodata_NMBernalillio"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_NMBernalillio"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1876,6 +2100,13 @@ namespace ScrapMaricopa
 
                     Scrapsource.WebDriver_MOStCharles mb = new Scrapsource.WebDriver_MOStCharles();
                     mb.FTP_StCahrles(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+
+                    if (HttpContext.Current.Session["Nodata_MOStCharles"] != null && HttpContext.Current.Session["Nodata_MOStCharles"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MOStCharles"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1940,6 +2171,12 @@ namespace ScrapMaricopa
 
                         Webdriver_OKTulsa tulsa = new Webdriver_OKTulsa();
                         tulsa.FTP_OKTulsa(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtunitnumber.Text.Trim(), txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                        if (HttpContext.Current.Session["Nodata_OKTulsa"] != null && HttpContext.Current.Session["Nodata_OKTulsa"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_OKTulsa"] = "";
+                            MessageBox("No Data Found....");
+                            return;
+                        }
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
                             HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -1972,6 +2209,11 @@ namespace ScrapMaricopa
                             BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                             Label1.Text = "Tax History Details:";
                             BindGrid(GridView1, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            if (HttpContext.Current.Session["Taxalert_Tulsa"] != null && HttpContext.Current.Session["Taxalert_Tulsa"].ToString() == "Yes")
+                            {
+                                Label6.Text = "Delinquent Taxes Details:";
+                                BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            }
                             MessageBox("data inserted successfully....");
                         }
 
@@ -1983,12 +2225,17 @@ namespace ScrapMaricopa
                     }
                 }
 
-
                 else if (statecountyid == "78")
                 {
 
                     Scrapsource.Webdriver_LAEastBatonRouge East = new Scrapsource.Webdriver_LAEastBatonRouge();
                     East.FTP_LAEastBatonRouge(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["EastbatonLA_NoRecord"] != null && HttpContext.Current.Session["EastbatonLA_NoRecord"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["EastbatonLA_NoRecord"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -2032,6 +2279,12 @@ namespace ScrapMaricopa
                         searchType = "titleflex";
                     }
                     SM.FTP_Summit(txtAddress.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_OHSummit"] != null && HttpContext.Current.Session["Nodata_OHSummit"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_OHSummit"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -2135,7 +2388,12 @@ namespace ScrapMaricopa
 
                     WebDriver_DENewCastle nc = new WebDriver_DENewCastle();
                     nc.FTP_NCDelaware(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_DENewCastle"] != null && HttpContext.Current.Session["Nodata_DENewCastle"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_DENewCastle"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -2196,6 +2454,12 @@ namespace ScrapMaricopa
 
                         WebDriver_ARPinal mb = new Scrapsource.WebDriver_ARPinal();
                         mb.FTP_ARPinal(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                        if (HttpContext.Current.Session["Nodata_AZPinal"] != null && HttpContext.Current.Session["Nodata_AZPinal"].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Nodata_AZPinal"] = "";
+                            MessageBox("No Data Found");
+                            return;
+                        }
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
                             HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -2260,6 +2524,12 @@ namespace ScrapMaricopa
                     {
                         searchType = "pin";
                     }
+                    if (HttpContext.Current.Session["Nodata_CherokeeGA"] != null && HttpContext.Current.Session["Nodata_CherokeeGA"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CherokeeGA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     WebDriver_CherokeeGA cherokee = new WebDriver_CherokeeGA();
                     cherokee.FTP_Cherokee(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
 
@@ -2310,6 +2580,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_SCCharleston SC = new WebDriver_SCCharleston();
                     SC.FTP_SCCharleston(txtAddress.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SCCharleston"] != null && HttpContext.Current.Session["Nodata_SCCharleston"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SCCharleston"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_SCCharleston"] != null && HttpContext.Current.Session["multiParcel_SCCharleston"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_SCCharleston"] = null;
@@ -2355,6 +2631,12 @@ namespace ScrapMaricopa
 
                     WebDriver_ORMarion MN = new Scrapsource.WebDriver_ORMarion();
                     MN.FTP_Marion(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_ORMarion"] != null && HttpContext.Current.Session["Nodata_ORMarion"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ORMarion"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -2399,6 +2681,12 @@ namespace ScrapMaricopa
 
                         WebDriver_MNHennepin mb = new Scrapsource.WebDriver_MNHennepin();
                         mb.FTP_MNHennepin(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                        if (HttpContext.Current.Session["Nodata_Hennepin"] != null && HttpContext.Current.Session["Nodata_Hennepin"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_Hennepin"] = "";
+                            MessageBox("No Data Found");
+                            return;
+                        }
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
                             HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -2459,6 +2747,13 @@ namespace ScrapMaricopa
 
                     Webdiver_CAPlacer placer = new Webdiver_CAPlacer();
                     placer.FTP_placer(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_CAPlacer"] != null && HttpContext.Current.Session["Nodata_CAPlacer"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CAPlacer"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -2528,6 +2823,12 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_LAJefferson"] != null && HttpContext.Current.Session["Nodata_LAJefferson"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LAJefferson"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     else
                     {
                         Label7.Text = "Property Details:";
@@ -2553,7 +2854,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_MNAnoka anoka = new WebDriver_MNAnoka();
                     anoka.FTP_Anoka(txtAddress.Text.Trim(), txtownername.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_MNAnoka"] != null && HttpContext.Current.Session["Nodata_MNAnoka"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MNAnoka"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Anoka"] != null && HttpContext.Current.Session["multiparcel_Anoka"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Anoka"] = "";
@@ -2602,7 +2908,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_OHStark stark = new WebDriver_OHStark();
                     stark.FTP_Stark(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_OHStark"] != null && HttpContext.Current.Session["Nodata_OHStark"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_OHStark"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Stark"] != null && HttpContext.Current.Session["multiparcel_Stark"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Stark"] = "";
@@ -2651,6 +2962,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_CODenver denver = new WebDriver_CODenver();
                     denver.FTP_Denver(txtAddress.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_CODenver"] != null && HttpContext.Current.Session["Nodata_CODenver"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CODenver"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -2699,6 +3016,13 @@ namespace ScrapMaricopa
 
                     WebDriver_CAEldorado CA = new Scrapsource.WebDriver_CAEldorado();
                     CA.FTP_Eldarado(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text, searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_CAEldorado"] != null && HttpContext.Current.Session["Nodata_CAEldorado"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CAEldorado"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -2791,12 +3115,18 @@ namespace ScrapMaricopa
                 else if (statecountyid == "80")
                 {
 
-                    if (txtunitnumber.Text.Trim() != "")
+                    if (txtunitnumber.Text.Trim() != "" && txtstreetno.Text == "" && txtstreetname.Text == "")
                     {
                         searchType = "block";
                     }
                     WebDriver_FLVolusia FL = new WebDriver_FLVolusia();
                     FL.FTP_FLVolusia(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLVolusia"] != null && HttpContext.Current.Session["Nodata_FLVolusia"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLVolusia"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -2849,9 +3179,18 @@ namespace ScrapMaricopa
 
                 else if (statecountyid == "96")
                 {
-
+                    if (txtAddress.Text.ToUpper().Contains("UNIT") || txtAddress.Text.ToUpper().Contains("APT") || txtAddress.Text.ToUpper().Contains("#"))
+                    {
+                        searchType = "titleflex";
+                    }
                     WebDriver_FLSarasota sarasota = new WebDriver_FLSarasota();
                     sarasota.FTP_FLSarasota(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLSarasota"] != null && HttpContext.Current.Session["Nodata_FLSarasota"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLSarasota"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -2904,6 +3243,18 @@ namespace ScrapMaricopa
                         searchType = "titleflex";
                     }
                     sant.FTP_CASantaBarbara(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtparcelno.Text.Trim(), txtunitnumber.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SantaCruzCA"] != null && HttpContext.Current.Session["Nodata_SantaCruzCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SantaCruzCA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Nodata_CASantaBarbara"] != null && HttpContext.Current.Session["Nodata_CASantaBarbara"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CASantaBarbara"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_CASantaBarbara"] != null && HttpContext.Current.Session["multiParcel_CASantaBarbara"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_CASantaBarbara"] = null;
@@ -2953,6 +3304,12 @@ namespace ScrapMaricopa
 
                     WebDriver_OHHamilton Hamilton = new WebDriver_OHHamilton();
                     Hamilton.FTP_OHHamilton(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtunitnumber.Text.Trim(), txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_OHHamilton"] != null && HttpContext.Current.Session["Nodata_OHHamilton"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_OHHamilton"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -3032,7 +3389,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_manatee"] != null && HttpContext.Current.Session["Zero_manatee"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_manatee"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     Label7.Text = "Property Details:";
@@ -3054,10 +3411,10 @@ namespace ScrapMaricopa
 
                     try
                     {
-                        if (txtAddress.Text.ToUpper().Contains("UNIT") || txtAddress.Text.ToUpper().Contains("APT") || txtAddress.Text.ToUpper().Contains("#"))
-                        {
-                            searchType = "titleflex";
-                        }
+                        //if (txtAddress.Text.ToUpper().Contains("UNIT") || txtAddress.Text.ToUpper().Contains("APT") || txtAddress.Text.ToUpper().Contains("#"))
+                        //{
+
+                        //}
 
                         Webdriver_AZMaricopa AZ = new Webdriver_AZMaricopa();
                         AZ.FTP_Maricopa(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
@@ -3134,10 +3491,14 @@ namespace ScrapMaricopa
                     {
                         searchType = "account";
                     }
-
-                    dbconn.ExecuteQuery("delete from data_value_master where order_no = '" + txtorderno.Text.Trim() + "'");
                     WebDriver_LarimerCO Larmier = new WebDriver_LarimerCO();
                     Larmier.FTP_LarimerCO(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_LarimerCO"] != null && HttpContext.Current.Session["Nodata_LarimerCO"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LarimerCO"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_LarimerCO"] != null && HttpContext.Current.Session["multiParcel_LarimerCO"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_LarimerCO"] = null;
@@ -3186,6 +3547,12 @@ namespace ScrapMaricopa
 
                     WebDriver_FLPolk polk = new WebDriver_FLPolk();
                     polk.FTP_FLPolk(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLPolk"] != null && HttpContext.Current.Session["Nodata_FLPolk"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLPolk"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_FLPolk"] != null && HttpContext.Current.Session["multiparcel_FLPolk"].ToString() == "Yes")
                     {
                         string strFLPolkMultiParcel = HttpContext.Current.Session["multiparcel_FLPolk"].ToString();
@@ -3238,6 +3605,12 @@ namespace ScrapMaricopa
 
                     WebDriver_FLBroward Bro = new WebDriver_FLBroward();
                     Bro.FTP_FLBroward(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_BrowardFL"] != null && HttpContext.Current.Session["Nodata_BrowardFL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_BrowardFL"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -3289,6 +3662,8 @@ namespace ScrapMaricopa
                     BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label10.Text = "Tax History Details";
                     BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    //Label11.Text = "Tax Sale Details";
+                    //BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 10 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
 
                     MessageBox("data inserted successfully....");
                 }
@@ -3298,6 +3673,12 @@ namespace ScrapMaricopa
 
                     WebDriver_FLOrange orange = new WebDriver_FLOrange();
                     orange.FTP_FLOrange(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLOrange"] != null && HttpContext.Current.Session["Nodata_FLOrange"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLOrange"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -3354,6 +3735,13 @@ namespace ScrapMaricopa
                     }
 
                     Marion.FTP_INMarion(txtAddress.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+
+                    if (HttpContext.Current.Session["Nodata_INMarion"] != null && HttpContext.Current.Session["Nodata_INMarion"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_INMarion"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     MessageBox("Data Inserted Successfully....");
@@ -3371,12 +3759,19 @@ namespace ScrapMaricopa
                         }
                         searchType = "address";
                     }
-                    if (txtownername.Text != "" || txtparcelno.Text != "")
+                    if (txtownername.Text != "" || txtparcelno.Text != "" || txtunitnumber.Text != "")
                     {
                         searchType = "titleflex";
                     }
                     Scrapsource.WebDriver_CAContraCosta Contra = new Scrapsource.WebDriver_CAContraCosta();
                     Contra.FTP_CAContracosta(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtcity.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), txtdirection.Text.Trim());
+
+                    if (HttpContext.Current.Session["Nodata_CAContraCosta"] != null && HttpContext.Current.Session["Nodata_CAContraCosta"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CAContraCosta"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_CAContraCosta"] != null && HttpContext.Current.Session["multiParcel_CAContraCosta"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_CAContraCosta"] = "";
@@ -3415,6 +3810,12 @@ namespace ScrapMaricopa
 
                     webdriver_CASacramento CA = new webdriver_CASacramento();
                     CA.FTP_Santamenta(txtAddress.Text, txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_CASacramento"] != null && HttpContext.Current.Session["Nodata_CASacramento"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CASacramento"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() != "")
                     {
                         if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
@@ -3425,8 +3826,14 @@ namespace ScrapMaricopa
                             MessageBox("Multiple Parcels....");
                             return;
                         }
-
                     }
+                    if (HttpContext.Current.Session["Nodata_sacramento"] != null && HttpContext.Current.Session["Nodata_sacramento"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_sacramento"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+
                     else
                     {
                         Label7.Text = "Property Details";
@@ -3456,6 +3863,23 @@ namespace ScrapMaricopa
                     }
                     WebDriver_FLStLucie Loucie = new WebDriver_FLStLucie();
                     Loucie.FTP_FLSTLucie(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() != "")
+                    {
+                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["TitleFlex_Search"] = null;
+                            Label3.Text = "Multi Parcel Details:";
+                            BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            MessageBox("Multiple Parcels....");
+                            return;
+                        }
+                    }
+                    if (HttpContext.Current.Session["Nodata_FLStLucie"] != null && HttpContext.Current.Session["Nodata_FLStLucie"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLStLucie"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_FLStLoucie"] != null && HttpContext.Current.Session["multiparcel_FLStLoucie"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_FLStLoucie"] = "";
@@ -3534,6 +3958,12 @@ namespace ScrapMaricopa
 
                         Webdriver_OKCleveland OK = new Webdriver_OKCleveland();
                         OK.FTP_Cleveland(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                        if (HttpContext.Current.Session["Nodata_OKCleveland"] != null && HttpContext.Current.Session["Nodata_OKCleveland"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_OKCleveland"] = "";
+                            MessageBox("No Data Found");
+                            return;
+                        }
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
                             HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -3598,7 +4028,12 @@ namespace ScrapMaricopa
 
                     WebDriver_MNDakota dakota = new WebDriver_MNDakota();
                     dakota.FTP_MNDakota(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_MNDakota"] != null && HttpContext.Current.Session["Nodata_MNDakota"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MNDakota"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_MNDakota"] != null && HttpContext.Current.Session["multiparcel_MNDakota"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_MNDakota"] = "";
@@ -3645,6 +4080,12 @@ namespace ScrapMaricopa
                         searchType = "titleflex";
                     }
                     Will.FTP_ILWill(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), txtdirection.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_ILWill"] != null && HttpContext.Current.Session["Nodata_ILWill"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ILWill"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_ILWill"] != null && HttpContext.Current.Session["multiparcel_ILWill"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_ILWill"] = "";
@@ -3691,7 +4132,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_NCGuilford guilford = new WebDriver_NCGuilford();
                     guilford.FTP_NCGuilford(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_NCGuilford"] != null && HttpContext.Current.Session["Nodata_NCGuilford"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_NCGuilford"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Guilford"] != null && HttpContext.Current.Session["multiparcel_Guilford"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Guilford"] = "";
@@ -3748,6 +4194,12 @@ namespace ScrapMaricopa
                             MessageBox("Multiple Parcels....");
                             return;
                         }
+                        if (HttpContext.Current.Session["Nodata_ALMadison"] != null && HttpContext.Current.Session["Nodata_ALMadison"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_ALMadison"] = "";
+                            MessageBox("No Data Found");
+                            return;
+                        }
                         else
                         {
                             Label7.Text = "Property Details";
@@ -3780,6 +4232,12 @@ namespace ScrapMaricopa
 
                     WebDriver_HarfordMD harford = new WebDriver_HarfordMD();
                     harford.FTP_MDHarford(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_HarfordMD"] != null && HttpContext.Current.Session["Nodata_HarfordMD"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_HarfordMD"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_MDHarford"] != null && HttpContext.Current.Session["multiparcel_MDHarford"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_MDHarford"] = "";
@@ -3865,10 +4323,10 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_SCBerkeley"] != null && HttpContext.Current.Session["Zero_SCBerkeley"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_SCBerkely"] != null && HttpContext.Current.Session["Nodata_SCBerkely"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["multiParcel_SCBerkeley_Multicount"] = "";
-                        MessageBox("No data found");
+                        HttpContext.Current.Session["Nodata_SCBerkely"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -3921,7 +4379,12 @@ namespace ScrapMaricopa
                                 return;
                             }
                         }
-
+                        if (HttpContext.Current.Session["Nodata_FLCollier"] != null && HttpContext.Current.Session["Nodata_FLCollier"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_FLCollier"] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
                         else
                         {
                             Label7.Text = "Property Details";
@@ -3988,7 +4451,12 @@ namespace ScrapMaricopa
                                 return;
                             }
                         }
-
+                        if (HttpContext.Current.Session["Nodata_INHamilton"] != null && HttpContext.Current.Session["Nodata_INHamilton"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_INHamilton"] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
                         else
                         {
                             Label7.Text = "Property Details";
@@ -4057,6 +4525,12 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_GAClayton"] != null && HttpContext.Current.Session["Nodata_GAClayton"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_GAClayton"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     else
                     {
                         Label7.Text = "Property Details:";
@@ -4082,6 +4556,14 @@ namespace ScrapMaricopa
                     {
                         Webdriver_ARWashington AR = new Webdriver_ARWashington();
                         AR.FTP_Washington(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+
+                        if (HttpContext.Current.Session["Nodata_ARWashington"] != null && HttpContext.Current.Session["Nodata_ARWashington"].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Nodata_ARWashington"] = "";
+                            MessageBox("No Data Found");
+                            return;
+                        }
+
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
                             HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -4141,6 +4623,21 @@ namespace ScrapMaricopa
                     }
                     WebDriver_FLOsceola Osceola = new WebDriver_FLOsceola();
                     Osceola.FTP_FLOsceola(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+
+                    if (HttpContext.Current.Session["Nodata_FLOsceola"] != null && HttpContext.Current.Session["Nodata_FLOsceola"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLOsceola"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_FLOsceola"] != null && HttpContext.Current.Session["multiparcel_FLOsceola"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_FLOsceola"] = null;
@@ -4170,6 +4667,12 @@ namespace ScrapMaricopa
 
                     WebDriver_WYLaramie Lara = new WebDriver_WYLaramie();
                     Lara.FTP_WYLaramie(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtdirection.Text.Trim());
+                    if (HttpContext.Current.Session["WYLaramie_Nodata"] != null && HttpContext.Current.Session["WYLaramie_Nodata"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["WYLaramie_Nodata"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -4178,6 +4681,7 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+
                     if (HttpContext.Current.Session["multiparcel_WYLaramie"] != null)
                     {
                         string strLaramineMultiParcel = HttpContext.Current.Session["multiparcel_WYLaramie"].ToString();
@@ -4212,7 +4716,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_CAYolo yolo = new WebDriver_CAYolo();
                     yolo.FTP_CAYolo(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_CAYolo"] != null && HttpContext.Current.Session["Nodata_CAYolo"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CAYolo"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_CAYolo"] != null && HttpContext.Current.Session["multiparcel_CAYolo"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_CAYolo"] = "";
@@ -4283,7 +4792,12 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
-
+                    if (HttpContext.Current.Session["Nodata_GANewton"] != null && HttpContext.Current.Session["Nodata_GANewton"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_GANewton"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     else
                     {
                         Label7.Text = "Property Details:";
@@ -4313,6 +4827,12 @@ namespace ScrapMaricopa
                     }
                     Webdriver_WaKing Waking = new Webdriver_WaKing();
                     Waking.FTP_King(txtstreetno.Text, txtstreettype.Text, txtstreetname.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtdirection.Text);
+                    if (HttpContext.Current.Session["Nodata_WAKing"] != null && HttpContext.Current.Session["Nodata_WAKing"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_WAKing"] = null;
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_King"] != null && HttpContext.Current.Session["multiparcel_King"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_King"] = null;
@@ -4360,7 +4880,12 @@ namespace ScrapMaricopa
                     }
                     Webdiver_CASantaClara SantaClara = new Webdiver_CASantaClara();
                     SantaClara.FTP_CASantaClara(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_CASantaClara"] != null && HttpContext.Current.Session["Nodata_CASantaClara"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CASantaClara"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_SantaClara"] != null && HttpContext.Current.Session["multiparcel_SantaClara"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_SantaClara"] = "";
@@ -4411,7 +4936,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_CASanBernardino SanBernardino = new WebDriver_CASanBernardino();
                     SanBernardino.FTP_CASanBernardino(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtcity.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), txtunitnumber.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_CASanBernardino"] != null && HttpContext.Current.Session["Nodata_CASanBernardino"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CASanBernardino"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_SanBernardino"] != null && HttpContext.Current.Session["multiparcel_SanBernardino"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_SanBernardino"] = "";
@@ -4459,13 +4989,19 @@ namespace ScrapMaricopa
                     }
                     Webdiver_WVBerkeley Berkeley = new Webdiver_WVBerkeley();
                     Berkeley.FTP_WVBerkeley(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_WVBerkeley"] != null && HttpContext.Current.Session["Nodata_WVBerkeley"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_WVBerkeley"] = "";
+                        MessageBox("No data found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Berkeley"] != null && HttpContext.Current.Session["multiparcel_Berkeley"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Berkeley"] = "";
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
+                        return;
                     }
 
                     if (HttpContext.Current.Session["multiParcel_Berkeley_Multicount"] != null && HttpContext.Current.Session["multiParcel_Berkeley_Multicount"].ToString() == "Maximum")
@@ -4498,6 +5034,12 @@ namespace ScrapMaricopa
 
                     Webdriver_SarpyNE sarpy = new Webdriver_SarpyNE();
                     sarpy.FTP_SarpyNE(txtAddress.Text, txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SarpyNE"] != null && HttpContext.Current.Session["Nodata_SarpyNE"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SarpyNE"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -4558,7 +5100,12 @@ namespace ScrapMaricopa
                     }
                     Webdriver_CAorange orange = new Webdriver_CAorange();
                     orange.FTP_Orange_Ca(txtAddress.Text, txtunitnumber.Text, txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Zero_Orange"] != null && HttpContext.Current.Session["Zero_Orange"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_Orange"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Orange"] != null && HttpContext.Current.Session["multiparcel_Orange"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Orange"] = "";
@@ -4602,6 +5149,12 @@ namespace ScrapMaricopa
                 {
                     Webdriver_SalineAR Saline = new Webdriver_SalineAR();
                     Saline.FTP_Saline(txtstreetno.Text, txtstreettype.Text, txtstreetname.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SalineAR"] != null && HttpContext.Current.Session["Nodata_SalineAR"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SalineAR"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -4648,7 +5201,12 @@ namespace ScrapMaricopa
 
                     WebDriver_ForsythNC Forsyth = new WebDriver_ForsythNC();
                     Forsyth.FTP_Forsyth(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text, txtparcelno.Text, searchType, txtorderno.Text.Trim(), txtparcelno.Text);
-
+                    if (HttpContext.Current.Session["Nodata_NCForsyth"] != null && HttpContext.Current.Session["Nodata_NCForsyth"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_NCForsyth"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Forsyth"] != null && HttpContext.Current.Session["multiparcel_Forsyth"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Forsyth"] = null;
@@ -4707,6 +5265,7 @@ namespace ScrapMaricopa
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
+                        return;
                     }
 
                     if (HttpContext.Current.Session["multiParcel_Spartanburg_Multicount"] != null && HttpContext.Current.Session["multiParcel_Spartanburg_Multicount"].ToString() == "Maximum")
@@ -4771,6 +5330,12 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_NYKing"] != null && HttpContext.Current.Session["Nodata_NYKing"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_NYKing"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_King_Multicount"] != null && HttpContext.Current.Session["multiParcel_King_Multicount"].ToString() == "Maximum")
                     {
                         HttpContext.Current.Session["multiParcel_King_Multicount"] = null;
@@ -4815,7 +5380,12 @@ namespace ScrapMaricopa
 
                     WebDriver_DorchesterSC dorchester = new WebDriver_DorchesterSC();
                     dorchester.FTP_Dorchester(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["NoRecord_SCDorchester"] != null && HttpContext.Current.Session["NoRecord_SCDorchester"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["NoRecord_SCDorchester"] = null;
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Dorchester"] != null && HttpContext.Current.Session["multiParcel_Dorchester"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Dorchester"] = "";
@@ -4864,7 +5434,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_MedinaOH medina = new WebDriver_MedinaOH();
                     medina.FTP_Medina(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_MedinaOH"] != null && HttpContext.Current.Session["Nodata_MedinaOH"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MedinaOH"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_MedinaOH"] != null && HttpContext.Current.Session["multiparcel_MedinaOH"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_MedinaOH"] = "";
@@ -4919,7 +5494,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_ShastaCA shasta = new WebDriver_ShastaCA();
                     shasta.FTP_CAShasta(txtstreetno.Text, txtstreetname.Text, txtdirection.Text, txtstreettype.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text);
-
+                    if (HttpContext.Current.Session["Nodata_ShataCA"] != null && HttpContext.Current.Session["Nodata_ShataCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ShataCA"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_CAShasta"] != null && HttpContext.Current.Session["multiparcel_CAShasta"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_CAShasta"] = "";
@@ -4962,7 +5542,6 @@ namespace ScrapMaricopa
                 }
                 else if (statecountyid == "190")
                 {
-                    dbconn.ExecuteQuery("delete from data_value_master where order_no = '" + txtorderno.Text.Trim() + "'");
 
                     if (txtstreetno.Text != "" && txtstreetname.Text != "")
                     {
@@ -4976,6 +5555,12 @@ namespace ScrapMaricopa
 
                     Webdriver_MoJefferson Jefferson = new Webdriver_MoJefferson();
                     Jefferson.FTP_Jefferson(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_MOJeferrson"] != null && HttpContext.Current.Session["Nodata_MOJeferrson"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MOJeferrson"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Jefferson"] != null && HttpContext.Current.Session["multiparcel_Jefferson"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Jefferson"] = null;
@@ -5025,7 +5610,12 @@ namespace ScrapMaricopa
                     dbconn.ExecuteQuery("delete from data_value_master where order_no = '" + txtorderno.Text.Trim() + "'");
                     Webdiver_GACoweta Coweta = new Webdiver_GACoweta();
                     Coweta.FTP_Coweta(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_CowetaGA"] != null && HttpContext.Current.Session["Nodata_CowetaGA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_CowetaGA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Coweta"] != null && HttpContext.Current.Session["multiparcel_Coweta"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Coweta"] = "";
@@ -5077,6 +5667,12 @@ namespace ScrapMaricopa
 
                     WebDriver_FayetteKy FayetteKy = new WebDriver_FayetteKy();
                     FayetteKy.FTP_FayetteKy(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text, txtparcelno.Text, searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_FayetteKy"] != null && HttpContext.Current.Session["Nodata_FayetteKy"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FayetteKy"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -5120,7 +5716,6 @@ namespace ScrapMaricopa
 
                 else if (statecountyid == "197")
                 {
-                    dbconn.ExecuteQuery("delete from data_value_master where order_no = '" + txtorderno.Text.Trim() + "'");
                     if ((txtAddress.Text.Trim().Contains("UNIT") || txtAddress.Text.Trim().Contains("APT") || txtAddress.Text.Trim().Contains("#")) || txtownername.Text.Trim() != "")
                     {
                         searchType = "titleflex";
@@ -5132,6 +5727,12 @@ namespace ScrapMaricopa
 
                     Webdriver_StaffordVA stafford = new Webdriver_StaffordVA();
                     stafford.FTP_Stafford(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtunitnumber.Text);
+                    if (HttpContext.Current.Session["Nodata_StaffordVA"] != null && HttpContext.Current.Session["Nodata_StaffordVA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_StaffordVA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_StaffordVA"] != null && HttpContext.Current.Session["multiparcel_StaffordVA"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_StaffordVA"] = "";
@@ -5181,6 +5782,12 @@ namespace ScrapMaricopa
 
                     WebDriver_DonaAnaNM Dona = new WebDriver_DonaAnaNM();
                     Dona.FTP_DonaAnaNM(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_DonaAnaNM"] != null && HttpContext.Current.Session["Nodata_DonaAnaNM"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_DonaAnaNM"] = null;
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_DonaAna"] != null && HttpContext.Current.Session["multiParcel_DonaAna"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_DonaAna"] = null;
@@ -5224,7 +5831,12 @@ namespace ScrapMaricopa
 
                     WebDriver_CharlotteFL Charlotte = new WebDriver_CharlotteFL();
                     Charlotte.FTP_Charlotte(txtstreetno.Text.Trim(), txtstreettype.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Charlotte_Zero"] != null && HttpContext.Current.Session["Charlotte_Zero"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Charlotte_Zero"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Charlotte"] != null && HttpContext.Current.Session["multiParcel_Charlotte"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Charlotte"] = "";
@@ -5309,12 +5921,7 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Nodata_FLMarion"] != null && HttpContext.Current.Session["Nodata_FLMarion"].ToString() == "Yes")
-                    {
-                        HttpContext.Current.Session["Nodata_FLMarion"] = "";
-                        MessageBox("No Data Found");
-                        return;
-                    }
+
                     Label7.Text = ("Property Details:");
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label2.Text = ("Current Values Details:");
@@ -5370,7 +5977,12 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-
+                    if (HttpContext.Current.Session["Nodata_CalcasieuLA"] != null && HttpContext.Current.Session["Nodata_CalcasieuLA"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CalcasieuLA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     Label7.Text = "Property Details";
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label2.Text = "Assessment Details";
@@ -5399,7 +6011,12 @@ namespace ScrapMaricopa
 
                     WebDriver_WilliamsonTX Williamson = new WebDriver_WilliamsonTX();
                     Williamson.FTP_Williamson(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_WilliamsonTX"] != null && HttpContext.Current.Session["Nodata_WilliamsonTX"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_WilliamsonTX"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Williamson"] != null && HttpContext.Current.Session["multiparcel_Williamson"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Williamson"] = "";
@@ -5456,7 +6073,12 @@ namespace ScrapMaricopa
                     Webdriver_KnoxTN knox = new Webdriver_KnoxTN();
                     knox.FTP_Knox(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtunitnumber.Text);
 
-
+                    if (HttpContext.Current.Session["Nodata_KnoxTN"] != null && HttpContext.Current.Session["Nodata_KnoxTN"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_KnoxTN"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
 
                     if (HttpContext.Current.Session["multiparcel_KnoxTN"] != null && HttpContext.Current.Session["multiparcel_KnoxTN"].ToString() == "Yes")
                     {
@@ -5509,12 +6131,19 @@ namespace ScrapMaricopa
                     Webdiver_GAHall Hall = new Webdiver_GAHall();
                     Hall.FTP_GAHall(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
 
+                    if (HttpContext.Current.Session["Nodata_GAHall"] != null && HttpContext.Current.Session["Nodata_GAHall"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_GAHall"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_GAHall"] != null && HttpContext.Current.Session["multiparcel_GAHall"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_GAHall"] = "";
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
+                        return;
                     }
 
                     if (HttpContext.Current.Session["multiParcel_GAHall_Multicount"] != null && HttpContext.Current.Session["multiParcel_GAHall_Multicount"].ToString() == "Maximum")
@@ -5568,6 +6197,12 @@ namespace ScrapMaricopa
 
                     WebDriver_StJohnsFL StJohns = new WebDriver_StJohnsFL();
                     StJohns.FTP_StJohnsFL(txtAddress.Text, txtownername.Text, txtparcelno.Text, searchType, txtorderno.Text.Trim(), txtparcelno.Text);
+                    if (HttpContext.Current.Session["Nodata_FLStJohns"] != null && HttpContext.Current.Session["Nodata_FLStJohns"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLStJohns"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -5633,6 +6268,12 @@ namespace ScrapMaricopa
 
                     Webdriver_KootenaiID KootenaiID = new Webdriver_KootenaiID();
                     KootenaiID.FTP_KootenaiID(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_Kootenai"] != null && HttpContext.Current.Session["Nodata_Kootenai"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_Kootenai"] = "";
+                        MessageBox("No Records Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["Zero_Kootenai"] != null && HttpContext.Current.Session["Zero_Kootenai"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Kootenai"] = "";
@@ -5692,12 +6333,20 @@ namespace ScrapMaricopa
                     Webdiver_TNHamilton Hamilton = new Webdiver_TNHamilton();
                     Hamilton.FTP_TNHamilton(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch, txtunitnumber.Text.Trim());
 
+                    if (HttpContext.Current.Session["Nodata_TNHamilton"] != null && HttpContext.Current.Session["Nodata_TNHamilton"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_TNHamilton"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["multiparcel_TNHamilton"] != null && HttpContext.Current.Session["multiparcel_TNHamilton"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_TNHamilton"] = "";
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
+                        return;
                     }
 
                     if (HttpContext.Current.Session["multiParcel_TNHamilton_Multicount"] != null && HttpContext.Current.Session["multiParcel_TNHamilton_Multicount"].ToString() == "Maximum")
@@ -5747,6 +6396,12 @@ namespace ScrapMaricopa
 
                     WebDriver_HidalgoTX Hidalgo = new WebDriver_HidalgoTX();
                     Hidalgo.FTP_Hidalgo(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_Hidalgo"] != null && HttpContext.Current.Session["Nodata_Hidalgo"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_Hidalgo"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
@@ -5831,7 +6486,12 @@ namespace ScrapMaricopa
 
                     WebDriver_LubbockTX lubbock = new WebDriver_LubbockTX();
                     lubbock.FTP_Lubbock(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_LubbockTX"] != null && HttpContext.Current.Session["Nodata_LubbockTX"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LubbockTX"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Lubbock"] != null && HttpContext.Current.Session["multiparcel_Lubbock"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Lubbock"] = "";
@@ -5883,16 +6543,21 @@ namespace ScrapMaricopa
                 }
                 else if (statecountyid == "211")
                 {
-
                     WebDriver_GAFayette Fayette = new WebDriver_GAFayette();
                     Fayette.FTP_GAFayette(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_GAFayette"] != null && HttpContext.Current.Session["Nodata_GAFayette"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_GAFayette"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_GAFayette"] != null && HttpContext.Current.Session["multiparcel_GAFayette"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_GAFayette"] = "";
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
+                        return;
                     }
 
                     if (HttpContext.Current.Session["multiParcel_GAFayette_Multicount"] != null && HttpContext.Current.Session["multiParcel_GAFayette_Multicount"].ToString() == "Maximum")
@@ -5943,6 +6608,12 @@ namespace ScrapMaricopa
 
                     WebDriver_NuecesTX Nueces = new WebDriver_NuecesTX();
                     Nueces.FTP_Nueces(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_Nueces"] != null && HttpContext.Current.Session["Nodata_Nueces"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_Nueces"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
@@ -6006,6 +6677,12 @@ namespace ScrapMaricopa
 
                     WebDriver_KanawhaWV KanawhaWV = new WebDriver_KanawhaWV();
                     KanawhaWV.FTP_KanawhaWV(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text, txtownername.Text, txtparcelno.Text, searchType, txtorderno.Text.Trim(), txtparcelno.Text);
+                    if (HttpContext.Current.Session["Nodata_KanawhaWV"] != null && HttpContext.Current.Session["Nodata_KanawhaWV"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_KanawhaWV"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -6109,19 +6786,6 @@ namespace ScrapMaricopa
                 else if (statecountyid == "205")
                 {
 
-                    if (txtstreetno.Text != "" && txtstreetname.Text != "")
-                    {
-                        searchType = "address";
-                    }
-                    if (txtparcelno.Text != "")
-                    {
-                        searchType = "parcel";
-                    }
-                    if (txtownername.Text != "")
-                    {
-                        searchType = "ownername";
-                    }
-
                     if (txtstreetname.Text.ToUpper().Contains("UNIT") || txtstreetname.Text.ToUpper().Contains("APT") || txtstreetname.Text.ToUpper().Contains("#") || txtunitnumber.Text != "")
                     {
                         searchType = "titleflex";
@@ -6129,7 +6793,12 @@ namespace ScrapMaricopa
 
                     Webdriver_DelawareOH DelawareOH = new Webdriver_DelawareOH();
                     DelawareOH.DelawareOH(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_DelawareOH"] != null && HttpContext.Current.Session["Nodata_DelawareOH"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_DelawareOH"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Delaware"] != null && HttpContext.Current.Session["multiParcel_Delaware"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Delaware"] = "";
@@ -6185,6 +6854,14 @@ namespace ScrapMaricopa
 
                     Webdriver_BellTX bell = new Webdriver_BellTX();
                     bell.FTP_Bell(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+
+                    if (HttpContext.Current.Session["Nodata_BellTX"] != null && HttpContext.Current.Session["Nodata_BellTX"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_BellTX"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
@@ -6246,7 +6923,12 @@ namespace ScrapMaricopa
 
                     Webdriver_St_Louis_CityMO stlouiscity = new Webdriver_St_Louis_CityMO();
                     stlouiscity.FTP_Stlouiscity(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtunitnumber.Text);
-
+                    if (HttpContext.Current.Session["Nodata_StLouisCityMO"] != null && HttpContext.Current.Session["Nodata_StLouisCityMO"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_StLouisCityMO"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
 
                     if (HttpContext.Current.Session["Delinquent_St_Louis_CityMO"] != null && HttpContext.Current.Session["Delinquent_St_Louis_CityMO"].ToString() == "Yes")
                     {
@@ -6297,7 +6979,12 @@ namespace ScrapMaricopa
 
                     WebDriver_TXEllis Ellis = new WebDriver_TXEllis();
                     Ellis.FTP_TXEllis(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_TXEills"] != null && HttpContext.Current.Session["Nodata_TXEills"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_TXEills"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_TXEllis"] != null && HttpContext.Current.Session["multiParcel_TXEllis"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_TXEllis"] = "";
@@ -6389,6 +7076,13 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_BoulderCO"] != null && HttpContext.Current.Session["Nodata_BoulderCO"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_BoulderCO"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+
                     Label7.Text = "Property Details:";
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label2.Text = "Assessment Details:";
@@ -6419,6 +7113,12 @@ namespace ScrapMaricopa
 
                     WebDriver_MahoningOH Mahoning = new WebDriver_MahoningOH();
                     Mahoning.FTP_Mahoning(txtstreetno.Text, txtstreetname.Text, txtdirection.Text, txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text, searchType, txtorderno.Text, dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_MahoningOH"] != null && HttpContext.Current.Session["Nodata_MahoningOH"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MahoningOH"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -6469,6 +7169,12 @@ namespace ScrapMaricopa
 
                     WebDriver_ComalTX comal = new WebDriver_ComalTX();
                     comal.FTP_Comal(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_ComalTX"] != null && HttpContext.Current.Session["Nodata_ComalTX"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_ComalTX"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
@@ -6528,9 +7234,10 @@ namespace ScrapMaricopa
                 }
                 else if (statecountyid == "79")
                 {
-
-                    searchType = "titleflex";
-
+                    if (txtstreetname.Text != "")
+                    {
+                        searchType = "titleflex";
+                    }
                     WebDriver_DavidsonTN david = new WebDriver_DavidsonTN();
                     david.FTP_DavidsonTN(txtstreetno.Text.Trim(), txtstreetname.Text, txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text, txtownername.Text, searchType, txtorderno.Text.Trim(), dierctSearch);
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
@@ -6602,6 +7309,13 @@ namespace ScrapMaricopa
                     Webdriver_ArapahoeCO ArapahoeCO = new Webdriver_ArapahoeCO();
                     ArapahoeCO.FTP_ArapahoeCO(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
 
+                    if (HttpContext.Current.Session["Nodata_ArapahoeCO"] != null && HttpContext.Current.Session["Nodata_ArapahoeCO"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_ArapahoeCO"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["multiParcel_Arapahoe"] != null && HttpContext.Current.Session["multiParcel_Arapahoe"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Arapahoe"] = "";
@@ -6652,6 +7366,12 @@ namespace ScrapMaricopa
 
                     WebDriver_SandovalNM Sandoval = new WebDriver_SandovalNM();
                     Sandoval.FTP_SandovalNM(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SandovalNM"] != null && HttpContext.Current.Session["Nodata_SandovalNM"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SandovalNM"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Sandoval"] != null && HttpContext.Current.Session["multiParcel_Sandoval"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Sandoval"] = null;
@@ -6701,6 +7421,13 @@ namespace ScrapMaricopa
                     }
                     Webdriver_AndersonSC AndersonSC = new Webdriver_AndersonSC();
                     AndersonSC.FTP_AndersonSC(txtAddress.Text.Trim(), txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_AndersonSC"] != null && HttpContext.Current.Session["Nodata_AndersonSC"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_AndersonSC"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -6749,6 +7476,12 @@ namespace ScrapMaricopa
 
                     WebDriver_PauldingGA Paulding = new WebDriver_PauldingGA();
                     Paulding.FTP_PauldingGA(txtstreetno.Text.Trim(), txtstreetname.Text, txtdirection.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text, txtownername.Text, searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_PauldingGA"] != null && HttpContext.Current.Session["Nodata_PauldingGA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_PauldingGA"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -6808,6 +7541,14 @@ namespace ScrapMaricopa
 
                     WebDriver_AdaID ada = new WebDriver_AdaID();
                     ada.FTP_Ada(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+
+                    if (HttpContext.Current.Session["Nodata_AdaID"] != null && HttpContext.Current.Session["Nodata_AdaID"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_AdaID"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["multiparcel_AdaID"] != null && HttpContext.Current.Session["multiparcel_AdaID"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_AdaID"] = "";
@@ -6855,6 +7596,12 @@ namespace ScrapMaricopa
 
                     WebDriver_SussexDE sussex = new WebDriver_SussexDE();
                     sussex.FTP_Sussex(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SussexDE"] != null && HttpContext.Current.Session["Nodata_SussexDE"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SussexDE"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["Delinquent_SussexDE"] != null && HttpContext.Current.Session["Delinquent_SussexDE"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["Delinquent_SussexDE"] = "";
@@ -6921,13 +7668,19 @@ namespace ScrapMaricopa
                     }
                     Webdriver_WAKitsap WAKitsap = new Webdriver_WAKitsap();
                     WAKitsap.FTP_WAKitsap(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_WAKitsap"] != null && HttpContext.Current.Session["Nodata_WAKitsap"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_WAKitsap"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_WAKitsap"] != null && HttpContext.Current.Session["multiparcel_WAKitsap"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_WAKitsap"] = "";
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
+                        return;
                     }
 
                     if (HttpContext.Current.Session["multiParcel_WAKitsap_Multicount"] != null && HttpContext.Current.Session["multiParcel_WAKitsap_Multicount"].ToString() == "Maximum")
@@ -6978,6 +7731,12 @@ namespace ScrapMaricopa
 
                     WebDriver_SpokaneWA Spokane = new WebDriver_SpokaneWA();
                     Spokane.FTP_Spokane(txtstreetno.Text, txtstreetname.Text, txtdirection.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text, txtparcelno.Text, searchType, txtorderno.Text.Trim(), txtparcelno.Text);
+                    if (HttpContext.Current.Session["Nodata_SpokaneWA"] != null && HttpContext.Current.Session["Nodata_SpokaneWA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SpokaneWA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -7026,7 +7785,12 @@ namespace ScrapMaricopa
                     WebDriver_CASan_Diego SanDiego = new WebDriver_CASan_Diego();
                     SanDiego.FTP_CASanDiego(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
 
-
+                    if (HttpContext.Current.Session["Nodata_CASanDiego"] != null && HttpContext.Current.Session["Nodata_CASanDiego"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CASanDiego"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -7052,16 +7816,15 @@ namespace ScrapMaricopa
                     {
                         searchType = "titleflex";
                     }
-                    if (txtstreetno.Text.Trim() != "")
-                    {
-                        searchType = "address";
-                    }
-                    if (txtownername.Text != "")
-                    {
-                        searchType = "ownername";
-                    }
+
                     webdriver_LyonNV LyonNV = new webdriver_LyonNV();
                     LyonNV.FTP_LyonNV(txtAddress.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_LyonNV"] != null && HttpContext.Current.Session["Nodata_LyonNV"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LyonNV"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -7117,7 +7880,12 @@ namespace ScrapMaricopa
                     WebDriver_ShelbyAL shelby = new WebDriver_ShelbyAL();
                     shelby.FTP_Shelby(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
 
-
+                    if (HttpContext.Current.Session["Nodata_ShelbyAL"] != null && HttpContext.Current.Session["Nodata_ShelbyAL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ShelbyAL"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -7168,6 +7936,12 @@ namespace ScrapMaricopa
 
                     Webdriver_CharlesMD charles = new Webdriver_CharlesMD();
                     charles.FTP_Charles(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_CharlesMD"] != null && HttpContext.Current.Session["Nodata_CharlesMD"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CharlesMD"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -7219,7 +7993,12 @@ namespace ScrapMaricopa
 
                     WebDriver_ORJackson ORjackson = new WebDriver_ORJackson();
                     ORjackson.FTP_ORJackson(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_ORJackson"] != null && HttpContext.Current.Session["Nodata_ORJackson"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ORJackson"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_ORjackson"] != null && HttpContext.Current.Session["multiParcel_ORjackson"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_ORjackson"] = "";
@@ -7333,6 +8112,12 @@ namespace ScrapMaricopa
 
                     Webdriver_EscambiaFL EscambiaFL = new Webdriver_EscambiaFL();
                     EscambiaFL.FTP_Escambia(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_EscambiaFL"] != null && HttpContext.Current.Session["Nodata_EscambiaFL"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_EscambiaFL"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
@@ -7393,6 +8178,12 @@ namespace ScrapMaricopa
 
                     WebDriver_McLennanTX McLennan = new WebDriver_McLennanTX();
                     McLennan.FTP_McLennan(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_McLennanTX"] != null && HttpContext.Current.Session["Nodata_McLennanTX"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_McLennanTX"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
@@ -7457,7 +8248,12 @@ namespace ScrapMaricopa
 
                     WebDriver_TXHays Hays = new WebDriver_TXHays();
                     Hays.FTP_TXHays(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_TXHays"] != null && HttpContext.Current.Session["Nodata_TXHays"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_TXHays"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_TXHays"] != null && HttpContext.Current.Session["multiParcel_TXHays"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_TXHays"] = "";
@@ -7537,6 +8333,12 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_MercedCA"] != null && HttpContext.Current.Session["Nodata_MercedCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MercedCA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     else
                     {
                         Label7.Text = "Property Details:";
@@ -7562,7 +8364,12 @@ namespace ScrapMaricopa
 
                     WebDriver_TXGuadalupe TXGuadalupe = new WebDriver_TXGuadalupe();
                     TXGuadalupe.FTP_TXGuadalupe(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, dierctSearch, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtunitnumber.Text);
-
+                    if (HttpContext.Current.Session["Nodata_TXGuadalupe"] != null && HttpContext.Current.Session["Nodata_TXGuadalupe"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_TXGuadalupe"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_TXGuadalupe"] != null && HttpContext.Current.Session["multiParcel_TXGuadalupe"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_TXGuadalupe"] = "";
@@ -7615,6 +8422,14 @@ namespace ScrapMaricopa
                     }
                     Webdriver_BuncombeNC Buncombe = new Webdriver_BuncombeNC();
                     Buncombe.FTP_Buncombe(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text, searchType, txtorderno.Text.Trim(), txtparcelno.Text);
+
+                    if (HttpContext.Current.Session["Nodata_BuncombeNC"] != null && HttpContext.Current.Session["Nodata_BuncombeNC"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_BuncombeNC"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -7683,6 +8498,12 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
+                    if (HttpContext.Current.Session["nodata_Yamhill"] != null && HttpContext.Current.Session["nodata_Yamhill"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["nodata_Yamhill"] = null;
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -7716,6 +8537,12 @@ namespace ScrapMaricopa
 
                     WebDriver_VenturaCA Ventura = new WebDriver_VenturaCA();
                     Ventura.FTP_VenturaCA(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_VenturaCA"] != null && HttpContext.Current.Session["Nodata_VenturaCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_VenturaCA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Ventura"] != null && HttpContext.Current.Session["multiParcel_Ventura"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Ventura"] = null;
@@ -7769,6 +8596,12 @@ namespace ScrapMaricopa
                     }
                     Webdriver_COOKIL CookIL = new Webdriver_COOKIL();
                     CookIL.FTP_CookIL(txtAddress.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_CookIL"] != null && HttpContext.Current.Session["Nodata_CookIL"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_CookIL"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -7856,13 +8689,18 @@ namespace ScrapMaricopa
 
                     WebDriver_TXBrazoria Brazoria = new WebDriver_TXBrazoria();
                     Brazoria.FTP_Brazoria(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_TXBrazoria"] != null && HttpContext.Current.Session["Nodata_TXBrazoria"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_TXBrazoria"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
                         MessageBox("Property Type is Personal/Mobile Home/Mineral ");
                         return;
                     }
-
                     if (HttpContext.Current.Session["multiparcel_Brazoria"] != null && HttpContext.Current.Session["multiparcel_Brazoria"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Brazoria"] = "";
@@ -7941,7 +8779,13 @@ namespace ScrapMaricopa
 
                     WebDriver_TXTravis TXTravis = new WebDriver_TXTravis();
                     TXTravis.FTP_TXTravis(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, dierctSearch, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtunitnumber.Text);
+                    if (HttpContext.Current.Session["Nodata_TXTravis"] != null && HttpContext.Current.Session["Nodata_TXTravis"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_TXTravis"] = "";
 
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_TXTravis"] != null && HttpContext.Current.Session["multiParcel_TXTravis"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_TXTravis"] = "";
@@ -7950,13 +8794,7 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["TXTravis_Zero"] != null && HttpContext.Current.Session["TXTravis_Zero"].ToString() == "Zero")
-                    {
-                        HttpContext.Current.Session["TXTravis_Zero"] = "";
 
-                        MessageBox("No Data Found");
-                        return;
-                    }
                     if (HttpContext.Current.Session["multiParcel_TXTravis_Multicount"] != null && HttpContext.Current.Session["multiParcel_TXTravis_Multicount"].ToString() == "Maximum")
                     {
                         HttpContext.Current.Session["multiParcel_TXTravis_Multicount"] = "";
@@ -7995,7 +8833,7 @@ namespace ScrapMaricopa
                 }
                 else if (statecountyid == "124")
                 {
-                    if ((txtAddress.Text.Trim().Contains("UNIT") || txtAddress.Text.Trim().Contains("APT") || txtAddress.Text.Trim().Contains("#")))
+                    if ((txtAddress.Text.ToUpper().Trim().Contains("UNIT") || txtAddress.Text.ToUpper().Trim().Contains("APT") || txtAddress.Text.Trim().Contains("#")))
                     {
                         searchType = "titleflex";
                     }
@@ -8026,7 +8864,12 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
-
+                    if (HttpContext.Current.Session["Nodata_JeffersonAL"] != null && HttpContext.Current.Session["Nodata_JeffersonAL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_JeffersonAL"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
 
                     Label7.Text = "Property Details:";
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
@@ -8053,7 +8896,12 @@ namespace ScrapMaricopa
                     {
                         searchType = "block";
                     }
-
+                    if (HttpContext.Current.Session["Nodata_GalvestonTX"] != null && HttpContext.Current.Session["Nodata_GalvestonTX"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_GalvestonTX"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     WebDriver_GalvestonTX Galveston = new WebDriver_GalvestonTX();
                     Galveston.FTP_Galveston(txtstreetno.Text, txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtdirection.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
@@ -8233,6 +9081,13 @@ namespace ScrapMaricopa
 
                     Webdriver_MontgomeryOH montgomery = new Webdriver_MontgomeryOH();
                     montgomery.FTP_MontgomeryOH(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+
+                    if (HttpContext.Current.Session["Nodata_MontgomeryOH"] != null && HttpContext.Current.Session["Nodata_MontgomeryOH"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MontgomeryOH"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Montgomery"] != null && HttpContext.Current.Session["multiParcel_Montgomery"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Montgomery"] = null;
@@ -8296,7 +9151,12 @@ namespace ScrapMaricopa
 
                     Webdriver_SedgwickKS Sedgwick = new Webdriver_SedgwickKS();
                     Sedgwick.FTP_Sedgwick_KS(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_SedgwickKS"] != null && HttpContext.Current.Session["Nodata_SedgwickKS"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SedgwickKS"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["Taxbilling_Sedgwick"] != null)
                     {
                         HttpContext.Current.Session["multiParcel_Sedgwick_Maximum"] = null;
@@ -8350,7 +9210,12 @@ namespace ScrapMaricopa
 
                     WebDriver_FortBendTX FortBend = new WebDriver_FortBendTX();
                     FortBend.FTP_FortBend(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_FortBend"] != null && HttpContext.Current.Session["Nodata_FortBend"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FortBend"] = null;
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_FortBend"] != null && HttpContext.Current.Session["multiparcel_FortBend"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_FortBend"] = "";
@@ -8497,7 +9362,12 @@ namespace ScrapMaricopa
                     WebDriver_MontgomeryAL MontgomeryAL = new WebDriver_MontgomeryAL();
                     MontgomeryAL.FTP_MontgomeryAL(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
 
-
+                    if (HttpContext.Current.Session["Nodata_MontogomeryAL"] != null && HttpContext.Current.Session["Nodata_MontogomeryAL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MontogomeryAL"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -8554,7 +9424,12 @@ namespace ScrapMaricopa
                     }
                     Webdriver_MohaveAZ mohave = new Webdriver_MohaveAZ();
                     mohave.FTP_Mohave(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_Mohave"] != null && HttpContext.Current.Session["Nodata_Mohave"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_Mohave"] = null;
+                        MessageBox("No Recored Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_MohaveAZ"] != null && HttpContext.Current.Session["multiparcel_MohaveAZ"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_MohaveAZ"] = "";
@@ -8616,18 +9491,10 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["multiParcel_Merced"] != null && HttpContext.Current.Session["multiParcel_Merced"].ToString() == "Yes")
+                    if (HttpContext.Current.Session["Zero_Madera"] != null && HttpContext.Current.Session["Zero_Madera"].ToString() == "Zero")
                     {
-                        HttpContext.Current.Session["multiParcel_Merced"] = "";
-                        Label3.Text = "Multi Parcel Details:";
-                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        MessageBox("Multiple Parcels....");
-                        return;
-                    }
-                    if (HttpContext.Current.Session["multiParcel_Merced_Multicount"] != null && HttpContext.Current.Session["multiParcel_Merced_Multicount"].ToString() == "Maximum")
-                    {
-                        HttpContext.Current.Session["multiParcel_Merced_Multicount"] = "";
-                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        HttpContext.Current.Session["Zero_Madera"] = "";
+                        MessageBox("No Data Found");
                         return;
                     }
                     else
@@ -8700,6 +9567,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_MarinCA MarinCA = new WebDriver_MarinCA();
                     MarinCA.FTP_MarinCA(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_MarinCA"] != null && HttpContext.Current.Session["Nodata_MarinCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MarinCA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -8752,7 +9625,12 @@ namespace ScrapMaricopa
                     }
                     Webdriver_LorainOH lorain = new Webdriver_LorainOH();
                     lorain.FTP_Lorain(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_LorainOH"] != null && HttpContext.Current.Session["Nodata_LorainOH"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LorainOH"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_LorainOH"] != null && HttpContext.Current.Session["multiparcel_LorainOH"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_LorainOH"] = "";
@@ -8801,16 +9679,15 @@ namespace ScrapMaricopa
                     {
                         searchType = "titleflex";
                     }
-                    if (txtstreetno.Text.Trim() != "")
-                    {
-                        searchType = "address";
-                    }
-                    if (txtownername.Text != "")
-                    {
-                        searchType = "ownername";
-                    }
+
                     Webdriver_ForsythGA ForsythGA = new Webdriver_ForsythGA();
                     ForsythGA.FTP_ForsythGA(txtAddress.Text.Trim(), txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_ForsythGA"] != null && HttpContext.Current.Session["Nodata_ForsythGA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_ForsythGA"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -8863,6 +9740,12 @@ namespace ScrapMaricopa
 
                     WebDriver_FrederickMD Frederick = new WebDriver_FrederickMD();
                     Frederick.FTP_Frederick(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FrederickMD"] != null && HttpContext.Current.Session["Nodata_FrederickMD"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FrederickMD"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -8946,7 +9829,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Stanislaus"] != null && HttpContext.Current.Session["Zero_Stanislaus"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Stanislaus"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -8972,7 +9855,12 @@ namespace ScrapMaricopa
                     }
                     Webdriver_SonomaCA sonoma = new Webdriver_SonomaCA();
                     sonoma.FTP_SonomaCA(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_SonomaCA"] != null && HttpContext.Current.Session["Nodata_SonomaCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SonomaCA"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_SonomaCA"] != null && HttpContext.Current.Session["multiparcel_SonomaCA"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_SonomaCA"] = "";
@@ -9091,7 +9979,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Imperial"] != null && HttpContext.Current.Session["Zero_Imperial"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Imperial"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -9120,7 +10008,12 @@ namespace ScrapMaricopa
                     WebDriver_LimestoneAL limestone = new WebDriver_LimestoneAL();
                     limestone.FTP_Limestone(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
 
-
+                    if (HttpContext.Current.Session["Nodata_LimestoneAL"] != null && HttpContext.Current.Session["Nodata_LimestoneAL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LimestoneAL"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -9170,6 +10063,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_IndianRiverFL indianriver = new WebDriver_IndianRiverFL();
                     indianriver.FTP_IndianRiver(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtownername.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_IndianRiverFL"] != null && HttpContext.Current.Session["Nodata_IndianRiverFL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_IndianRiverFL"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
 
                     if (HttpContext.Current.Session["multiparcel_IndianRiver"] != null && HttpContext.Current.Session["multiparcel_IndianRiver"].ToString() == "Yes")
                     {
@@ -9221,6 +10120,12 @@ namespace ScrapMaricopa
 
                     WebDriver_SolanoCA SolanoCA = new WebDriver_SolanoCA();
                     SolanoCA.FTP_SolanoCA(txtstreetno.Text, txtstreetname.Text, txtdirection.Text, txtstreettype.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_SolanoCA"] != null && HttpContext.Current.Session["Nodata_SolanoCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_SolanoCA"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -9246,7 +10151,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Solano"] != null && HttpContext.Current.Session["Zero_Solano"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Solano"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -9345,7 +10250,12 @@ namespace ScrapMaricopa
 
                     WebDriver_FLClay Clay = new WebDriver_FLClay();
                     Clay.FTP_FLClay(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim());
-
+                    if (HttpContext.Current.Session["Nodata_FLClay"] != null && HttpContext.Current.Session["Nodata_FLClay"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_FLClay"] = ""; HttpContext.Current.Session["Nodata_FLClay"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_FLClay"] != null && HttpContext.Current.Session["multiparcel_FLClay"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_FLClay"] = "";
@@ -9428,7 +10338,12 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-
+                    if (HttpContext.Current.Session["Nodata_WaltonFL"] != null && HttpContext.Current.Session["Nodata_WaltonFL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_WaltonFL"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     Label7.Text = "Property Details";
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label2.Text = "Assessment History Details";
@@ -9458,6 +10373,12 @@ namespace ScrapMaricopa
 
                     Webdriver_CitrusFL CitrusFL = new Webdriver_CitrusFL();
                     CitrusFL.FTP_CitrusFL(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Zero_Citrus"] != null && HttpContext.Current.Session["Zero_Citrus"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_Citrus"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["alert_msg"] = "";
@@ -9571,6 +10492,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_HowardMD howard = new WebDriver_HowardMD();
                     howard.FTP_Howard(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_HowardMD"] != null && HttpContext.Current.Session["Nodata_HowardMD"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_HowardMD"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -9632,10 +10559,10 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_Alachua"] != null && HttpContext.Current.Session["Zero_Alachua"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_AlachuaFL"] != null && HttpContext.Current.Session["Nodata_AlachuaFL"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_Alachua"] = "";
-                        MessageBox("NO Record Found");
+                        HttpContext.Current.Session["Nodata_AlachuaFL"] = "";
+                        MessageBox("N Record Found");
                         return;
                     }
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
@@ -9728,9 +10655,9 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
-                    if (HttpContext.Current.Session["SnohomishWA_NoRecord"] != null && HttpContext.Current.Session["SnohomishWA_NoRecord"].ToString() == "Yes")
+                    if (HttpContext.Current.Session["Nodata_SnohomishWA"] != null && HttpContext.Current.Session["Nodata_SnohomishWA"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["SnohomishWA_NoRecord"] = null;
+                        HttpContext.Current.Session["Nodata_SnohomishWA"] = null;
                         MessageBox("No Record Found");
                         return;
                     }
@@ -9759,6 +10686,12 @@ namespace ScrapMaricopa
 
                     WebDriver_MontgomeryMD montgomerymd = new WebDriver_MontgomeryMD();
                     montgomerymd.FTP_MontgomeryMD(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_MontgomeryMD"] != null && HttpContext.Current.Session["Nodata_MontgomeryMD"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MontgomeryMD"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -9864,10 +10797,10 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_Wayne"] != null && HttpContext.Current.Session["Zero_Wayne"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_JacksonMO"] != null && HttpContext.Current.Session["Nodata_JacksonMO"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_Wayne"] = "";
-                        MessageBox("NO Record Found");
+                        HttpContext.Current.Session["Nodata_JacksonMO"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -9894,7 +10827,12 @@ namespace ScrapMaricopa
                     WebDriver_CobbGA Cobb = new WebDriver_CobbGA();
                     Cobb.FTP_Cobb(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtownername.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
 
-
+                    if (HttpContext.Current.Session["Nodata_CobbGA"] != null && HttpContext.Current.Session["Nodata_CobbGA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_CobbGA"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Cobb"] != null && HttpContext.Current.Session["multiparcel_Cobb"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Cobb"] = "";
@@ -9919,7 +10857,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Cobb"] != null && HttpContext.Current.Session["Zero_Cobb"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Cobb"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details:");
@@ -10057,7 +10995,12 @@ namespace ScrapMaricopa
                     }
                     Webdriver_MDWashington Washignton = new Webdriver_MDWashington();
                     Washignton.FTP_MDWashignton(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-
+                    if (HttpContext.Current.Session["Nodata_MDWashington"] != null && HttpContext.Current.Session["Nodata_MDWashington"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MDWashington"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -10132,10 +11075,10 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_Wayne"] != null && HttpContext.Current.Session["Zero_Wayne"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_WayneOH"] != null && HttpContext.Current.Session["Nodata_WayneOH"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_Wayne"] = "";
-                        MessageBox("NO Record Found");
+                        HttpContext.Current.Session["Nodata_WayneOH"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -10159,6 +11102,12 @@ namespace ScrapMaricopa
 
                     WebDriver_HighlandsFL Highlands = new WebDriver_HighlandsFL();
                     Highlands.FTP_HighlandsFL(txtstreetno.Text.Trim(), txtstreetname.Text, txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text, txtownername.Text, searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_FLHighlands"] != null && HttpContext.Current.Session["Nodata_FLHighlands"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_FLHighlands"] = null;
+                        MessageBox("No data Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -10213,6 +11162,12 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["multiparcel_WaltonGA_Maximum"] != null && HttpContext.Current.Session["multiparcel_WaltonGA_Maximum"].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiparcel_WaltonGA_Maximum"] = "";
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_WaltonGA"] != null && HttpContext.Current.Session["multiparcel_WaltonGA"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_WaltonGA"] = "";
@@ -10220,10 +11175,10 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_Walton"] != null && HttpContext.Current.Session["Zero_Walton"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_WaltonGA"] != null && HttpContext.Current.Session["Nodata_WaltonGA"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_Walton"] = "";
-                        MessageBox("NO Record Found");
+                        HttpContext.Current.Session["Nodata_WaltonGA"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -10260,9 +11215,9 @@ namespace ScrapMaricopa
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_QueensNY"] != null && HttpContext.Current.Session["Zero_QueensNY"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_QueensNY"] != null && HttpContext.Current.Session["Nodata_QueensNY"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_QueensNY"] = null;
+                        HttpContext.Current.Session["Nodata_QueensNY"] = null;
                         MessageBox("No Records Found");
                         return;
                     }
@@ -10285,11 +11240,10 @@ namespace ScrapMaricopa
                     BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label6.Text = "Tax Distribution Details";
                     BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label8.Text = "Tax Distribution Details";
-                    BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     MessageBox("Data Inserted Successfully....");
 
                 }
+
                 else if (statecountyid == "90")
                 {
                     if (txtAddress.Text.Trim().ToUpper().Contains("APT") || txtAddress.Text.Trim().Contains("#") || txtAddress.Text.ToUpper().Trim().Contains("UNIT") || txtownername.Text.Trim() != "")
@@ -10298,6 +11252,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_RichlandSC richland = new WebDriver_RichlandSC();
                     richland.FTP_RichlandSC(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtownername.Text.Trim(), txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_Richland"] != null && HttpContext.Current.Session["Nodata_Richland"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_Richland"] = null;
+                        MessageBox("No Records Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -10315,7 +11275,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Richland"] != null && HttpContext.Current.Session["Zero_Richland"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Richland"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -10369,12 +11329,12 @@ namespace ScrapMaricopa
 
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                     BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Ad Valorem Details");
-                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Non Ad Valorem Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Ad and Non Valorem Details");
                     BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Assessment Details");
+                    BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Due Details");
                     MessageBox("Data Inserted Successfully....");
-
-
                 }
 
 
@@ -10423,7 +11383,7 @@ namespace ScrapMaricopa
                     BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label5.Text = "Tax Real Estate Account Details";
                     BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label6.Text = "Tax Ad Valorem Details";
+                    Label6.Text = "Tax Distribution";
                     BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label8.Text = "Tax Due Details";
                     BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
@@ -10446,6 +11406,12 @@ namespace ScrapMaricopa
                     WebDriver_PinellasFL pinellas = new WebDriver_PinellasFL();
                     pinellas.FTP_Pinellas(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtownername.Text.Trim(), txtorderno.Text.Trim(), dierctSearch);
 
+                    if (HttpContext.Current.Session["Nodata_PinellasFL"] != null && HttpContext.Current.Session["Nodata_PinellasFL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_PinellasFL"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiparcel_Pinellas"] != null && HttpContext.Current.Session["multiparcel_Pinellas"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiparcel_Pinellas"] = "";
@@ -10539,8 +11505,12 @@ namespace ScrapMaricopa
                     {
                         searchType = "titleflex";
                     }
+                    if (txtstreetno.Text == "" && txtunitnumber.Text != "")
+                    {
+                        searchType = "account";
+                    }
                     WebDriver_BeaufortSC BeaufortSC = new WebDriver_BeaufortSC();
-                    BeaufortSC.FTP_BeaufortSC(txtAddress.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtownername.Text.Trim(), txtorderno.Text.Trim());
+                    BeaufortSC.FTP_BeaufortSC(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtownername.Text.Trim(), txtorderno.Text.Trim());
                     if (HttpContext.Current.Session["multiParcel_BeaufortSC"] != null && HttpContext.Current.Session["multiParcel_BeaufortSC"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_BeaufortSC"] = null;
@@ -10638,6 +11608,12 @@ namespace ScrapMaricopa
 
                     WebDriver_HonoluluHI Honolulu = new WebDriver_HonoluluHI();
                     Honolulu.FTP_HonoluluHI(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_HonoluluHI"] != null && HttpContext.Current.Session["Nodata_HonoluluHI"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_HonoluluHI"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Honolulu"] != null && HttpContext.Current.Session["multiParcel_Honolulu"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Honolulu"] = null;
@@ -10663,7 +11639,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Honolulu"] != null && HttpContext.Current.Session["Zero_Honolulu"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Honolulu"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
 
@@ -10717,14 +11693,12 @@ namespace ScrapMaricopa
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label2.Text = "Assessment Details";
                     BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label4.Text = "Tax Information Details";
+                    Label4.Text = "Tax Information";
                     BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label5.Text = "Tax Receipt Details";
+                    Label5.Text = "Tax Info Details:";
                     BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label6.Text = "Tax Distribution Details";
+                    Label6.Text = "Tax Payments/Adjustments Details:";
                     BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label8.Text = "Tax History Details";
-                    BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     MessageBox("Data Inserted Successfully....");
 
                 }
@@ -10785,6 +11759,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_OklahomaOK oklahoma = new WebDriver_OklahomaOK();
                     oklahoma.FTP_OklahomaOK(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), searchType, txtownername.Text.Trim(), txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_Oklahoma"] != null && HttpContext.Current.Session["Nodata_Oklahoma"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_Oklahoma"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -10802,7 +11782,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Oklahoma"] != null && HttpContext.Current.Session["Zero_Oklahoma"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Oklahoma"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -10841,7 +11821,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Elpaso"] != null && HttpContext.Current.Session["Zero_Elpaso"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Elpaso"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -10884,10 +11864,10 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_Jefferson"] != null && HttpContext.Current.Session["Zero_Jefferson"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_JeffersonCO"] != null && HttpContext.Current.Session["Nodata_JeffersonCO"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_Jefferson"] = "";
-                        MessageBox("NO Record Found");
+                        HttpContext.Current.Session["Nodata_JeffersonCO"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -10934,7 +11914,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Weld"] != null && HttpContext.Current.Session["Zero_Weld"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Weld"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -11036,8 +12016,8 @@ namespace ScrapMaricopa
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label2.Text = "Assessment Details";
                     BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label3.Text = "Tax Information";
-                    BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label4.Text = "Tax Information";
+                    BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label5.Text = "Tax Info Details:";
                     BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label6.Text = "Tax Payments/Adjustments Details:";
@@ -11052,7 +12032,10 @@ namespace ScrapMaricopa
                     {
                         searchType = "titleflex";
                     }
-
+                    if (txtstreetno.Text.Trim() == "" && txtunitnumber.Text.Trim() != "")
+                    {
+                        searchType = "Account";
+                    }
 
                     Webdriver_AdamsCO AdamsCO = new Webdriver_AdamsCO();
                     AdamsCO.AdamsCO(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
@@ -11119,7 +12102,12 @@ namespace ScrapMaricopa
                     WebDriver_MobileAL mobile = new WebDriver_MobileAL();
                     mobile.FTP_MobileAL(txtAddress.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
 
-
+                    if (HttpContext.Current.Session["Nodata_MobileAL"] != null && HttpContext.Current.Session["Nodata_MobileAL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_MobileAL"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -11159,9 +12147,15 @@ namespace ScrapMaricopa
                         searchType = "titleflex";
                     }
 
-                    if (txtunitnumber.Text != "")
+                    if (txtunitnumber.Text != "" && txtstreetno.Text.Trim() == "")
                     {
                         searchType = "unitnumber";
+                    }
+                    if (HttpContext.Current.Session["Nodata_LakeFL"] != null && HttpContext.Current.Session["Nodata_LakeFL"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LakeFL"] = null;
+                        MessageBox("No Data Found");
+                        return;
                     }
                     Webdriver_LakeFL LakeFL = new Webdriver_LakeFL();
                     LakeFL.LakeFL(txtstreetno.Text.Trim(), txtstreetname.Text.Trim(), txtdirection.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
@@ -11184,16 +12178,12 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["multiParcel_LakeFL_Maximum"] != null && HttpContext.Current.Session["multiParcel_LakeFL_Maximum"].ToString() == "Maximum")
                     {
                         HttpContext.Current.Session["multiParcel_LakeFL_Maximum"] = null;
-                        //Label3.Text = "Multi Parcel Details:";
-                        //BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
                         return;
                     }
                     if (HttpContext.Current.Session["Zero_LakeFL"] != null && HttpContext.Current.Session["Zero_LakeFL"].ToString() == "Zero")
                     {
-                        HttpContext.Current.Session["multiParcel_LakeFL_Maximum"] = null;
-                        //Label3.Text = "Multi Parcel Details:";
-                        // BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        HttpContext.Current.Session["Zero_LakeFL"] = null;
                         MessageBox("No Data Found");
                         return;
                     }
@@ -11225,6 +12215,12 @@ namespace ScrapMaricopa
 
                     WebDriver_HawaiiHI Hawaii = new WebDriver_HawaiiHI();
                     Hawaii.FTP_HawaiiHI(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_HawaiiHI"] != null && HttpContext.Current.Session["Nodata_HawaiiHI"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_HawaiiHI"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_Hawaii"] != null && HttpContext.Current.Session["multiParcel_Hawaii"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Hawaii"] = null;
@@ -11250,26 +12246,29 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Hawaii"] != null && HttpContext.Current.Session["Zero_Hawaii"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Hawaii"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
+
+                    //BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    //BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                    //BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Year Tax Information Table");
+                    //BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax History Details Table");
+                    //BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Table");
+                    //BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Histroy Details Table");
+
 
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                     BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
                     BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Year Tax Information Table");
-                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax History Details Table");
-                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Table");
-                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Histroy Details Table");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Sales Details Table");
+                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax History Details Table");
 
                     MessageBox("Data Inserted Successfully....");
                 }
 
                 else if (statecountyid == "110")
                 {
-                    if (txtunitnumber.Text != "" && txtstreetno.Text != "" && txtstreetname.Text != "")
-                    {
-                        searchType = "titleflex";
-                    }
                     WebDriver_SeminoleFL SeminoleFL = new WebDriver_SeminoleFL();
                     SeminoleFL.FTP_SeminoleFL(txtstreetno.Text.Trim(), txtstreetname.Text, txtdirection.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text, txtownername.Text, searchType, txtorderno.Text.Trim(), txtdirection.Text.Trim());
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
@@ -11305,9 +12304,11 @@ namespace ScrapMaricopa
                     BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Tax Information Details");
                     BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Due Date Details");
                     BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Delinquent Details");
-                    BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Installment Plan Details");
-                    BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Prior Year Tax Information Details");
-                    BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Prior Year Payment Details Details");
+                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Installment Plan Details");
+                    BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Prior Year Tax Information Details");
+                    BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Prior Year Payment Details Details");
+
+                    MessageBox("Data Inserted Successfully....");
 
                     MessageBox("Data Inserted Successfully....");
                 }
@@ -11347,7 +12348,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Baldwin"] != null && HttpContext.Current.Session["Zero_Baldwin"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Baldwin"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -11371,6 +12372,12 @@ namespace ScrapMaricopa
 
                     WebDriver_HenryGA Henry = new WebDriver_HenryGA();
                     Henry.FTP_HenryGA(txtAddress.Text, txtunitnumber.Text.Trim(), txtownername.Text, txtparcelno.Text, searchType, txtorderno.Text.Trim(), txtparcelno.Text);
+                    if (HttpContext.Current.Session["Nodata_HenryGA"] != null && HttpContext.Current.Session["Nodata_HenryGA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_HenryGA"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -11502,16 +12509,14 @@ namespace ScrapMaricopa
                         BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label2.Text = "Assessment Details Table:";
                         BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label1.Text = "Tax History";
+                        Label1.Text = "Tax information Table";
                         BindGrid(GridView1, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label4.Text = "Tax Distribution Table:";
+                        Label4.Text = "Tax Installment Table:";
                         BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label6.Text = "Due Date Details Table:";
+                        Label6.Text = "Tax Distribution Table";
                         BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label8.Text = "Tax information Table";
+                        Label8.Text = "Tax History";
                         BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        //Label9.Text = ("Tax Payment Details:");
-                        //BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Data Inserted Successfully....");
                     }
                 }
@@ -11524,8 +12529,15 @@ namespace ScrapMaricopa
                         searchType = "titleflex";
                     }
 
-                    Webdriver_LexingtonSC LexingtonAZ = new Webdriver_LexingtonSC();
-                    LexingtonAZ.FTP_LexingtonSC(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    Webdriver_LexingtonSC LexingtonSC = new Webdriver_LexingtonSC();
+                    LexingtonSC.FTP_LexingtonSC(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_LexingtonSC"] != null && HttpContext.Current.Session["Nodata_LexingtonSC"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LexingtonSC"] = null;
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -11563,14 +12575,15 @@ namespace ScrapMaricopa
                     MessageBox("Data Inserted Successfully....");
                 }
 
+
                 else if (statecountyid == "131")
                 {
                     if ((txtstreetno.Text != "" && txtstreetname.Text != "" && txtunitnumber.Text != ""))
                     {
                         searchType = "titleflex";
                     }
-                    WebDriver_LucasOH montgomery = new WebDriver_LucasOH();
-                    montgomery.FTP_LucasOH(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    WebDriver_LucasOH lucas = new WebDriver_LucasOH();
+                    lucas.FTP_LucasOH(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
                     if (HttpContext.Current.Session["multiParcel_Lucas"] != null && HttpContext.Current.Session["multiParcel_Lucas"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_Lucas"] = null;
@@ -11593,6 +12606,14 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Nodata_LucasOH"] != null && HttpContext.Current.Session["Nodata_LucasOH"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_LucasOH"] = null;
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+
+
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                     BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Summary - Values Details");
                     BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Credits Details");
@@ -11602,6 +12623,7 @@ namespace ScrapMaricopa
                     BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Prior Year Taxes Details");
                     BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Special Assessment Details");
                     BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Payment Details");
+                    BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Value Change History Details");
 
 
                     MessageBox("Data Inserted Successfully....");
@@ -11656,12 +12678,19 @@ namespace ScrapMaricopa
 
                 else if (statecountyid == "19")
                 {
-                    if (txtAddress.Text.Trim() != "" || txtownername.Text.Trim() != "")
+
+                    if (txtAddress.Text.Trim().ToUpper().Contains("APT") || txtAddress.Text.Trim().ToUpper().Contains("UNIT") || txtAddress.Text.Trim().ToUpper().Contains("#") || txtownername.Text.Trim() != "")
                     {
                         searchType = "titleflex";
                     }
                     Webdriver_RiversideCA RiversideCA = new Webdriver_RiversideCA();
                     RiversideCA.FTP_Riverside(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["Nodata_RiversideCA"] != null && HttpContext.Current.Session["Nodata_RiversideCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_RiversideCA"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = null;
@@ -11672,7 +12701,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_RiverSide"] != null && HttpContext.Current.Session["Zero_RiverSide"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_RiverSide"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -11779,6 +12808,8 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Distribution");
                         BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Special Assessment Table");
                         BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Special Assessment History");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Special Sale");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Tax Sale");
                         MessageBox("Data Inserted Successfully....");
                     }
                 }
@@ -11816,16 +12847,23 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_Maui"] != null && HttpContext.Current.Session["Zero_Maui"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_Maui"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
 
+                    //BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    //BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                    //BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details Table");
+                    //BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Payment Details Table");
+                    //BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Tax Information Table");
+                    //BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Sales Information");
+
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                     BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details Table");
-                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Payment Details Table");
-                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Tax Information Table");
-                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Sales Information");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Sale Details Table");
+                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax History Details Table");
+
+
                     MessageBox("Data Inserted Successfully....");
                 }
 
@@ -11902,7 +12940,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_DouglasNV"] != null && HttpContext.Current.Session["Zero_DouglasNV"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_DouglasNV"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -11982,15 +13020,9 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_MNwashin"] != null && HttpContext.Current.Session["Zero_MNwashin"].ToString() == "Zero")
-                    {
-                        HttpContext.Current.Session["Zero_MNwashin"] = "";
-                        MessageBox("NO Record Found");
-                        return;
-                    }
                     if (HttpContext.Current.Session["multiparcel_MNwashin"] != null && HttpContext.Current.Session["multiparcel_MNwashin"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["multiparcel_MNwashin"] = null;
+                        HttpContext.Current.Session["multiparcel_MNwashin"] = "";
                         Label3.Text = "Multi Parcel Details:";
                         BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multiple Parcels....");
@@ -11998,76 +13030,38 @@ namespace ScrapMaricopa
                     }
                     if (HttpContext.Current.Session["multiParcel_MNwashin_Multicount"] != null && HttpContext.Current.Session["multiParcel_MNwashin_Multicount"].ToString() == "Maximum")
                     {
-                        HttpContext.Current.Session["multiParcel_MNwashin_Multicount"] = null;
+                        HttpContext.Current.Session["multiParcel_MNwashin_Multicount"] = "";
+                        //Label3.Text = "Multi Parcel Details:";
+                        //BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Nodata_WashingtonMN"] != null && HttpContext.Current.Session["Nodata_WashingtonMN"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_WashingtonMN"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
                     {
-                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
-                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Bill Totals Details");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Installment Details");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Payment History Details");
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details Table");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details Table:");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Details Table:");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Installment Details Table:");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Details Table:");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment History Details Table: ");
                         MessageBox("Data Inserted Successfully....");
                     }
                 }
 
-                else if (statecountyid == "102")
-                {
-                    if (txtAddress.Text.Trim().ToUpper().Contains("APT") || txtAddress.Text.Trim().Contains("#") || txtAddress.Text.ToUpper().Trim().Contains("UNIT") || txtownername.Text.Trim() != "")
-                    {
-                        searchType = "titleflex";
-                    }
-                    Webdriver_YavapaiAZ YavapaiAZ = new Webdriver_YavapaiAZ();
-                    YavapaiAZ.FTP_YavapaiAZ(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
-                    {
-                        HttpContext.Current.Session["TitleFlex_Search"] = "";
-                        Label3.Text = "Multi Parcel Details:";
-                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        MessageBox("Multiple Parcels....");
-                        return;
-                    }
-                    if (HttpContext.Current.Session["multiParcel_Yavapai"] != null && HttpContext.Current.Session["multiParcel_Yavapai"].ToString() == "Yes")
-                    {
-                        HttpContext.Current.Session["multiParcel_BentonAR"] = null;
-                        Label3.Text = "Multi Parcel Details:";
-                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        MessageBox("Multiple Parcels....");
-                        return;
-                    }
-                    if (HttpContext.Current.Session["multiParcel_Yavapai_Maximum"] != null && HttpContext.Current.Session["multiParcel_Yavapai_Maximum"].ToString() == "Maximum")
-                    {
-                        HttpContext.Current.Session["multiParcel_Yavapai_Maximum"] = null;
-                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
-                        return;
-                    }
-                    if (HttpContext.Current.Session["Nodata_Yavapai"] != null && HttpContext.Current.Session["Nodata_Yavapai"].ToString() == "Zero")
-                    {
-                        HttpContext.Current.Session["Nodata_Yavapai"] = "";
-                        MessageBox("No Data Found....");
-                        return;
-                    }
-
-                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
-                    BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Tax Details");
-                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Payment Receipts Details");
-                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
-                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Deliquents Details");
-
-                    MessageBox("Data Inserted Successfully....");
-                }
 
                 else if (statecountyid == "169")
                 {
 
-                    if (txtstreetno.Text != "" && txtstreetname.Text != "" && txtunitnumber.Text != "" || txtownername.Text.Trim() != "")
-                    {
-                        searchType = "titleflex";
-                    }
+                    //if (txtstreetno.Text != "" && txtstreetname.Text != "")
+                    //{
+                    //    searchType = "titleflex";
+                    //}
 
                     WebDriver_LakeIL Lake = new WebDriver_LakeIL();
                     Lake.FTP_LakeIL(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtcity.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
@@ -12097,10 +13091,19 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Current Tax Details");
                         BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Taxing Body Details Table");
                         BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Assessment History Table");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Payment Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Bill Details");
-
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Payment History");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Sale/Redemptions Receipts");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Adjustment");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Value History");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Excemptions Current");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Tax Excemptions History");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Land Information");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Permits");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "14", txtorderno.Text, "Property Transfer History");
+                        BindGridDisplay(GridView16, Label16, statecountyid, "15", txtorderno.Text, "Taxes Due Details");
                         MessageBox("Data Inserted Successfully....");
+
+
                     }
                 }
 
@@ -12131,7 +13134,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_ButlerOH"] != null && HttpContext.Current.Session["Zero_ButlerOH"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_ButlerOH"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -12140,7 +13143,7 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
                         BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Exemption Details Table");
                         BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Information Table");
-                       // BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Year Charges Table");
+                        // BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Year Charges Table");
                         BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Distribution Details Table");
                         BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax History Details");
                         BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Special Assessment Table");
@@ -12178,7 +13181,7 @@ namespace ScrapMaricopa
                     if (HttpContext.Current.Session["Zero_DouglasNE"] != null && HttpContext.Current.Session["Zero_DouglasNE"].ToString() == "Zero")
                     {
                         HttpContext.Current.Session["Zero_DouglasNE"] = "";
-                        MessageBox("NO Record Found");
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
@@ -12203,6 +13206,12 @@ namespace ScrapMaricopa
                     }
                     WebDriver_HorrySC HorrySC = new WebDriver_HorrySC();
                     HorrySC.FTP_HorrySC(txtAddress.Text.Trim(), txtownername.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["Nodata_HorrySC"] != null && HttpContext.Current.Session["Nodata_HorrySC"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_HorrySC"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
                     if (HttpContext.Current.Session["multiParcel_HorrySC"] != null && HttpContext.Current.Session["multiParcel_HorrySC"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["multiParcel_HorrySC"] = null;
@@ -12277,22 +13286,41 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
+                    if (HttpContext.Current.Session["Loudoun_Zero"] != null && HttpContext.Current.Session["Loudoun_Zero"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Loudoun_Zero"] = "";
+                        MessageBox("No Data Found");
+                        return;
+                    }
                     Label7.Text = "Property Details:";
                     BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     Label2.Text = "Assessment Details:";
                     BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label4.Text = "Tax Payment Details:";
+                    Label4.Text = "Tax Bill Details Table";
                     BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label6.Text = "Tax Bill Details:";
-                    BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                    Label8.Text = "Tax Authority Details:";
-                    BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label5.Text = "Tax Payment Details Table:";
+                    BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label6.Text = "Tax Authority Details:";
+                    BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label8.Text = "Town Tax Bill Details Table:";
+                    BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label9.Text = "Town Tax Charges Details:";
+                    BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label10.Text = "City Property Details:";
+                    BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 10 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label11.Text = "Town Assessment Value Details:";
+                    BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label12.Text = "Assessment History Details:";
+                    BindGrid(GridView12, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 12 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label13.Text = "Payments/Adjustments Information Details:";
+                    BindGrid(GridView13, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                     MessageBox("Data Inserted Successfully....");
                 }
 
+
                 else if (statecountyid == "209")
                 {
-                    if (txtAddress.Text.Trim().ToUpper().Contains("APT") || txtAddress.Text.Trim().Contains("#") || txtAddress.Text.ToUpper().Trim().Contains("UNIT") || txtownername.Text.Trim() != "")
+                    if (txtAddress.Text.Trim().ToUpper().Contains("APT") || txtAddress.Text.Trim().Contains("#") || txtAddress.Text.ToUpper().Trim().Contains("UNIT"))
                     {
                         searchType = "titleflex";
                     }
@@ -12305,34 +13333,1920 @@ namespace ScrapMaricopa
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["multiparcel_Richland"] != null && HttpContext.Current.Session["multiparcel_Richland"].ToString() == "Yes")
+                    if (HttpContext.Current.Session["multiParcel_Weber"] != null && HttpContext.Current.Session["multiParcel_Weber"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["multiparcel_Richland"] = "";
+                        HttpContext.Current.Session["multiParcel_Weber"] = "";
                         BindGridDisplay(GridView3, Label3, statecountyid, "7", txtorderno.Text, "Multi Parcel Details:");
                         MessageBox("Multiple Parcels....");
                         return;
                     }
-                    if (HttpContext.Current.Session["Zero_Richland"] != null && HttpContext.Current.Session["Zero_Richland"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["multiParcel_Weber_Multicount"] != null && HttpContext.Current.Session["multiParcel_Weber_Multicount"].ToString() == "Maximum")
                     {
-                        HttpContext.Current.Session["Zero_Richland"] = "";
-                        MessageBox("NO Record Found");
+                        HttpContext.Current.Session["multiParcel_Weber_Multicount"] = "";
+                        //BindGridDisplay(GridView3, Label3, statecountyid, "7", txtorderno.Text, "Multi Parcel Details:");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Zero_Weber"] != null && HttpContext.Current.Session["Zero_Weber"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_Weber"] = "";
+                        MessageBox("No Record Found");
                         return;
                     }
                     else
                     {
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Tax Details");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Details Table");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Due Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Receipt Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Deliquent");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Property Charges Details Table:");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Property Values Details Table:");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Taxing Unit Areas Details Table: ");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payments History Details Table:");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Deliquent Information");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Delinquent Taxes Details Table:");
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                }
+                else if (statecountyid == "102")
+                {
+                    if (txtAddress.Text.Trim().ToUpper().Contains("APT") || txtAddress.Text.Trim().Contains("#") || txtAddress.Text.ToUpper().Trim().Contains("UNIT") || txtownername.Text.Trim() != "")
+                    {
+                        searchType = "titleflex";
+                    }
+                    Webdriver_YavapaiAZ YavapaiAZ = new Webdriver_YavapaiAZ();
+                    YavapaiAZ.FTP_YavapaiAZ(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_Yavapai"] != null && HttpContext.Current.Session["multiParcel_Yavapai"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiParcel_Yavapai"] = null;
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_Yavapai_Maximum"] != null && HttpContext.Current.Session["multiParcel_Yavapai_Maximum"].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Yavapai_Maximum"] = null;
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Nodata_Yavapai"] != null && HttpContext.Current.Session["Nodata_Yavapai"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Nodata_Yavapai"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Tax Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Payment Receipts Details");
+                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Deliquents Details");
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+
+                else if (statecountyid == "246")
+                {                    
+                    if (txtAddress.Text.ToUpper().Trim() != "")
+                    {
+                        searchType = "titleflex";
+                    }
+                    if (txtownername.Text.Trim() != "")
+                    {
+                        MessageBox("Owner Search Not Available");
+                        return;
+                    }
+                    WebDriver_SanMateoCA SanMateo = new WebDriver_SanMateoCA();
+                    SanMateo.FTP_SanMateoCA(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Multiparcel_SanMateoCA"] != null && HttpContext.Current.Session["Multiparcel_SanMateoCA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Multiparcel_SanMateoCA"] = null;
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Nodata_CASanMateo"] != null && HttpContext.Current.Session["Nodata_CASanMateo"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_CASanMateo"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "General Tax Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Detail Special Charges Details");
+                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "More Special Charges Details");
+                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Current Tax Details");
+                    BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Defaulted Tax Details");
+                    MessageBox("Data Inserted Successfully....");
+                }
+                else if (statecountyid == "242")
+                {
+                    if (txtstreetno.Text.Trim() != "" && txtunitnumber.Text.Trim() != "")
+                    {
+                        searchType = "titleflex";
+                    }
+                    Webdriver_GreenvilleSC GreenvilleSC = new Webdriver_GreenvilleSC();
+                    GreenvilleSC.FTP_GreenvilleSC(txtstreetno.Text, txtdirection.Text.Trim(), txtstreettype.Text, txtstreetname.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), txtdirection.Text);
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_Greenville"] != null && HttpContext.Current.Session["multiParcel_Greenville"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiParcel_Greenville"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_Greenville_Multicount"] != null && HttpContext.Current.Session["multiParcel_Greenville_Multicount"].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Greenville_Multicount"] = "";
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Zero_Greenville"] != null && HttpContext.Current.Session["Zero_Greenville"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_Greenville"] = null;
+                        MessageBox("No Recored Found");
+                        return;
+                    }
+                    else
+                    {
+                        Label7.Text = "Property Details:";
+                        BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label2.Text = "Assessment Details:";
+                        BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label5.Text = "Tax Details Table";
+                        BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label4.Text = "Tax History Table:";
+                        BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label6.Text = "Delinquent Commends Table:";
+                        BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                }
+                else if (statecountyid == "223")//Middlesex
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+                    if (countno == "1")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                    }
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+                else if (statecountyid == "227")//Monmouth
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+                    if (countno == "1")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                    }
+
+                    if (countno == "5")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                    }
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+                else if (statecountyid == "228")//Bergen
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["LinkThree" + countynameNJ] != null && HttpContext.Current.Session["LinkThree" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["LinkThree" + countynameNJ] = "";
+                        MessageBox("Multiparcel in Tax Site");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+                    if (countno == "1")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                    }
+                    if (countno == "2")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "17", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "18", txtorderno.Text, "Tax Detail");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "19", txtorderno.Text, "Tax Refuse Detail");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "20", txtorderno.Text, "Tax Sewer Detail");
+                    }
+                    if (countno == "3")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "21", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "22", txtorderno.Text, "Tax History Details");
+                    }
+
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+                else if (statecountyid == "229")//Ocean
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+
+                    if (countno == "8")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "35", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "36", txtorderno.Text, "Yearly Summary");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "37", txtorderno.Text, "Tax Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "38", txtorderno.Text, "Tax Lien");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "39", txtorderno.Text, "MOD IV");
+                    }
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+                else if (statecountyid == "247")//Essex
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+                    if (countno == "1")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                    }
+
+                    if (countno == "4")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "23", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "24", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "25", txtorderno.Text, "Tax Payment Details");
+
+                    }
+                    if (countno == "5")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+
+                    }
+                    if (countno == "6")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
+                       // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                    }
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+                else if (statecountyid == "250")//Union
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+                    if (countno == "1")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                    }
+
+                    if (countno == "4")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "23", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "24", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "25", txtorderno.Text, "Tax Payment Details");
+
+                    }
+
+                    if (countno == "8")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "35", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "36", txtorderno.Text, "Yearly Summary");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "37", txtorderno.Text, "Tax Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "38", txtorderno.Text, "Tax Lien");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "39", txtorderno.Text, "MOD IV");
+                    }
+
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+                else if (statecountyid == "252")//Burlington
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+                else if (statecountyid == "258")//Somerset
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["LinkSeven" + countynameNJ] != null && HttpContext.Current.Session["LinkSeven" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["LinkSeven" + countynameNJ] = "";
+                        MessageBox("Multiparcel in Tax Site");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+                    if (countno == "1")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                    }
+                    if (countno == "2")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "17", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "18", txtorderno.Text, "Tax Detail");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "19", txtorderno.Text, "Tax Refuse Detail");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "20", txtorderno.Text, "Tax Sewer Detail");
+                    }
+
+                    if (countno == "5")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                    }
+
+                    if (countno == "7")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "29", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "30", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "31", txtorderno.Text, "TLast Pay stub Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "40", txtorderno.Text, "Tax General Details");
+                    }
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+                else if (statecountyid == "259")//Hudson
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["LinkThree" + countynameNJ] != null && HttpContext.Current.Session["LinkThree" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["LinkThree" + countynameNJ] = "";
+                        MessageBox("Multiparcel in Tax Site");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+
+                    if (countno == "2")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "17", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "18", txtorderno.Text, "Tax Detail");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "19", txtorderno.Text, "Tax Refuse Detail");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "20", txtorderno.Text, "Tax Sewer Detail");
+                    }
+                    if (countno == "3")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "21", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "22", txtorderno.Text, "Tax History Details");
+                    }
+
+                    if (countno == "6")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
+                       // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                    }
+
+
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+                else if (statecountyid == "260")//Camden
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities/Sewer Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info/Sewer Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+
+                    if (countno == "5")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                    }
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+
+                else if (statecountyid == "239")//Morris
+                {
+
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+                    if (countno == "1")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                    }
+                    if (countno == "4")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "23", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "24", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "25", txtorderno.Text, "Tax Payment Details");
+
+                    }
+                    if (countno == "5")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                    }
+                    if (countno == "7")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "29", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "30", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "31", txtorderno.Text, "TLast Pay stub Details");
+                    }
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+                else if (statecountyid == "423")
+                {
+                    if ((txtstreetno.Text.Trim() != "" && txtstreetname.Text.Trim() != "" && txtunitnumber.Text.ToUpper().Trim() != "") || txtownername.Text.Trim() != "")
+                    {
+                        searchType = "titleflex";
+                    }
+                    if (txtstreetno.Text.Trim() == "" && txtunitnumber.Text.ToUpper().Trim() != "")
+                    {
+                        searchType = "Block";
+                    }
+                    Webdriver_ChesterfieldVA ChesterfieldVA = new Webdriver_ChesterfieldVA();
+                    ChesterfieldVA.FTP_ChesterfieldVA(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtcity.Text.Trim(), txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = null;
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiparcel_Chesterfield"] != null && HttpContext.Current.Session["multiparcel_Chesterfield"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_Chesterfield"] = "";
+                        BindGridDisplay(GridView3, Label3, statecountyid, "7", txtorderno.Text, "Multi Parcel Details:");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_Chesterfield_Multicount"] != null && HttpContext.Current.Session["multiParcel_Chesterfield_Multicount"].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiparcel_Chesterfield"] = "";
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Zero_Chesterfield"] != null && HttpContext.Current.Session["Zero_Chesterfield"].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_Chesterfield"] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    else
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details Table");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Improvements Detail Table");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Land Detail Table");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "8", txtorderno.Text, "Ownership Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "5", txtorderno.Text, "Current Year Payment Due Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "6", txtorderno.Text, "Tax History Details");
                         MessageBox("Data Inserted Successfully....");
                     }
                 }
 
-                //last single
+                else if (statecountyid == "230")
+                {
+                    // if ((txtstreetno.Text != "" && txtstreetname.Text != "" && txtunitnumber.Text != "") || txtownername.Text != "")
+                    if (txtownername.Text != "")
+                    {
+                        searchType = "titleflex";
+                    }
 
+                    WebDriver_FairFaxVA Fairfax = new WebDriver_FairFaxVA();
+                    Fairfax.FTP_FairFaxVA(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtunitnumber.Text, txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim());
+                    if (HttpContext.Current.Session["multiParcel_Fairfax"] != null && HttpContext.Current.Session["multiParcel_Fairfax"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiParcel_Fairfax"] = null;
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_Fairfax_Maximum"] != null && HttpContext.Current.Session["multiParcel_Fairfax_Maximum"].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Fairfax_Maximum"] = null;
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["nodata_FairFaxVA"] != null && HttpContext.Current.Session["nodata_FairFaxVA"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["nodata_FairFaxVA"] = null;
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    Label7.Text = "Property Details";
+                    BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label2.Text = "Sale History Details";
+                    BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label4.Text = "Current Sale Details";
+                    BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label5.Text = "Current Value Details";
+                    BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label6.Text = "Value History Details";
+                    BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label8.Text = "Tax Summary Details";
+                    BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label9.Text = "Tax Pay Refund Details";
+                    BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label10.Text = "Resedential Details";
+                    BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label11.Text = "County Tax Details";
+                    BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 10 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label12.Text = "Town of Vienna Assessment Details";
+                    BindGrid(GridView12, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 14 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label13.Text = "Town of Vienna Payments Details";
+                    BindGrid(GridView13, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 13 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label14.Text = "Town of Vienna Property Details";
+                    BindGrid(GridView14, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 12 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                    Label15.Text = "Town of Vienna Tax Assessment Details";
+                    BindGrid(GridView15, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                    MessageBox("data inserted successfully....");
+                }
+
+                else if (statecountyid == "229")//ocean
+                {
+                    if (dropTownship.SelectedItem.Text == "--select--")
+                    {
+                        MessageBox("Select Township...");
+                        return;
+                    }
+                    string countynameNJ = "";
+                    countynameNJ = dropCounty.SelectedItem.Text;
+                    Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                    NJMiddlesex.FTP_NJMiddlesex(txtAddress.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameNJ, statecountyid, dropTownship.SelectedItem.Text, "");
+
+                    if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_NJ" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] != null && HttpContext.Current.Session["TitleFlex_Search" + countynameNJ].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search" + countynameNJ] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                    {
+                        HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    string countno = HttpContext.Current.Session["linkNo"].ToString();
+                    //property details
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                    if (countno == "0")
+                    {
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                    }
+
+                    MessageBox("Data Inserted Successfully....");
+                }
+
+                //dallas
+                //Dallas
+                else if (statecountyid == "220")
+                {
+
+                    if ((txtstreetno.Text != "" && txtstreetname.Text != "" && txtunitnumber.Text != ""))
+                    {
+                        searchType = "titleflex";
+                    }
+
+                    WebDriver_DallasTX Dallas = new WebDriver_DallasTX();
+                    Dallas.FTP_DallasTX(txtstreetno.Text.Trim(), txtstreetname.Text, txtdirection.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text, txtownername.Text, searchType, txtorderno.Text.Trim(), txtdirection.Text.Trim());
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id where DFM.Category_Id = 16 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_DallasTX"] != null && HttpContext.Current.Session["multiParcel_DallasTX"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiParcel_DallasTX"] = null;
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["multiParcel_DallasTX_Maximum"] != null && HttpContext.Current.Session["multiParcel_SeminoleFL_Maximum"].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_DallasTX_Maximum"] = null;
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Nodata_DallasTX"] != null && HttpContext.Current.Session["Nodata_DallasTX"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Nodata_DallasTX"] = "";
+                        MessageBox("No Data Found....");
+                        return;
+                    }
+                    BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                    BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Information Details");
+                    //Garland
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "City of Garland Pay Taxes Details");
+                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "City of Garland Pay Taxes Information Details");
+
+                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "City of Mesquite Property Details");
+                    BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "City of Mesquite Tax Information Details");
+                    BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "City of Coppell Property Tax Details");
+                    BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "City of Coppell  Year and Jurisdiction Details ");
+                    BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "City of Coppell Payment Information");
+                    BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "City of Coppell Request an address Correction");
+                    MessageBox("Data Inserted Successfully....");
+
+                }
+
+                //CT Fairfield
+
+                else if (statecountyid == "234")
+                {
+                    if ((txtstreetno.Text == "" && txtstreetname.Text == "" && txtunitnumber.Text != ""))
+                    {
+                        searchType = "accountno";
+                    }
+                    if (dropTownship.SelectedItem.Text == "--select--")
+                    {
+                        MessageBox("Select Township...");
+                        return;
+                    }
+
+                    string countynameNJ = "", township = "", countynameCT = "";
+                    countynameCT = dropCounty.SelectedItem.Text;
+                    township = dropTownship.SelectedItem.Text;
+
+                    Webdriver_CTFairfield CTFairfield = new Webdriver_CTFairfield();
+                    CTFairfield.FTP_CTFairfield(txtstreetno.Text, txtstreetname.Text, txtdirection.Text, txtstreettype.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameCT, statecountyid, dropTownship.SelectedItem.Text, townshipcode);
+                    string countnoAssess = HttpContext.Current.Session["linkNoAssess"].ToString();
+                    string countnoTax = HttpContext.Current.Session["linkNoTax"].ToString();
+
+                    if (HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] != null && HttpContext.Current.Session["multiparcel_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] != null && HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select orderno,parcelno,ownername,address,county,state from multiparcels where orderno = '" + txtorderno.Text + "' group by parcelno");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_CT" + countynameCT + township] != null && HttpContext.Current.Session["Zero_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Owner_CT" + countynameCT + township] != null && HttpContext.Current.Session["Owner_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Owner_CT" + countynameCT + township] = "";
+                        MessageBox("No Owner Search");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_NJ" + countynameCT + township] != null && HttpContext.Current.Session["NoTax_NJ" + countynameCT + township].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_NJ" + countynameCT + township] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+
+                    if (countnoAssess == "0")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Building Information");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Land Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Valuation History Details");
+                    }
+                    if (countnoAssess == "1")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+
+                    }
+                    if (countnoAssess == "2")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+
+                    }
+                    if (countnoAssess == "3")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales History");
+
+                    }
+                    if (countnoAssess == "4")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+
+                    }
+                    if (countnoAssess == "5")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+
+                    }
+
+
+                    if (countnoAssess == "6")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Land Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales History Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Permit Information Details");
+                    }
+                    if (countnoAssess == "13")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Owner History Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Assessment History Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Building Permits Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Land Line Valuation Details");
+                    }
+                    if (countnoTax == "0")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Bill Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Tax Bill Information Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "11", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "12", txtorderno.Text, "Tax Total Due ");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "13", txtorderno.Text, "Tax Bill History");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "15", txtorderno.Text, "Sewer details");
+                    }
+                    if (countnoTax == "1")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Current Tax Bill Information  Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Current Balance Due");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Payment History Details");
+                    }
+                    if (countnoTax == "2")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Payment History Details");
+                    }
+                    BindGridDisplay(GridView14, Label14, statecountyid, "14", txtorderno.Text, "Tax Authority Details");
+
+                    MessageBox("Data Inserted Successfully....");
+
+                }
+
+                //CT New Haven
+
+                else if (statecountyid == "244")
+                {
+                    if ((txtstreetno.Text == "" && txtstreetname.Text == "" && txtownername.Text =="" && txtunitnumber.Text != ""))
+                    {
+                        searchType = "accountno";
+                    }
+
+                    if (dropTownship.SelectedItem.Text == "--select--")
+                    {
+                        MessageBox("Select Township...");
+                        return;
+                    }
+
+                    string countynameNJ = "", township = "", countynameCT = "";
+                    countynameCT = dropCounty.SelectedItem.Text;
+                    township = dropTownship.SelectedItem.Text;
+                    if(txtstreetname.Text.Trim()!="")
+                    {
+                        searchType = "address";
+                    }
+                    Webdriver_CTNewHaven CTNewHaven = new Webdriver_CTNewHaven();
+                    CTNewHaven.FTP_CTNewHaven(txtstreetno.Text, txtstreetname.Text, txtdirection.Text, txtstreettype.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameCT, statecountyid, dropTownship.SelectedItem.Text, townshipcode);
+                    string countnoAssess = HttpContext.Current.Session["linkNoAssess"].ToString();
+                    string countnoTax = HttpContext.Current.Session["linkNoTax"].ToString();
+
+                    if (HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] != null && HttpContext.Current.Session["multiparcel_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] != null && HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select orderno,parcelno,ownername,address,county,state from multiparcels where orderno = '" + txtorderno.Text + "' group by parcelno");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_CT" + countynameCT + township] != null && HttpContext.Current.Session["Zero_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Owner_CT" + countynameCT + township] != null && HttpContext.Current.Session["Owner_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Owner_CT" + countynameCT + township] = "";
+                        MessageBox("No Owner Search");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_CT" + countynameCT] != null && HttpContext.Current.Session["NoTax_CT" + countynameCT].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_CT" + countynameCT] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Parcel_CT" + countynameCT + township] != null && HttpContext.Current.Session["Parcel_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Parcel_CT" + countynameCT + township] = "";
+                        MessageBox("No Parcel Search");
+                        return;
+                    }
+                    if (countnoAssess == "0")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Building Information");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Land Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Valuation History Details");
+                    }
+                    if (countnoAssess == "1")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+
+                    }
+
+                    if (countnoAssess == "5")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+                    }
+                    if (countnoAssess == "7")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+
+                    }
+
+                    if (countnoAssess == "8")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+
+                    }
+                    if (countnoAssess == "14")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+
+                    }
+                    if (countnoTax == "0")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Bill Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Tax Bill Information Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "11", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "12", txtorderno.Text, "Tax Total Due ");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "13", txtorderno.Text, "Tax Bill History");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "15", txtorderno.Text, "sewer Detail");
+                    }
+                    if (countnoTax == "1")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Current Tax Bill Information  Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Current Balance Due");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Payment History Details");
+                    }
+                    if (countnoTax == "3")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Payment History Details");
+                    }
+                    BindGridDisplay(GridView14, Label14, statecountyid, "14", txtorderno.Text, "Tax Authority Details");
+
+                    MessageBox("Data Inserted Successfully....");
+
+                }
+                //CT hartford
+
+                else if (statecountyid == "238")
+                {
+
+                    if (dropTownship.SelectedItem.Text == "--select--")
+                    {
+                        MessageBox("Select Township...");
+                        return;
+                    }
+
+                    string countynameNJ = "", township = "", countynameCT = "";
+                    countynameCT = dropCounty.SelectedItem.Text;
+                    township = dropTownship.SelectedItem.Text;
+
+                    Webdriver_CTHartford CTHartford = new Webdriver_CTHartford();
+                    CTHartford.FTP_CTHartford(txtstreetno.Text, txtstreetname.Text, txtdirection.Text, txtstreettype.Text, txtunitnumber.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch, txtownername.Text.Trim(), countynameCT, statecountyid, dropTownship.SelectedItem.Text, townshipcode);
+                    string countnoAssess = HttpContext.Current.Session["linkNoAssess"].ToString();
+                    string countnoTax = HttpContext.Current.Session["linkNoTax"].ToString();
+
+                    if (HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] != null && HttpContext.Current.Session["multiparcel_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] != null && HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township].ToString() == "Maximum")
+                    {
+                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Multi Parcels & Search contains more results.go for manual search....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["TitleFlex_Search"] = "";
+                        Label3.Text = "Multi Parcel Details:";
+                        BindGrid(GridView3, "select orderno,parcelno,ownername,address,county,state from multiparcels where orderno = '" + txtorderno.Text + "' group by parcelno");
+                        MessageBox("Multiple Parcels....");
+                        return;
+                    }
+
+                    if (HttpContext.Current.Session["Zero_CT" + countynameCT + township] != null && HttpContext.Current.Session["Zero_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "";
+                        MessageBox("No Record Found");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Owner_CT" + countynameCT + township] != null && HttpContext.Current.Session["Owner_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Owner_CT" + countynameCT + township] = "";
+                        MessageBox("No Owner Search");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["NoTax_CT" + countynameCT] != null && HttpContext.Current.Session["NoTax_CT" + countynameCT].ToString() == "No_Tax")
+                    {
+                        HttpContext.Current.Session["NoTax_CT" + countynameCT] = "";
+                        MessageBox("Taxes Not Available");
+                        return;
+                    }
+                    if (HttpContext.Current.Session["Parcel_CT" + countynameCT + township] != null && HttpContext.Current.Session["Parcel_CT" + countynameCT + township].ToString() == "Yes")
+                    {
+                        HttpContext.Current.Session["Parcel_CT" + countynameCT + township] = "";
+                        MessageBox("No Parcel Search");
+                        return;
+                    }
+                    if (countnoAssess == "0")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Building Information");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Land Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Valuation History Details");
+                    }
+                    if (countnoAssess == "1")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+
+                    }
+                    if (countnoAssess == "3")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales History");
+
+                    }
+
+                    if (countnoAssess == "5")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+                    }
+                    if (countnoAssess == "9")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+
+                    }
+                    if (countnoAssess == "10")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Valution History");
+                    }
+
+                    if (countnoAssess == "11")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales Information");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Previous Assessment");
+
+                    }
+                    if (countnoAssess == "12")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales Information");
+                    }
+
+                    if (countnoAssess == "15")
+                    {
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+
+
+                    }
+
+                    if (countnoTax == "0")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Bill Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Tax Bill Information Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "11", txtorderno.Text, "Tax Payment Details");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "12", txtorderno.Text, "Tax Total Due ");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "13", txtorderno.Text, "Tax Bill History");
+                    }
+                    if (countnoTax == "1")
+                    {
+                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Current Tax Bill Information  Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Current Balance Due");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Payment History Details");
+                    }
+
+                    BindGridDisplay(GridView14, Label14, statecountyid, "14", txtorderno.Text, "Tax Authority Details");
+
+                    MessageBox("Data Inserted Successfully....");
+
+                }
+
+
+
+
+
+
+
+
+
+                //last single
+                Amrockdisplay();
             }
             catch (Exception ex)
             {
@@ -12344,7 +15258,23 @@ namespace ScrapMaricopa
             bloc2.Visible = true;
 
         }
-
+        DataSet ds = new DataSet();
+        protected void Amrockdisplay()
+        {
+            try
+            {
+                LabelAmrock.Text = "Amrock Mapping Tax Details";
+                string strquery = "select TaxId,Instamount1,Instamount2,Instamount3,Instamount4,Instamountpaid1,Instamountpaid2,Instamountpaid3,Instamountpaid4,InstPaidDue1,InstPaidDue2,InstPaidDue3,InstPaidDue4,IsDelinquent from tbl_taxauthorities2 where  Orderno='" + txtorderno.Text + "' ";
+                ds = dbconn.ExecuteQuery(strquery);
+                GridViewAmrock.DataSource = ds;
+                GridViewAmrock.DataBind();
+            }
+            catch (Exception ex)
+            {
+                GlobalClass.LogError(ex, txtorderno.Text);
+                MessageBox("Page encountered an error while processing your request : Try Again...");
+            }
+        }
         //Bernalillo
         private void BindMulti_NMBernalillo(string orderNo)
         {
@@ -13295,10 +16225,8 @@ namespace ScrapMaricopa
             {
                 string test = row.BackColor.ToString();
                 int i = Convert.ToInt16(row.RowIndex);
-
                 string number = row.Cells[1].Text.ToString();
                 account = row.Cells[3].Text.ToString();
-
                 row.BackColor = Color.LightGreen;
                 if (chkBx.Checked)
                 {
@@ -13335,15 +16263,21 @@ namespace ScrapMaricopa
         {
             SelectAddressSearchType();
             string county_Name = dropCounty.Text;
+            string townshipcode = "";
+            if (GlobalClass.sname == "CT")
+            {
+                townshipcode = dbconn.ExecuteScalar("SELECT Township_Code FROM tbl_njtownshipmaster where State_County_Id='" + statecountyid + "'and Township='" + dropTownship.SelectedItem.Text + "'");
+            }
             GridViewRow row = (sender as CheckBox).Parent.Parent as GridViewRow;
             CheckBox chkBxmulti = (CheckBox)row.FindControl("chkselect");
+
             try
             {
                 string test = row.BackColor.ToString();
                 int i = Convert.ToInt16(row.RowIndex);
 
                 string number = row.Cells[1].Text.ToString().Trim();
-
+                string districtid = row.Cells[2].Text.ToString().Trim();
                 if (row.BackColor == Color.LightGreen)
                 {
                     MessageBox("ParcelNo Already Scrapped...");
@@ -13382,6 +16316,10 @@ namespace ScrapMaricopa
                         BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label11.Text = "Due Date Details:";
                         BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label12.Text = "Certificate Details:";
+                        BindGrid(GridView12, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -13533,7 +16471,7 @@ namespace ScrapMaricopa
                         if (HttpContext.Current.Session["Zero_Multnomah"] != null && HttpContext.Current.Session["Zero_Multnomah"].ToString() == "Zero")
                         {
                             HttpContext.Current.Session["Zero_Multnomah"] = "";
-                            MessageBox("NO Record Found");
+                            MessageBox("No Record Found");
                             return;
                         }
                         WebDriver_ORMultnomah ORM = new WebDriver_ORMultnomah();
@@ -13793,6 +16731,11 @@ namespace ScrapMaricopa
                         BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label1.Text = "Tax History Details:";
                         BindGrid(GridView1, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        if (HttpContext.Current.Session["Taxalert_Tulsa"] != null && HttpContext.Current.Session["Taxalert_Tulsa"].ToString() == "Yes")
+                        {
+                            Label6.Text = "Delinquent Taxes Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        }
                         MessageBox("data inserted successfully....");
                     }
 
@@ -14044,77 +16987,98 @@ namespace ScrapMaricopa
                             HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label6.Text = "Payment Details:";
-                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            //City Details
+                            Label8.Text = "City Tax Information Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "Payment Information Details:";
+                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         }
                         else if (HttpContext.Current.Session["CHKMunicipalJurisdiction"] != null && HttpContext.Current.Session["CHKMunicipalJurisdiction"].ToString() == "B")
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label9.Text = "Payment Details:";
-                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
 
+                            //City Details
+                            Label8.Text = "City Tax Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "Tax Payment Information Details:";
+                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                         }
                         else if (HttpContext.Current.Session["CHKMunicipalJurisdiction"] != null && HttpContext.Current.Session["CHKMunicipalJurisdiction"].ToString() == "C")
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label6.Text = "Bill Details:";
-                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            //City Details
+                            Label8.Text = "City Tax Payment Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "City Tax Information Details:";
+                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label10.Text = "City Tax Payment History Details:";
+                            BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 12 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
                             HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                         }
-
                         else if (HttpContext.Current.Session["CHKMunicipalJurisdiction"] != null && HttpContext.Current.Session["CHKMunicipalJurisdiction"].ToString() == "G")
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label5.Text = "City Tax Details:";
-                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label6.Text = "Account Details:";
-                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 15 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                            //City Details
+                            Label8.Text = "City Tax Details:";
+                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label9.Text = "City Tax Payment History:";
+                            BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 15 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
                             HttpContext.Current.Session["CHKMunicipalJurisdiction"] = "";
                         }
                         else
                         {
                             Label7.Text = "Property Details:";
                             BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label4.Text = "Assessment Details:";
-                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label8.Text = "Tax History Details:";
-                            BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                            Label2.Text = "Transaction Details:";
-                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label2.Text = "Assessment Details:";
+                            BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label4.Text = "Current Tax Details:";
+                            BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label5.Text = "Payment Details:";
+                            BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            Label6.Text = "Property Tax Notice Details:";
+                            BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         }
                         MessageBox("Data Inserted Successfully....");
                     }
@@ -14451,6 +17415,9 @@ namespace ScrapMaricopa
                         BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label10.Text = "Tax History Details";
                         BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        //Label11.Text = "Tax Sale Details";
+                        //BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 10 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
                         MessageBox("data inserted successfully....");
                     }
 
@@ -15316,6 +18283,12 @@ namespace ScrapMaricopa
                     {
                         Webdiver_FLMarion FLMarion = new Webdiver_FLMarion();
                         FLMarion.FTP_FLMarion("", "", number, "parcel", txtorderno.Text.Trim(), "", "");
+                        if (HttpContext.Current.Session["Nodata_FLMarion"] != null && HttpContext.Current.Session["Nodata_FLMarion"].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["Nodata_FLMarion"] = "";
+                            MessageBox("No Data Found");
+                            return;
+                        }
 
                         Label7.Text = ("Property Details:");
                         BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
@@ -16157,10 +19130,7 @@ namespace ScrapMaricopa
                     }
                     else if (statecountyid == "188")
                     {
-
-
                         WebDriver_McLennanTX McLennan = new WebDriver_McLennanTX();
-
                         McLennan.FTP_McLennan("", "", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "");
                         Label7.Text = "Property Details:";
                         BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
@@ -17394,11 +20364,8 @@ namespace ScrapMaricopa
                         BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label6.Text = ("Tax Information Details");
                         BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label8.Text = ("Tax Information Details");
-                        BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Data Inserted Successfully....");
                     }
-
 
                     else if (statecountyid == "90")
                     {
@@ -17423,9 +20390,11 @@ namespace ScrapMaricopa
                         BayFL.FTP_BayFL("", "", "", "", "", "", number, "parcel", txtorderno.Text.Trim());
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Ad Valorem Details");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Non Ad Valorem Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Ad and Non Valorem Details");
                         BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Assessment Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Due Details");
                         MessageBox("Data Inserted Successfully....");
 
                     }
@@ -17450,7 +20419,6 @@ namespace ScrapMaricopa
                         BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Data Inserted Successfully....");
                     }
-
                     //PinellasFL
                     else if (statecountyid == "50")
                     {
@@ -17494,8 +20462,7 @@ namespace ScrapMaricopa
                     else if (statecountyid == "148")
                     {
                         WebDriver_BeaufortSC BeaufortSC = new WebDriver_BeaufortSC();
-                        BeaufortSC.FTP_BeaufortSC("", "", number, "parcel", "", txtorderno.Text.Trim());
-
+                        BeaufortSC.FTP_BeaufortSC("", "", "", "", "", number, "parcel", "", txtorderno.Text.Trim());
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
                         BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details");
@@ -17591,17 +20558,16 @@ namespace ScrapMaricopa
                         Webdriver_AnneArundelMD AnneArundelMD = new Webdriver_AnneArundelMD();
                         AnneArundelMD.FTP_AnneArundelMD("", "", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "");
                         Label7.Text = "Property Details";
+                        Label7.Text = "Property Details";
                         BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label2.Text = "Assessment Details";
                         BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label4.Text = "Tax Information Details";
+                        Label4.Text = "Tax Information";
                         BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label5.Text = "Tax Receipt Details";
+                        Label5.Text = "Tax Info Details:";
                         BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label6.Text = "Tax Distribution Details";
+                        Label6.Text = "Tax Payments/Adjustments Details:";
                         BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label8.Text = "Tax History Details";
-                        BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -17665,8 +20631,8 @@ namespace ScrapMaricopa
                         BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label2.Text = "Assessment Details";
                         BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label3.Text = "Tax Information";
-                        BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label4.Text = "Tax Information";
+                        BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label5.Text = "Tax Info Details:";
                         BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label6.Text = "Tax Payments/Adjustments Details:";
@@ -17739,12 +20705,19 @@ namespace ScrapMaricopa
                         WebDriver_HawaiiHI Hawaii = new WebDriver_HawaiiHI();
                         Hawaii.FTP_HawaiiHI("", "", "", "", "", number, "", "parcel", txtorderno.Text.Trim());
 
+                        //BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        //BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        //BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Year Tax Information Table");
+                        //BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax History Details Table");
+                        //BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Table");
+                        //BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Histroy Details Table");
+
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
                         BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Year Tax Information Table");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax History Details Table");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Table");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Histroy Details Table");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Sales Details Table");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax History Details Table");
+
 
                         MessageBox("Data Inserted Successfully....");
                     }
@@ -17758,9 +20731,11 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Tax Information Details");
                         BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Due Date Details");
                         BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Delinquent Details");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Installment Plan Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Prior Year Tax Information Details");
-                        BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Prior Year Delinquent Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Installment Plan Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Prior Year Tax Information Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Prior Year Payment Details Details");
+
+                        MessageBox("Data Inserted Successfully....");
 
                         MessageBox("Data Inserted Successfully....");
                     }
@@ -17779,14 +20754,13 @@ namespace ScrapMaricopa
                     else if (statecountyid == "87")
                     {
                         WebDriver_HenryGA Henry = new WebDriver_HenryGA();
-                        Henry.FTP_HenryGA("", number, "", "", "parcel", txtorderno.Text.Trim(), "");
+                        Henry.FTP_HenryGA("", "", "", number, "parcel", txtorderno.Text.Trim(), "");
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Tax Details");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Payment Receipts Details");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Deliquents Details");
-
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Distribution Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Delinquent Details");
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -17798,16 +20772,14 @@ namespace ScrapMaricopa
                         BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label2.Text = "Assessment Details Table:";
                         BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label1.Text = "Tax History";
+                        Label1.Text = "Tax information Table";
                         BindGrid(GridView1, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label4.Text = "Tax Distribution Table:";
+                        Label4.Text = "Tax Installment Table:";
                         BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label6.Text = "Due Date Details Table:";
+                        Label6.Text = "Tax Distribution Table";
                         BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label8.Text = "Tax information Table";
+                        Label8.Text = "Tax History";
                         BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        //Label9.Text = ("Tax Payment Details:");
-                        //BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -17846,6 +20818,7 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Prior Year Taxes Details");
                         BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Special Assessment Details");
                         BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Payment Details");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Value Change History Details");
 
                         MessageBox("data inserted successfully....");
 
@@ -17908,6 +20881,8 @@ namespace ScrapMaricopa
                             BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Distribution");
                             BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Special Assessment Table");
                             BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Special Assessment History");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Special Sale");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Tax Sale");
                             MessageBox("Data Inserted Successfully....");
 
                         }
@@ -17920,12 +20895,18 @@ namespace ScrapMaricopa
                         WebDriver_MauiHI maui = new WebDriver_MauiHI();
                         maui.FTP_MauiHI("", "", "", "", "", number, "", "parcel", txtorderno.Text.Trim());
 
+                        //BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        //BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        //BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details Table");
+                        //BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Payment Details Table");
+                        //BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Tax Information Table");
+                        //BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Sales Information");
+
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details Table");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Payment Details Table");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Tax Information Table");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Sales Information");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Sale Details Table");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax History Details Table");
+
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -17982,13 +20963,14 @@ namespace ScrapMaricopa
                     {
                         Webdriver_WashingtonMN WashingtonMN = new Webdriver_WashingtonMN();
                         WashingtonMN.FTP_WashingtonMN("", number, "", "parcel", txtorderno.Text.Trim(), "");
-                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
-                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Bill Totals Details");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Installment Details");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Payment History Details");
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details Table");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details Table:");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Details Table:");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Installment Details Table:");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Details Table:");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment History Details Table: ");
                         MessageBox("Data Inserted Successfully....");
+
                     }
                     else if (statecountyid == "102")
                     {
@@ -18006,16 +20988,25 @@ namespace ScrapMaricopa
                     else if (statecountyid == "169")
                     {
                         WebDriver_LakeIL Lake = new WebDriver_LakeIL();
-                        Lake.FTP_LakeIL("", "", "", "", "", number, "", "", "parcel", txtorderno.Text.Trim(), "");
-                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
-                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Current Tax Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Taxing Body Details Table");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Assessment History Table");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Payment Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Bill Details");
-                        MessageBox("Data Inserted Successfully....");
+                        Lake.FTP_LakeIL("", "", "", "", "", "", number, "", "parcel", txtorderno.Text.Trim(), "");
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Current Tax Details");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Taxing Body Details Table");
+                            BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Assessment History Table");
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Payment History");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Sale/Redemptions Receipts");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Adjustment");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Value History");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Excemptions Current");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Tax Excemptions History");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Land Information");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Permits");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "14", txtorderno.Text, "Property Transfer History");
+                            BindGridDisplay(GridView16, Label16, statecountyid, "15", txtorderno.Text, "Taxes Due Details");
+                            MessageBox("Data Inserted Successfully....");
 
-
+                        }
 
                     }
 
@@ -18028,7 +21019,7 @@ namespace ScrapMaricopa
                             BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
                             BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Exemption Details Table");
                             BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Information Table");
-                           // BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Year Charges Table");
+                            // BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Current Year Charges Table");
                             BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Distribution Details Table");
                             BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax History Details");
                             BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Special Assessment Table");
@@ -18053,22 +21044,21 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax History Details");
                         BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Information Details");
                         BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Penalty Information Details");
-
                         MessageBox("data inserted successfully....");
-
                     }
 
                     else if (statecountyid == "209")
                     {
-                        Webdriver_WeberUT MWeberUT = new Webdriver_WeberUT();
-                        MWeberUT.FTP_WeberUT("", number, "parcel", "", txtorderno.Text.Trim(), "");
+                        Webdriver_WeberUT WeberUT = new Webdriver_WeberUT();
+                        WeberUT.FTP_WeberUT("", number, "parcel", "", txtorderno.Text.Trim(), "");
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Tax Details");
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Details Table");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Due Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Receipt Details");
-                        BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Deliquent");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Property Charges History Details Table:");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Property Values Details Table:");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Taxing Unit Areas Details Table: ");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payments History Details Table:");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Deliquent Information");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Delinquent Taxes Details Table:");
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -18080,15 +21070,1221 @@ namespace ScrapMaricopa
                         BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         Label2.Text = "Assessment Details:";
                         BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label4.Text = "Tax Payment Details:";
+                        Label4.Text = "Tax Bill Details Table";
                         BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label6.Text = "Tax Bill Details:";
-                        BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label8.Text = "Tax Authority Details:";
-                        BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label5.Text = "Tax Payment Details Table:";
+                        BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label6.Text = "Tax Authority Details:";
+                        BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label8.Text = "Town Tax Bill Details Table:";
+                        BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label9.Text = "Town Tax Charges Details:";
+                        BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label10.Text = "City Property Details:";
+                        BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 10 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label11.Text = "Town Assessment Value Details:";
+                        BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label12.Text = "Assessment History Details:";
+                        BindGrid(GridView12, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 12 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label13.Text = "Payments/Adjustments Information Details:";
+                        BindGrid(GridView13, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Data Inserted Successfully....");
                     }
 
+                    else if (statecountyid == "145")
+                    {
+
+                        WebDriver_DouglasNE douglas = new WebDriver_DouglasNE();
+                        douglas.FTP_DouglasNE("", "", "", "", "", number, "", "parcel", txtorderno.Text.Trim(), "");
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Bill Details Table");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Payment History Table");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Property Levy Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Worksheet Details");
+                        MessageBox("Data Inserted Successfully....");
+
+                    }
+                    else if (statecountyid == "118")
+                    {
+                        WebDriver_LakeOH Lake = new WebDriver_LakeOH();
+                        Lake.FTP_Lake("", "", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "");
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax History Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Distribution Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Delinquent Details");
+
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+
+
+
+                    else if (statecountyid == "246")
+                    {
+                        WebDriver_SanMateoCA SanMateo = new WebDriver_SanMateoCA();
+                        SanMateo.FTP_SanMateoCA("", number, "", "parcel", txtorderno.Text.Trim());
+
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "General Tax Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Detail Special Charges Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "More Special Charges Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Current Tax Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Defaulted Tax Details");                        
+                        MessageBox("Data Inserted Successfully....");
+                    }
+
+                    else if (statecountyid == "242")
+                    {
+
+                        Webdriver_GreenvilleSC GreenvilleSC = new Webdriver_GreenvilleSC();
+                        GreenvilleSC.FTP_GreenvilleSC("", "", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "");
+                        Label7.Text = "Property Details:";
+                        BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label2.Text = "Assessment Details:";
+                        BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label5.Text = "Tax Details Table";
+                        BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label4.Text = "Tax History Table:";
+                        BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label6.Text = "Delinquent Commends Table:";
+                        BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        MessageBox("Data Inserted Successfully....");
+
+                    }
+
+                    else if (statecountyid == "223")//Middlesex
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        if (countno == "1")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                        }
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "227")//Monmouth
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        if (countno == "1")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                        }
+
+                        if (countno == "5")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                        }
+
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "228")//Bergen
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["LinkThree" + countynameNJ] != null && HttpContext.Current.Session["LinkThree" + countynameNJ].ToString() == "Maximum")
+                        {
+                            HttpContext.Current.Session["LinkThree" + countynameNJ] = "";
+                            MessageBox("Multiparcel in Tax Site");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        if (countno == "1")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                        }
+                        if (countno == "2")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "17", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "18", txtorderno.Text, "Tax Detail");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "19", txtorderno.Text, "Tax Refuse Detail");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "20", txtorderno.Text, "Tax Sewer Detail");
+                        }
+                        if (countno == "3")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "21", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "22", txtorderno.Text, "Tax History Details");
+                        }
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "229")//Ocean
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+
+                        if (countno == "8")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "35", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "36", txtorderno.Text, "Yearly Summary");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "37", txtorderno.Text, "Tax Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "38", txtorderno.Text, "Tax Lien");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "39", txtorderno.Text, "MOD IV");
+                        }
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "247")//Essex
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        if (countno == "1")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                        }
+
+                        if (countno == "4")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "23", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "24", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "25", txtorderno.Text, "Tax Payment Details");
+
+                        }
+                        if (countno == "5")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                        }
+                        if (countno == "6")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
+                           // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                        }
+
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+
+                    else if (statecountyid == "250")//Union
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        if (countno == "1")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                        }
+
+                        if (countno == "4")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "23", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "24", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "25", txtorderno.Text, "Tax Payment Details");
+
+                        }
+
+                        if (countno == "8")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "35", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "36", txtorderno.Text, "Yearly Summary");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "37", txtorderno.Text, "Tax Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "38", txtorderno.Text, "Tax Lien");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "39", txtorderno.Text, "MOD IV");
+                        }
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "252")//Burlington
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        MessageBox("Data Inserted Successfully....");
+                    }
+
+                    else if (statecountyid == "258")//Somerset
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        if (countno == "1")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                        }
+                        if (countno == "2")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "17", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "18", txtorderno.Text, "Tax Detail");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "19", txtorderno.Text, "Tax Refuse Detail");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "20", txtorderno.Text, "Tax Sewer Detail");
+                        }
+
+                        if (countno == "5")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                        }
+
+                        if (countno == "7")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "29", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "30", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "31", txtorderno.Text, "TLast Pay stub Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "40", txtorderno.Text, "Tax General Details");
+                        }
+
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+
+                    else if (statecountyid == "259")//Hudson
+                    {
+
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                    
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] != null && HttpContext.Current.Session["multiparcel_NJ" + countynameNJ].ToString() == "Yes")
+                        {
+                            HttpContext.Current.Session["multiparcel_NJ" + countynameNJ] = "";
+                            Label3.Text = "Multi Parcel Details:";
+                            BindGrid(GridView3, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 7 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                            MessageBox("Parcel Search Contains Mulitple Records... So Go to Manual Search.....");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["LinkThree" + countynameNJ] != null && HttpContext.Current.Session["LinkThree" + countynameNJ].ToString() == "Maximum")
+                        {
+                            HttpContext.Current.Session["LinkThree" + countynameNJ] = "";
+                            MessageBox("Multiparcel in Tax Site");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+
+                        if (countno == "2")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "17", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "18", txtorderno.Text, "Tax Detail");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "19", txtorderno.Text, "Tax Refuse Detail");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "20", txtorderno.Text, "Tax Sewer Detail");
+                        }
+                        if (countno == "3")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "21", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "22", txtorderno.Text, "Tax History Details");
+                        }
+
+                        if (countno == "6")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
+                           // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                        }
+
+
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+
+                    else if (statecountyid == "260")//Camden
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities/Sewer Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info/Sewer Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+
+                        if (countno == "5")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                        }
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "239")//Morris
+                    {
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        if (HttpContext.Current.Session["Zero_NJ" + countynameNJ] != null && HttpContext.Current.Session["Zero_NJ" + countynameNJ].ToString() == "Zero")
+                        {
+                            HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "";
+                            MessageBox("No Record Found");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "2", txtorderno.Text, "Sale Information Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+                        if (countno == "1")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "14", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "15", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "16", txtorderno.Text, "Tax Due Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "42", txtorderno.Text, "Tax Property Information");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "43", txtorderno.Text, "Tax History Details");
+
+                        }
+                        if (countno == "4")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "23", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "24", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "25", txtorderno.Text, "Tax Payment Details");
+
+                        }
+                        if (countno == "5")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "32", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "33", txtorderno.Text, "Tax Quarter History");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "34", txtorderno.Text, "Transaction History");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "44", txtorderno.Text, "Property Tax Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "45", txtorderno.Text, "Over Payment History");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "46", txtorderno.Text, "Balance Summary");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "47", txtorderno.Text, "Summary of Transactions");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "48", txtorderno.Text, "Interest Calculation");
+                        }
+                        if (countno == "7")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "29", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "30", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "31", txtorderno.Text, "TLast Pay stub Details");
+                        }
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "423")
+                    {
+                        Webdriver_ChesterfieldVA ChesterfieldVA = new Webdriver_ChesterfieldVA();
+                        ChesterfieldVA.FTP_ChesterfieldVA("", "", "", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "");
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details Table");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Improvements Detail Table");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Land Detail Table");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "8", txtorderno.Text, "Ownership Details");
+                        BindGridDisplay(GridView8, Label8, statecountyid, "5", txtorderno.Text, "Current Year Payment Due Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    else if (statecountyid == "230")
+                    {
+
+                        WebDriver_FairFaxVA Fairfax = new WebDriver_FairFaxVA();
+                        Fairfax.FTP_FairFaxVA("", "", "", "", "", number, "", "parcel", txtorderno.Text.Trim());
+
+                        Label7.Text = "Property Details";
+                        BindGrid(GridView7, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label2.Text = "Sale History Details";
+                        BindGrid(GridView2, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label4.Text = "Current Sale Details";
+                        BindGrid(GridView4, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 3 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label5.Text = "Current Value Details";
+                        BindGrid(GridView5, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label6.Text = "Value History Details";
+                        BindGrid(GridView6, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label8.Text = "Tax Summary Details";
+                        BindGrid(GridView8, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label9.Text = "Tax Pay Refund Details";
+                        BindGrid(GridView9, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label10.Text = "Resedential Details";
+                        BindGrid(GridView10, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label11.Text = "County Tax Details";
+                        BindGrid(GridView11, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 10 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label12.Text = "Town of Vienna Assessment Details";
+                        BindGrid(GridView12, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 14 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label13.Text = "Town of Vienna Payments Details";
+                        BindGrid(GridView13, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 13 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label14.Text = "Town of Vienna Property Details";
+                        BindGrid(GridView14, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 12 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label15.Text = "Town of Vienna Tax Assessment Details";
+                        BindGrid(GridView15, "select order_no, parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 11 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                        MessageBox("data inserted successfully....");
+                    }
+                    else if (statecountyid == "229")//ocean
+                    {
+
+                        Webdriver_NJMiddlesex NJMiddlesex = new Webdriver_NJMiddlesex();
+                        NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
+                        string countynameNJ = "";
+                        countynameNJ = dropCounty.SelectedItem.Text;
+                        if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        string countno = HttpContext.Current.Session["linkNo"].ToString();
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Authority Details");
+
+                        if (countno == "0")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax History Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Tax Rate Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "Tax Utilities Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "Tax Liens");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "Utility Info Details");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "Utility History Details");
+                            BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, "Deliquent Details");
+                            BindGridDisplay(GridView15, Label15, statecountyid, "41", txtorderno.Text, "Special Assessment Details");
+
+                        }
+
+                        if (countno == "8")
+                        {
+                            BindGridDisplay(GridView6, Label6, statecountyid, "35", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView8, Label8, statecountyid, "36", txtorderno.Text, "Yearly Summary");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "37", txtorderno.Text, "Tax Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "38", txtorderno.Text, "Tax Lien");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "39", txtorderno.Text, "MOD IV");
+                        }
+
+                        MessageBox("Data Inserted Successfully....");
+                    }
+                    // dallas
+                    //Multiparce
+                    else if (statecountyid == "220")
+                    {
+
+                        WebDriver_DallasTX Dallas = new WebDriver_DallasTX();
+                        Dallas.FTP_DallasTX("", "", "", "", "", number, "", "parcel", txtorderno.Text.Trim(), "");
+                        BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Information Details");
+                        //Garland
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "City of Garland Pay Taxes Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "City of Garland Pay Taxes Information Details");
+
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "City of Mesquite Property Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "City of Mesquite Tax Information Details");
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "City of Coppell Property Tax Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "City of Coppell  Year and Jurisdiction Details ");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "City of Coppell Payment Information");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "City of Coppell Request an address Correction");
+                        MessageBox("Data Inserted Successfully....");
+
+                        MessageBox("Data Inserted Successfully....");
+
+                    }
+
+                    //CT Fairfield
+                    else if (statecountyid == "234")//
+                    {
+                        
+                        if (dropTownship.SelectedItem.Text == "--select--")
+                        {
+                            MessageBox("Select Township...");
+                            return;
+                        }
+
+                        string countynameNJ = "", township = "", countynameCT = "";
+                        countynameCT = dropCounty.SelectedItem.Text;
+                        township = dropTownship.SelectedItem.Text;
+
+
+                        Webdriver_CTFairfield CTFairfield = new Webdriver_CTFairfield();
+                        CTFairfield.FTP_CTFairfield("", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, dropTownship.SelectedItem.Text, townshipcode);
+                        if (HttpContext.Current.Session["NoTax_CT" + countynameCT] != null && HttpContext.Current.Session["NoTax_CT" + countynameCT].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_CT" + countynameCT] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        string countnoAssess = HttpContext.Current.Session["linkNoAssess"].ToString();
+                        string countnoTax = HttpContext.Current.Session["linkNoTax"].ToString();
+                        if (countnoAssess == "0")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Building Information");
+                            BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Land Details");
+                            BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Valuation History Details");
+                        }
+                        if (countnoAssess == "1")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+
+                        }
+                        if (countnoAssess == "2")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+
+                        }
+                        if (countnoAssess == "3")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales History");
+
+                        }
+                        if (countnoAssess == "4")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+
+                        }
+                        if (countnoAssess == "5")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+
+                        }
+
+
+                        if (countnoAssess == "6")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Land Details");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales History Details");
+                            BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Permit Information Details");
+                        }
+                        if (countnoAssess == "13")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Owner History Details");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Assessment History Details");
+                            BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Building Permits Details");
+                            BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Land Line Valuation Details");
+                        }
+                        if (countnoTax == "0")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Bill Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Tax Bill Information Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "11", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "12", txtorderno.Text, "Tax Total Due ");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "13", txtorderno.Text, "Tax Bill History");
+                        }
+                        if (countnoTax == "1")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Current Tax Bill Information  Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Current Balance Due");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Payment History Details");
+                        }
+                        if (countnoTax == "2")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Payment History Details");
+                        }
+                        BindGridDisplay(GridView14, Label14, statecountyid, "14", txtorderno.Text, "Tax Authority Details");
+
+                        MessageBox("Data Inserted Successfully....");
+
+                    }
+                    //CT newhaven
+
+                    else if (statecountyid == "244")//
+                    {
+                        if (dropTownship.SelectedItem.Text == "--select--")
+                        {
+                            MessageBox("Select Township...");
+                            return;
+                        }
+
+                        string countynameNJ = "", township = "", countynameCT = "";
+                        countynameCT = dropCounty.SelectedItem.Text;
+                        township = dropTownship.SelectedItem.Text;
+
+                        Webdriver_CTNewHaven CTNewHaven = new Webdriver_CTNewHaven();
+                        CTNewHaven.FTP_CTNewHaven("", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, dropTownship.SelectedItem.Text, townshipcode);
+                        if (HttpContext.Current.Session["NoTax_CT" + countynameCT] != null && HttpContext.Current.Session["NoTax_CT" + countynameCT].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_CT" + countynameCT] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        string countnoAssess = HttpContext.Current.Session["linkNoAssess"].ToString();
+                        string countnoTax = HttpContext.Current.Session["linkNoTax"].ToString();
+                        if (countnoAssess == "0")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Building Information");
+                            BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Land Details");
+                            BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Valuation History Details");
+                        }
+                        if (countnoAssess == "1")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+
+                        }
+
+                        if (countnoAssess == "5")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+                        }
+                        if (countnoAssess == "7")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+
+                        }
+
+                        if (countnoAssess == "8")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+
+                        }
+                        if (countnoAssess == "14")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+
+                        }
+                        if (countnoTax == "0")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Bill Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Tax Bill Information Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "11", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "12", txtorderno.Text, "Tax Total Due ");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "13", txtorderno.Text, "Tax Bill History");
+                        }
+                        if (countnoTax == "1")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Current Tax Bill Information  Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Current Balance Due");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Payment History Details");
+                        }
+                        if (countnoTax == "3")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Payment History Details");
+                        }
+                        BindGridDisplay(GridView14, Label14, statecountyid, "14", txtorderno.Text, "Tax Authority Details");
+
+                        MessageBox("Data Inserted Successfully....");
+
+                    }
+                    // ct Hartford
+                    else if (statecountyid == "238")//
+                    {
+                        if (dropTownship.SelectedItem.Text == "--select--")
+                        {
+                            MessageBox("Select Township...");
+                            return;
+                        }
+
+                        string countynameNJ = "", township = "", countynameCT = "";
+                        countynameCT = dropCounty.SelectedItem.Text;
+                        township = dropTownship.SelectedItem.Text;
+
+                        Webdriver_CTHartford CTHartford = new Webdriver_CTHartford();
+                        CTHartford.FTP_CTHartford("", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, dropTownship.SelectedItem.Text, townshipcode);
+                        if (HttpContext.Current.Session["NoTax_CT" + countynameCT] != null && HttpContext.Current.Session["NoTax_CT" + countynameCT].ToString() == "No_Tax")
+                        {
+                            HttpContext.Current.Session["NoTax_CT" + countynameCT] = "";
+                            MessageBox("Taxes Not Available");
+                            return;
+                        }
+                        string countnoAssess = HttpContext.Current.Session["linkNoAssess"].ToString();
+                        string countnoTax = HttpContext.Current.Session["linkNoTax"].ToString();
+                        if (countnoAssess == "0")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Building Information");
+                            BindGridDisplay(GridView5, Label5, statecountyid, "5", txtorderno.Text, "Land Details");
+                            BindGridDisplay(GridView6, Label6, statecountyid, "6", txtorderno.Text, "Valuation History Details");
+                        }
+                        if (countnoAssess == "1")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Ownership History");
+
+                        }
+                        if (countnoAssess == "3")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales History");
+
+                        }
+
+                        if (countnoAssess == "5")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Property Information");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+                        }
+                        if (countnoAssess == "9")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+
+                        }
+                        if (countnoAssess == "10")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Valution History");
+                        }
+
+                        if (countnoAssess == "11")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales Information");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Previous Assessment");
+
+                        }
+                        if (countnoAssess == "12")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales Information");
+                        }
+
+                        if (countnoAssess == "15")
+                        {
+                            BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+
+
+                        }
+
+                        if (countnoTax == "0")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Tax Bill Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Tax Information Details");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Tax Bill Information Details");
+                            BindGridDisplay(GridView11, Label11, statecountyid, "11", txtorderno.Text, "Tax Payment Details");
+                            BindGridDisplay(GridView12, Label12, statecountyid, "12", txtorderno.Text, "Tax Total Due ");
+                            BindGridDisplay(GridView13, Label13, statecountyid, "13", txtorderno.Text, "Tax Bill History");
+                        }
+                        if (countnoTax == "1")
+                        {
+                            BindGridDisplay(GridView8, Label8, statecountyid, "8", txtorderno.Text, "Current Tax Bill Information  Details");
+                            BindGridDisplay(GridView9, Label9, statecountyid, "9", txtorderno.Text, "Current Balance Due");
+                            BindGridDisplay(GridView10, Label10, statecountyid, "10", txtorderno.Text, "Payment History Details");
+                        }
+
+                        BindGridDisplay(GridView14, Label14, statecountyid, "14", txtorderno.Text, "Tax Authority Details");
+
+                        MessageBox("Data Inserted Successfully....");
+
+                    }
                     //last multi
                 }
                 bloc1.Visible = true;

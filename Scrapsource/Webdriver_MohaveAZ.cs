@@ -57,18 +57,23 @@ namespace ScrapMaricopa.Scrapsource
                     driver.Navigate().GoToUrl("https://www.mohavecounty.us/ContentPage.aspx?id=111&cid=869");
                     Thread.Sleep(7000);
 
-
                     if (searchType == "titleflex")
                     {
                         string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "AZ", "Mohave");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Mohave"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
-
                     }
 
                     if (searchType == "address")
@@ -84,8 +89,16 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(4000);
                         gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "AZ", "Mohave");
 
-                        driver.FindElement(By.Id("searchParcel-ct-button-span-label")).Click();
-                        Thread.Sleep(3000);
+                        try
+                        {
+                            driver.FindElement(By.Id("searchParcel-ct-button-span-label")).Click();
+                        }
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.Id("searchParcel")).Click();
+                        }
+                        catch { }
                         int Max = 0;
                         string RecordCount = "";
                         try
@@ -108,7 +121,7 @@ namespace ScrapMaricopa.Scrapsource
                                     HttpContext.Current.Session["multiparcel_MohaveAZ_Maximum"] = "Maximum";
                                     driver.Quit();
                                     return "Maximum";
-                                   
+
                                 }
                                 if (multiTD.Count != 0 && multiRow.Count > 2 && multiRow.Count <= 25 && multi.Text.Trim() != "")
                                 {
@@ -129,7 +142,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (Max == 0 && RecordCount == "0")
                             {
 
-                                HttpContext.Current.Session["Zero_Mohave"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Mohave"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
 
@@ -150,7 +163,17 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("searchParcel-ct-button-span-label")).Click();
                         Thread.Sleep(3000);
                         // gc.CreatePdf(orderNumber, parcelNumber, "parcel search Result", driver, "AZ", "Mohave");
-
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.Id("deletedParcelText"));
+                            if (Inodata.Text.Contains("The following parcel was not found"))
+                            {
+                                HttpContext.Current.Session["Nodata_Mohave"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     else if (searchType == "ownername")
                     {
@@ -210,7 +233,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0 && RecordCount == "0")
                             {
-                                HttpContext.Current.Session["Zero_Mohave"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Mohave"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -231,8 +254,12 @@ namespace ScrapMaricopa.Scrapsource
                         ByVisibleElement(driver.FindElement(By.XPath("//*[@id='parcelNumberResult']")));
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Property Details", driver, "AZ", "Mohave");
+
+                        driver.FindElement(By.XPath("//*[@id='dialog-ct-dialog-button-ok']")).Click();
+                        Thread.Sleep(4000);
                     }
                     catch { }
+
                     IWebElement iownername = driver.FindElement(By.XPath("//*[@id='parcelOwnerResult']"));
                     owner_name = iownername.Text;
                     IWebElement iownershiptype = driver.FindElement(By.XPath("//*[@id='parcelOwnershipTypeResult']"));
@@ -301,7 +328,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -396,8 +423,6 @@ namespace ScrapMaricopa.Scrapsource
                                     Full_Half = rowarray3[2] + " " + rowarray3[3] + " " + rowarray3[4];
 
                                 }
-
-
                             }
                         }
                         catch (Exception ex) { }
@@ -409,7 +434,7 @@ namespace ScrapMaricopa.Scrapsource
 
 
                     // Tax Information
-                    driver.Navigate().GoToUrl("https://eagletreas.mohavecounty.us/treasurer/treasurerweb/search.jsp");
+                    driver.Navigate().GoToUrl("https://eagletw.mohavecounty.us/treasurer/treasurerweb/search.jsp");
                     Thread.Sleep(4000);
 
                     try
@@ -901,7 +926,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -985,14 +1010,9 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch (Exception ex) { }
-
-
-
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
-
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");
                     gc.insert_TakenTime(orderNumber, "AZ", "Mohave", StartTime, AssessmentTime, TaxTime, CitytaxTime, LastEndTime);
-
                     driver.Quit();
                     gc.mergpdf(orderNumber, "AZ", "Mohave");
                     return "Data Inserted Successfully";

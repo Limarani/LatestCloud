@@ -44,7 +44,7 @@ namespace ScrapMaricopa.Scrapsource
         public string FTP_CAobispo(string streetno, string sname, string unitno, string parcelNumber, string ownername, string searchType, string orderNumber, string directparcel)
         {
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "", AssessTakenTime = "", TaxTakentime = "", CityTaxtakentime = "";
-            string TotaltakenTime = "";
+            string TotaltakenTime = ""; string tyear = "";
             GlobalClass.sname = "CA";
             GlobalClass.cname = "San Luis Obispo";
             GlobalClass.global_orderNo = orderNumber; HttpContext.Current.Session["orderNo"] = orderNumber; GlobalClass.global_parcelNo = parcelNumber;
@@ -251,7 +251,13 @@ namespace ScrapMaricopa.Scrapsource
                         MailURL.Add(URL);
                     }
                     catch { }
-
+                    try
+                    {
+                        linkbillno = driver.FindElement(By.XPath("//*[@id='Form1']/table/tbody/tr[7]/td/table[3]/tbody/tr/td[1]/a")).Text.Trim();
+                        string URL = "https://services.slocountytax.org/Detail.aspx?lblBillnum=" + linkbillno + " &csus=0";
+                        MailURL.Add(URL);
+                    }
+                    catch { }
                     try
 
                     {
@@ -309,7 +315,14 @@ namespace ScrapMaricopa.Scrapsource
                                 MailURL.Add(URL);
                             }
                             catch { }
-
+                            try
+                            {
+                                //MailURL.Clear();
+                                linkbillno = driver.FindElement(By.XPath("//*[@id='Form1']/table/tbody/tr[7]/td/table[3]/tbody/tr/td[1]/a")).Text.Trim();
+                                string URL = "https://services.slocountytax.org/detailsupp.aspx?lblBillnum="+linkbillno+"&csus=0";
+                                MailURL.Add(URL);
+                            }
+                            catch { }
                             try
 
                             {
@@ -573,16 +586,23 @@ namespace ScrapMaricopa.Scrapsource
                                     gc.insert_date(orderNumber, outparcelno, 435, value3, 1, DateTime.Now);
 
                                     //Placer Supplemental Tax
-                                    if (p == 0)
+                                    //if (p == 0)
+                                    //{
+                                    if (m == 0)
                                     {
-                                        if (m == 0)
+                                        string syear = taxyear.Substring(0, 4);
+                                        if (tyear == syear)
                                         {
-                                            string tyear = taxyear.Substring(0, 4);
-                                            pltitle.Year = Convert.ToInt32(tyear);
-                                            //  pltitle.TaxIDNumber = billnumberwoh;
+                                            pltitle.Year = Convert.ToInt32(syear);
+                                            gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, "0", pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 100, pltitle.Year, "San luis obsipo County Treasurer-Tax Collector", pltitle.TaxIDNumber, "Supplemental", pltitle.TaxIDNumberFurtherDescribed);
+                                        }
+                                        else if (FirstDue != "$0.00" || SecondDue != "$0.00")
+                                        {
+                                            pltitle.Year = Convert.ToInt32(syear);
                                             gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, "0", pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 100, pltitle.Year, "San luis obsipo County Treasurer-Tax Collector", pltitle.TaxIDNumber, "Supplemental", pltitle.TaxIDNumberFurtherDescribed);
                                         }
                                     }
+                                    //}
                                     p++;
 
                                 }
@@ -795,7 +815,7 @@ namespace ScrapMaricopa.Scrapsource
                                     //Placer County Tax                                  
                                     if (n == 0)
                                     {
-                                        string tyear = taxyear.Substring(0, 4);
+                                        tyear = taxyear.Substring(0, 4);
                                         pltitle.Year = Convert.ToInt32(tyear);
                                         //pltitle.TaxIDNumber = billnumberwoh;
                                         gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, "0", pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 1, pltitle.Year, "San luis obsipo County Treasurer-Tax Collector", pltitle.TaxIDNumber, "County", pltitle.TaxIDNumberFurtherDescribed);
@@ -809,7 +829,7 @@ namespace ScrapMaricopa.Scrapsource
                             //load chrome driver...
                             //IWebDriver chDriver = new ChromeDriver();
                             var chromeOptions = new ChromeOptions();
-                            var downloadDirectory = "F:\\AutoPdf\\";
+                            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

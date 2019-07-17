@@ -66,10 +66,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + Dir + " " + sname;
                         gc.TitleFlexSearch(orderno, parcelNumber, "", address, "FL", "Volusia");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLVolusia"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -83,6 +89,12 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='inpNo']")).SendKeys(houseno.Trim());
                         driver.FindElement(By.XPath("//*[@id='inpDir']")).SendKeys(Dir.Trim());
                         driver.FindElement(By.XPath("//*[@id='inpStreet']")).SendKeys(sname.Trim());
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='inpUnit']")).SendKeys(account.Trim());
+
+                        }
+                        catch { }
                         Thread.Sleep(1000);
                         gc.CreatePdf_WOP(orderno, "Address Search", driver, "FL", "Volusia");
                         driver.FindElement(By.XPath("//*[@id='btSearch']")).SendKeys(Keys.Enter);
@@ -225,6 +237,18 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]"));
+                        if(Inodata.Text.Contains("search did not find any records"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLVolusia"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     string owner2 = "";
                     // string MailingAddress = "", PropertyType = "", YearBuilt = "", LegalDescription = "";
                     parcelNumber = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/div[3]/div/div/table/tbody/tr/td/table/tbody/tr[2]/td/div/div[1]/table[2]/tbody/tr[1]/td[2]")).Text;
@@ -1575,7 +1599,7 @@ namespace ScrapMaricopa.Scrapsource
         {
             string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);

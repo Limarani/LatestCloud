@@ -61,11 +61,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetno + " " + streetname + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "TX", "Ellis");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_TXEills"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -152,9 +159,12 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "TX", "Ellis");
                         driver.FindElement(By.XPath("//*[@id='index-search']/div[4]/div/div/button")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-
-                        driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr/td[2]")).Click();
-                        Thread.Sleep(5000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr/td[2]")).Click();
+                            Thread.Sleep(5000);
+                        }
+                        catch { }
                     }
 
                     if (searchType == "ownername")
@@ -223,6 +233,18 @@ namespace ScrapMaricopa.Scrapsource
                             { }
                         }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("results-page"));
+                        if (INodata.Text.Contains("Page 1 of 0 - Total: 0"))
+                        {
+                            HttpContext.Current.Session["Nodata_TXEills"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //Property Details
                     try

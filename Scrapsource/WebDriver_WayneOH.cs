@@ -54,11 +54,18 @@ namespace ScrapMaricopa.Scrapsource
                         string titleaddress = houseno + " " + sname + " " + housedir + " " + unitno;
 
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "OH", "Wayne");
-                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_WayneOH"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -126,7 +133,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Wayne"] = "Zero";
+                                HttpContext.Current.Session["Nodata_WayneOH"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -152,10 +159,17 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             var ownersplit = ownername.Trim().Split(' ');
-                            Lastname = ownersplit[0];
-                            Firstname = ownersplit[1];
-                            driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(Lastname);
-                            driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerFirstName")).SendKeys(Firstname);
+                            if(ownersplit.Length == 2)
+                            {
+                                Lastname = ownersplit[0];
+                                Firstname = ownersplit[1];
+                                driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(Lastname);
+                                driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerFirstName")).SendKeys(Firstname);
+                            }
+                            else
+                            {
+                                driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(ownername.Trim());
+                            }
                             ownername = Lastname + " " + Firstname;
                         }
                         catch { }
@@ -206,7 +220,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Wayne"] = "Zero";
+                                HttpContext.Current.Session["Nodata_WayneOH"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -234,9 +248,26 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("ContentPlaceHolder1_Parcel_btnSearchParcel")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "parcel search Result", driver, "OH", "Wayne");
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
-                        Thread.Sleep(3000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
+                            Thread.Sleep(3000);
+                        }
+                        catch { }
                     }
+
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text;
+                        if (nodata.Contains("No results"))
+                        {
+                            HttpContext.Current.Session["Nodata_WayneOH"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property details
 

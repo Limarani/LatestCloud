@@ -55,9 +55,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + direction + " " + sname + " " + accountnumber;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "OK", "Tulsa");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_OKTulsa"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -115,7 +122,6 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                         catch { }
-
                     }
 
                     else if (searchType == "parcel")
@@ -184,6 +190,18 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
 
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='content']/p[4]"));
+                        if (INodata.Text.Contains("No properties were found"))
+                        {
+                            HttpContext.Current.Session["Nodata_OKTulsa"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     Thread.Sleep(4000);
                     //Assessment Information
@@ -426,9 +444,11 @@ namespace ScrapMaricopa.Scrapsource
                             string taxalert = driver.FindElement(By.XPath("//*[@id='lblmsgtxt']")).Text;
                             if (taxalert.Contains("Please call "))
                             {
+                                gc.insert_date(orderNumber, Parcel_No, 1872, taxalert.Replace("/r/n",""), 1, DateTime.Now);
                                 HttpContext.Current.Session["Taxalert_Tulsa"] = "Yes";
                                 driver.Quit();
-                                return "'" + taxalert + "'";
+                                // return "'" + taxalert + "'";
+                                return "Data Inserted Successfully";
                             }
                         }
                         catch

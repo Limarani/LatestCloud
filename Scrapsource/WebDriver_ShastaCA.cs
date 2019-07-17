@@ -56,11 +56,16 @@ namespace ScrapMaricopa.Scrapsource
                         string address = "";
                         address = houseno + " " + sname + " " + direction + " " + type + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, parcelNumber.Trim(), ownername.Trim(), address.Trim(), "CA", "Shasta");
-                        parcelNumber = GlobalClass.global_parcelNo;
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ShataCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -130,18 +135,34 @@ namespace ScrapMaricopa.Scrapsource
                             if (TRmulti.Count > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_CAShasta_Multicount"] = "Maximum";
+                                driver.Quit();
+                                gc.mergpdf(orderNumber, "CA", "Shasta");
+                                return "Maximum";
                             }
                             else
                             {
                                 HttpContext.Current.Session["multiparcel_CAShasta"] = "Yes";
+                                driver.Quit();
+                                gc.mergpdf(orderNumber, "CA", "Shasta");
+                                return "MultiParcel";
                             }
-                            driver.Quit();
-                            gc.mergpdf(orderNumber, "CA", "Shasta");
-                            return "MultiParcel";
                         }
 
 
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("/html/body/form/table"));
+                        if (INodata.Text.Contains("Assessor Inquiry: Please enter search criteria"))
+                        {
+                            HttpContext.Current.Session["Nodata_ShataCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string parcel_id1 = "";
                     parcel_id1 = driver.FindElement(By.XPath("/html/body/form/table/tbody/tr[2]/td[2]")).Text.Trim();
 
@@ -257,15 +278,31 @@ namespace ScrapMaricopa.Scrapsource
                         string pdfyear = driver.FindElement(By.XPath("/html/body/div[2]/section/div/div/div/div[6]/div/div[1]/div[3]/div[2]")).Text;
                         int pdf = k1;
                         string fulltabletextTax1 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[1]/dl")).Text.Trim().Replace("\r\n", "");
-                        First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Delinq. Date").Trim();
-                        First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Delinq. Date", "Total Due").Trim();
+                        if (fulltabletextTax1.Contains("Delinq. Date"))
+                        {
+                            First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Delinq. Date").Trim();
+                            First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Delinq. Date", "Total Due").Trim();
+                        }
+                        else
+                        {
+                            First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Paid Date").Trim();
+                            First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Paid Date", "Total Due").Trim();
+                        }
                         First_Installment_Total_Due = gc.Between(fulltabletextTax1, "Total Due", "Total Paid").Trim();
                         First_Installment_Total_Paid = gc.Between(fulltabletextTax1, "Total Paid", "Balance").Trim();
                         First_Installment_Balance = WebDriverTest.After(fulltabletextTax1, "Balance");
 
                         string fulltabletextTax2 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[2]/dl")).Text.Trim().Replace("\r\n", "");
-                        Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Delinq. Date").Trim();
-                        Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Delinq. Date", "Total Due").Trim();
+                        if (fulltabletextTax2.Contains("Delinq. Date"))
+                        {
+                            Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Delinq. Date").Trim();
+                            Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Delinq. Date", "Total Due").Trim();
+                        }
+                        else
+                        {
+                            Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Paid Date").Trim();
+                            Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Paid Date", "Total Due").Trim();
+                        }
                         Second_Installment_Total_Due = gc.Between(fulltabletextTax2, "Total Due", "Total Paid").Trim();
                         Second_Installment_Total_Paid = gc.Between(fulltabletextTax2, "Total Paid", "Balance").Trim();
                         Second_Installment_Balance = WebDriverTest.After(fulltabletextTax2, "Balance");

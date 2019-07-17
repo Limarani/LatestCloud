@@ -59,11 +59,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = streetno + " " + streetname + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", titleaddress, "TX", "Travis");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_TXTravis"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -86,63 +93,66 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("propertySearchOptions_searchAdv")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
 
-                        ChkMulti = driver.FindElement(By.XPath("//*[@id='pageTitle']/h2")).Text;
-                        ChkMulti = WebDriverTest.Between(ChkMulti, "Property Search Results > ", " for");
+                        try
+                        {
+                            ChkMulti = driver.FindElement(By.XPath("//*[@id='pageTitle']/h2")).Text;
+                            ChkMulti = WebDriverTest.Between(ChkMulti, "Property Search Results > ", " for");
 
-                        if (ChkMulti == "1 - 1 of 1")
-                        {
-                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
-                            Thread.Sleep(2000);
-                            gc.CreatePdf_WOP(orderNumber, "Single Address search", driver, "TX", "Travis");
-                        }
-                        else
-                        {
-                            try
+                            if (ChkMulti == "1 - 1 of 1")
                             {
-                                IWebElement MultiAddressTB = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody"));
-                                IList<IWebElement> MultiAddressTR = MultiAddressTB.FindElements(By.TagName("tr"));
-                                IList<IWebElement> MultiAddressTD;
-                                gc.CreatePdf_WOP(orderNumber, "Multi Address search", driver, "TX", "Travis");
-                                int AddressmaxCheck = 0;
-                                foreach (IWebElement MultiAddress in MultiAddressTR)
-                                {
-                                    if (AddressmaxCheck <= 25 && MultiAddressTR.Count > 2)
-                                    {
-                                        MultiAddressTD = MultiAddress.FindElements(By.TagName("td"));
-                                        if (MultiAddressTD.Count != 0 && !MultiAddress.Text.Contains("Mobile Home") && !MultiAddress.Text.Contains("     ") && !MultiAddress.Text.Contains("Page:   1"))
-                                        {
-                                            Parcelno = MultiAddressTD[1].Text;
-                                            Multi_Type = MultiAddressTD[3].Text;
-                                            Property_Address = MultiAddressTD[4].Text;
-                                            Owner = MultiAddressTD[6].Text;
-
-                                            MultiAddress_details = Multi_Type + "~" + Property_Address + "~" + Owner;
-                                            gc.insert_date(orderNumber, Parcelno, 1058, MultiAddress_details, 1, DateTime.Now);
-                                        }
-                                        AddressmaxCheck++;
-                                    }
-                                }
-                                if (MultiAddressTR.Count <= 2)
-                                {
-
-                                    HttpContext.Current.Session["TXTravis_Zero"] = "Zero";
-                                    driver.Quit();
-                                    return "No Data Found";
-                                }
-                                if (MultiAddressTR.Count > 25)
-                                {
-                                    HttpContext.Current.Session["multiParcel_TXTravis_Multicount"] = "Maximum";
-                                }
-                                else
-                                {
-                                    HttpContext.Current.Session["multiParcel_TXTravis"] = "Yes";
-                                }
-                                driver.Quit();
-                                return "MultiParcel";
+                                driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                                Thread.Sleep(2000);
+                                gc.CreatePdf_WOP(orderNumber, "Single Address search", driver, "TX", "Travis");
                             }
-                            catch
-                            { }
+                            else
+                            {
+                                try
+                                {
+                                    IWebElement MultiAddressTB = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody"));
+                                    IList<IWebElement> MultiAddressTR = MultiAddressTB.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> MultiAddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Multi Address search", driver, "TX", "Travis");
+                                    int AddressmaxCheck = 0;
+                                    foreach (IWebElement MultiAddress in MultiAddressTR)
+                                    {
+                                        if (AddressmaxCheck <= 25 && MultiAddressTR.Count > 2)
+                                        {
+                                            MultiAddressTD = MultiAddress.FindElements(By.TagName("td"));
+                                            if (MultiAddressTD.Count != 0 && !MultiAddress.Text.Contains("Mobile Home") && !MultiAddress.Text.Contains("     ") && !MultiAddress.Text.Contains("Page:   1"))
+                                            {
+                                                Parcelno = MultiAddressTD[1].Text;
+                                                Multi_Type = MultiAddressTD[3].Text;
+                                                Property_Address = MultiAddressTD[4].Text;
+                                                Owner = MultiAddressTD[6].Text;
+
+                                                MultiAddress_details = Multi_Type + "~" + Property_Address + "~" + Owner;
+                                                gc.insert_date(orderNumber, Parcelno, 1058, MultiAddress_details, 1, DateTime.Now);
+                                            }
+                                            AddressmaxCheck++;
+                                        }
+                                    }
+                                    if (MultiAddressTR.Count <= 2)
+                                    {
+                                        HttpContext.Current.Session["Nodata_TXTravis"] = "Yes";
+                                        driver.Quit();
+                                        return "No Data Found";
+                                    }
+                                    if (MultiAddressTR.Count > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_TXTravis_Multicount"] = "Maximum";
+                                    }
+                                    else
+                                    {
+                                        HttpContext.Current.Session["multiParcel_TXTravis"] = "Yes";
+                                    }
+                                    driver.Quit();
+                                    return "MultiParcel";
+                                }
+                                catch
+                                { }
+                            }
                         }
+                        catch { }
 
                     }
 
@@ -150,78 +160,86 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.Navigate().GoToUrl("http://propaccess.traviscad.org/clientdb/?cid=1");
                         Thread.Sleep(2000);
-
+                        //driver.FindElement(By.Id("propertySearchOptions_advanced")).Click();
+                        //Thread.Sleep(2000);
                         driver.FindElement(By.Id("propertySearchOptions_searchText")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "TX", "Travis");
 
-                        driver.FindElement(By.Id("propertySearchOptions_searchAdv")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("propertySearchOptions_search")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-
-                        driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
-                        Thread.Sleep(2000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                            Thread.Sleep(2000);
+                        }
+                        catch{ }
                     }
 
                     if (searchType == "ownername")
                     {
                         driver.Navigate().GoToUrl("http://propaccess.traviscad.org/clientdb/?cid=1");
                         Thread.Sleep(2000);
-
-                        driver.FindElement(By.Id("propertySearchOptions_searchText")).SendKeys(ownernm);
+                        driver.FindElement(By.Id("propertySearchOptions_advanced")).Click();
+                        Thread.Sleep(2000);
+                        driver.FindElement(By.Id("propertySearchOptions_ownerName")).SendKeys(ownernm);
                         gc.CreatePdf_WOP(orderNumber, "owner search", driver, "TX", "Travis");
 
                         driver.FindElement(By.Id("propertySearchOptions_searchAdv")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-
-                        ChkMulti = driver.FindElement(By.XPath("//*[@id='pageTitle']/h2")).Text;
-                        ChkMulti = WebDriverTest.Between(ChkMulti, "Property Search Results > ", " for");
-
-                        if (ChkMulti == "1 - 1 of 1")
+                        try
                         {
-                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
-                            Thread.Sleep(2000);
-                            gc.CreatePdf_WOP(orderNumber, "Single Owner search", driver, "TX", "Travis");
-                        }
-                        else
-                        {
-                            try
+                            ChkMulti = driver.FindElement(By.XPath("//*[@id='pageTitle']/h2")).Text;
+                            ChkMulti = WebDriverTest.Between(ChkMulti, "Property Search Results > ", " for");
+
+                            if (ChkMulti == "1 - 1 of 1")
                             {
-                                IWebElement MultiAddressTB = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody"));
-                                IList<IWebElement> MultiAddressTR = MultiAddressTB.FindElements(By.TagName("tr"));
-                                IList<IWebElement> MultiAddressTD;
-                                gc.CreatePdf_WOP(orderNumber, "Multi Owner search", driver, "TX", "Travis");
-                                int AddressmaxCheck = 0;
-                                foreach (IWebElement MultiAddress in MultiAddressTR)
-                                {
-                                    if (AddressmaxCheck <= 25)
-                                    {
-                                        MultiAddressTD = MultiAddress.FindElements(By.TagName("td"));
-                                        if (MultiAddressTD.Count != 0 && !MultiAddress.Text.Contains("Mobile Home") && !MultiAddress.Text.Contains("     ") && !MultiAddress.Text.Contains("Page:   1"))
-                                        {
-                                            Parcelno = MultiAddressTD[1].Text;
-                                            Multi_Type = MultiAddressTD[3].Text;
-                                            Property_Address = MultiAddressTD[4].Text;
-                                            Owner = MultiAddressTD[6].Text;
-
-                                            MultiAddress_details = Multi_Type + "~" + Property_Address + "~" + Owner;
-                                            gc.insert_date(orderNumber, Parcelno, 1058, MultiAddress_details, 1, DateTime.Now);
-                                        }
-                                        AddressmaxCheck++;
-                                    }
-                                }
-                                if (MultiAddressTR.Count > 25)
-                                {
-                                    HttpContext.Current.Session["multiParcel_TXTravis_Multicount"] = "Maximum";
-                                }
-                                else
-                                {
-                                    HttpContext.Current.Session["multiParcel_TXTravis"] = "Yes";
-                                }
-                                driver.Quit();
-                                return "MultiParcel";
+                                driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                                Thread.Sleep(2000);
+                                gc.CreatePdf_WOP(orderNumber, "Single Owner search", driver, "TX", "Travis");
                             }
-                            catch
-                            { }
+                            else
+                            {
+                                try
+                                {
+                                    IWebElement MultiAddressTB = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody"));
+                                    IList<IWebElement> MultiAddressTR = MultiAddressTB.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> MultiAddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Multi Owner search", driver, "TX", "Travis");
+                                    int AddressmaxCheck = 0;
+                                    foreach (IWebElement MultiAddress in MultiAddressTR)
+                                    {
+                                        if (AddressmaxCheck <= 25)
+                                        {
+                                            MultiAddressTD = MultiAddress.FindElements(By.TagName("td"));
+                                            if (MultiAddressTD.Count != 0 && !MultiAddress.Text.Contains("Mobile Home") && !MultiAddress.Text.Contains("     ") && !MultiAddress.Text.Contains("Page:   1"))
+                                            {
+                                                Parcelno = MultiAddressTD[1].Text;
+                                                Multi_Type = MultiAddressTD[3].Text;
+                                                Property_Address = MultiAddressTD[4].Text;
+                                                Owner = MultiAddressTD[6].Text;
+
+                                                MultiAddress_details = Multi_Type + "~" + Property_Address + "~" + Owner;
+                                                gc.insert_date(orderNumber, Parcelno, 1058, MultiAddress_details, 1, DateTime.Now);
+                                            }
+                                            AddressmaxCheck++;
+                                        }
+                                    }
+                                    if (MultiAddressTR.Count > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_TXTravis_Multicount"] = "Maximum";
+                                    }
+                                    else
+                                    {
+                                        HttpContext.Current.Session["multiParcel_TXTravis"] = "Yes";
+                                    }
+                                    driver.Quit();
+                                    return "MultiParcel";
+                                }
+                                catch
+                                { }
+                            }
                         }
+                        catch { }
                     }
 
                     else if (searchType == "block")
@@ -232,12 +250,28 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("propertySearchOptions_searchText")).SendKeys(Account_id);
                         gc.CreatePdf_WOP(orderNumber, "Account Number Search ", driver, "TX", "Travis");
 
-                        driver.FindElement(By.Id("propertySearchOptions_searchAdv")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("propertySearchOptions_search")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-
-                        driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
-                        Thread.Sleep(2000);
+                        try
+                        {
+                                                          
+                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                            Thread.Sleep(2000);
+                        }
+                        catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
+                        if (INodata.Text.Contains("None found"))
+                        {
+                            HttpContext.Current.Session["Nodata_TXTravis"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property details              
                     try
@@ -557,7 +591,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

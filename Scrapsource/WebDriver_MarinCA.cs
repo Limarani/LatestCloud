@@ -62,6 +62,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MarinCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -360,7 +366,20 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                         try
                         {
+                            driver.FindElement(By.XPath("//*[@id='main-content']/div[2]/div[5]/input[1]")).Click();
+                        }
+                        catch { }
+                        try
+                        {
                             IWebElement IPropertySearch1 = driver.FindElement(By.XPath("//*[@id='compwa']/div[4]/input[1]"));
+                            IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                            js1.ExecuteScript("arguments[0].click();", IPropertySearch1);
+                            Thread.Sleep(5000);
+                        }
+                        catch { }
+                        try
+                        {
+                            IWebElement IPropertySearch1 = driver.FindElement(By.XPath("//*[@id='main-content']/div[2]/div[5]/input[1]"));
                             IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                             js1.ExecuteScript("arguments[0].click();", IPropertySearch1);
                             Thread.Sleep(5000);
@@ -374,7 +393,7 @@ namespace ScrapMaricopa.Scrapsource
                         IWebElement text = driver.FindElement(By.Id("PropertyId"));
                         IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
                         js.ExecuteScript("document.getElementById('PropertyId').value='" + ParcelNumber + "'");
-                        driver.FindElement(By.XPath("//*[@id='compwa']/form/div/input[2]")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.XPath("//*[@id='main-content']/div[2]/form/div[2]/div[2]/div/input[1]")).SendKeys(Keys.Enter);
 
                         gc.CreatePdf(orderNumber, ParcelNumber, "Property Tax Bill Details PDF", driver, "CA", "Marin");
                         //Delinquent Details
@@ -395,7 +414,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
                         catch { }
-                        IWebElement Taxbillclick = driver.FindElement(By.Id("compwa"));
+                        IWebElement Taxbillclick = driver.FindElement(By.Id("content"));
                         IList<IWebElement> taxpay = Taxbillclick.FindElements(By.TagName("table"));
                         List<string> Singlerowclick = new List<string>();
                         foreach (IWebElement taxpament in taxpay)

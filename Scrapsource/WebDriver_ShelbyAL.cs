@@ -58,7 +58,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "AL", "Shelby");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ShelbyAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -115,15 +122,11 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     string strowner = "", strAddress = "", strProperty = "";
                                     IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='BodyTable']/tbody/tr[" + i + "]/td/fieldset"));
-
                                     strProperty = GlobalClass.Before(multiaddress.Text, "PAY TAX").Trim();
                                     strAddress = gc.Between(multiaddress.Text, "ADDRESS", "LAND VALUE").Trim().Replace(": ", "");
                                     strowner = gc.Between(multiaddress.Text, "OWNER NAME", "RECEIPT NO").Trim().Replace(":", "");
-
                                     string multidetails = strowner + "~" + strAddress;
                                     gc.insert_date(orderNumber, strProperty, 1001, multidetails, 1, DateTime.Now);
-
-
                                 }
                             }
 
@@ -138,7 +141,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
-
+                    try
+                    {
+                        string nodata = driver.FindElement(By.XPath("//*[@id='TABLE2']/tbody/tr[2]/td/table/tbody/tr[5]/td/table")).Text;
+                        if (nodata.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_ShelbyAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
 
                     // Property Details

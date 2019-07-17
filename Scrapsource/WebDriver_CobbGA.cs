@@ -31,7 +31,7 @@ namespace ScrapMaricopa.Scrapsource
         int searchcount;
         public string FTP_Cobb(string streetnumber, string direction, string streetname, string streettype, string unitnumber, string ownername, string parcelNumber, string searchType, string orderNumber, string directParcel)
         {
-            string  address = "";
+            string address = "";
             GlobalClass.global_orderNo = orderNumber;
             HttpContext.Current.Session["orderNo"] = orderNumber;
             GlobalClass.global_parcelNo = parcelNumber;
@@ -62,6 +62,12 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CobbGA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -98,7 +104,7 @@ namespace ScrapMaricopa.Scrapsource
                                     string OWnername = Multiaddressid[2].Text;
                                     string Address1 = Multiaddressid[3].Text;
                                     searchlist.Add(Multiaddressid[1].Text);
-                                    searchcount = searchlist.Count;                                    
+                                    searchcount = searchlist.Count;
                                 }
                             }
                             if (searchcount == 1)
@@ -126,24 +132,6 @@ namespace ScrapMaricopa.Scrapsource
                                     return "Maximum";
                                 }
                             }
-                            //if (multiaddressrow.Count < 4)
-                            //{
-                            //    driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[2]")).Click();
-                            //    Thread.Sleep(2000);
-                            //}
-
-                            //if (multiaddressrow.Count > 3 && multiaddressrow.Count < 26)
-                            //{
-                            //    HttpContext.Current.Session["multiparcel_Cobb"] = "Yes";
-                            //    driver.Quit();
-                            //    return "MultiParcel";
-                            //}
-                            //if (multiaddressrow.Count > 3 && multiaddressrow.Count > 25)
-                            //{
-                            //    HttpContext.Current.Session["multiParcel_Cobb_Multicount"] = "Maximum";
-                            //    driver.Quit();
-                            //    return "Maximum";
-                            //}                           
                         }
                         catch { }
                         try
@@ -162,13 +150,13 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "parcel")
                     {
                         driver.FindElement(By.XPath("//*[@id='secondarytopmenu']/ul/li[3]/a")).Click();
-                        Thread.Sleep(5000);
+                        Thread.Sleep(2000);
                         driver.FindElement(By.Id("inpParid")).SendKeys(parcelNumber);
                         Thread.Sleep(2000);
-                        gc.CreatePdf_WOP(orderNumber, "ParcelIpuntPassedBefore", driver, "GA", "Cobb");
+                        gc.CreatePdf(orderNumber, parcelNumber, "ParcelIpuntPassedBefore", driver, "GA", "Cobb");
                         driver.FindElement(By.Id("btSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-                        gc.CreatePdf_WOP(orderNumber, "ParcelIpuntPassedAfter", driver, "GA", "Cobb");
+                        gc.CreatePdf(orderNumber, parcelNumber, "ParcelIpuntPassedAfter", driver, "GA", "Cobb");
                         try
                         {
                             //No Data Found
@@ -184,8 +172,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "ownername")
                     {
-
-                        driver.FindElement(By.XPath("//*[@id='secondarytopmenu']/ul/li[1]")).Click();
+                        driver.FindElement(By.XPath("//*[@id='secondarytopmenu']/ul/li[1]/a")).Click();
                         Thread.Sleep(2000);
                         driver.FindElement(By.Id("inpOwner")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "OwnernameIpuntPassedBefore", driver, "GA", "Cobb");
@@ -218,7 +205,7 @@ namespace ScrapMaricopa.Scrapsource
                                 IWebElement element2 = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[2]"));
                                 IJavaScriptExecutor js2 = driver as IJavaScriptExecutor;
                                 js2.ExecuteScript("arguments[0].click();", element2);
-                                Thread.Sleep(3000);
+                                Thread.Sleep(1000);
                             }
                             else
                             {
@@ -275,6 +262,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     //Property Details
 
+
                     string ParcelNumber = "", PropertyClass = "", PropertyAddress = "", Neighborhood = "", Owner = "", TaxDistrict = "", SubdivisionNumber = "", YearBuilt = "";
                     try
                     {
@@ -283,10 +271,10 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch
                     { }
-                    gc.CreatePdf(orderNumber, ParcelNumber, "Property Details Pdf", driver, "GA", "Cobb");
+
 
                     ParcelNumber = driver.FindElement(By.XPath("//*[@id='datalet_header_row']/td/table/tbody/tr[1]/td[1]")).Text.Replace("PARID:", "");
-
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Property Details Pdf", driver, "GA", "Cobb");
                     IWebElement Bigdata4 = driver.FindElement(By.Id("Parcel"));
                     IList<IWebElement> TRBigdata4 = Bigdata4.FindElements(By.TagName("tr"));
                     IList<IWebElement> TDBigdata4;
@@ -294,11 +282,6 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         TDBigdata4 = row4.FindElements(By.TagName("td"));
 
-                        if (TDBigdata4.Count != 0 && TDBigdata4.Count == 2 && TDBigdata4[0].Text.Trim() != "" && (row4.Text.Contains("Class")))
-                        {
-
-                            PropertyClass = TDBigdata4[1].Text;
-                        }
                         if (TDBigdata4.Count != 0 && TDBigdata4.Count == 2 && TDBigdata4[0].Text.Trim() != "" && (row4.Text.Contains("Address")))
                         {
                             PropertyAddress = TDBigdata4[1].Text;
@@ -338,11 +321,39 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                     }
+                    //Residential ,Commercial ,History,Appeals ,Permits,Sales information 
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[3]/a")).Click();
+                    Thread.Sleep(1000);
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Residential", driver, "GA", "Cobb");
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[4]/a")).Click();
+                    Thread.Sleep(1000);
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Commercial", driver, "GA", "Cobb");
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[5]/a")).Click();
+                    Thread.Sleep(1000);
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Historypdf", driver, "GA", "Cobb");
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[6]/a")).Click();
+                    Thread.Sleep(1000);
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Appeals", driver, "GA", "Cobb");
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[7]/a")).Click();
+                    Thread.Sleep(1000);
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Permits", driver, "GA", "Cobb");
+
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[8]/a")).Click();
+                    Thread.Sleep(1000);
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Sales Information", driver, "GA", "Cobb");
+                    ByVisibleElement(driver.FindElement(By.XPath("//*[@id='Sales']/tbody/tr[1]/td[7]")));
+                    gc.CreatePdf(orderNumber, ParcelNumber, "Sales Information1", driver, "GA", "Cobb");
                     //Year Built
                     try
                     {
                         driver.FindElement(By.XPath("//*[@id='sidemenu']/li[3]/a")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(1000);
 
                         IWebElement Bigdata8 = driver.FindElement(By.Id("Building"));
                         IList<IWebElement> TRBigdata8 = Bigdata8.FindElements(By.TagName("tr"));
@@ -377,6 +388,16 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
+                    //History Click Property class Details
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='sidemenu']/li[5]/a")).Click();
+                        Thread.Sleep(2000);
+
+                        PropertyClass = driver.FindElement(By.XPath("//*[@id='History']/tbody/tr[2]/td[2]")).Text.Trim();
+                    }
+                    catch { }
+
                     string PropertyDetails1 = PropertyClass.Trim() + "~" + PropertyAddress.Trim() + "~" + Neighborhood.Trim() + "~" + Owner.Trim() + "~" + TaxDistrict.Trim() + "~" + SubdivisionNumber.Trim() + "~" + YearBuilt.Trim();
                     gc.insert_date(orderNumber, ParcelNumber, 1384, PropertyDetails1, 1, DateTime.Now);
 
@@ -387,7 +408,6 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.XPath("//*[@id='sidemenu']/li[2]/a")).Click();
                         Thread.Sleep(2000);
-
                     }
                     catch { }
                     gc.CreatePdf(orderNumber, ParcelNumber, "Assessment Details Pdf", driver, "GA", "Cobb");
@@ -425,13 +445,13 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.XPath("/html/body/div[1]/div/div/div[3]/button[2]")).SendKeys(Keys.Enter);
-                        Thread.Sleep(9000);
+                        Thread.Sleep(5000);
                     }
                     catch { }
 
                     driver.FindElement(By.XPath("//*[@id='searchBox']")).SendKeys(ParcelNumber);
                     driver.FindElement(By.XPath("//*[@id='searchForm']/div[1]/div/span/button")).Click();
-                    Thread.Sleep(3000);
+                    Thread.Sleep(1000);
                     gc.CreatePdf(orderNumber, ParcelNumber, "Tax Information Details Pdf", driver, "GA", "Cobb");
 
                     //Tax Payment Receipt Details Table
@@ -489,7 +509,7 @@ namespace ScrapMaricopa.Scrapsource
                                 { }
                                 gc.CreatePdf(orderNumber, ParcelNumber, "Overview & Pay Pdf" + p, driver, "GA", "Cobb");
 
-                                Thread.Sleep(6000);
+                                Thread.Sleep(3000);
                                 //View Delinquent Details
                                 try
                                 {
@@ -712,11 +732,11 @@ namespace ScrapMaricopa.Scrapsource
                                 try
                                 {
                                     driver.FindElement(By.XPath("//*[@id='secContent']/div[2]/div/div/ul/li[4]/a/div")).Click();
-                                    Thread.Sleep(9000);
+                                    Thread.Sleep(3000);
                                     gc.CreatePdf(orderNumber, ParcelNumber, "View Print Receipt" + TaxYearbill, driver, "GA", "Cobb");
                                 }
                                 catch { }
-                                Thread.Sleep(5000);
+                                Thread.Sleep(3000);
                                 driver.Navigate().Back();
 
 
@@ -745,7 +765,6 @@ namespace ScrapMaricopa.Scrapsource
 
                             try
                             {
-                                //gc.CreatePdf(orderNumber, ParcelNumber, "Tax Information click", driver, "MD", "Frederick");
                                 IWebElement ParcelTB = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_BillsGridView"));
                                 IList<IWebElement> ParcelTR = ParcelTB.FindElements(By.TagName("tr"));
                                 ParcelTR.Reverse();
@@ -792,9 +811,8 @@ namespace ScrapMaricopa.Scrapsource
 
 
                                 string asofGood = "", asof = "", billyear = "", bill = "", viewbillowner = "", parcelid1 = "";
-                                IWebElement IasofDate = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_AsOfDateTextBox"));
+                                IWebElement IasofDate = driver.FindElement(By.Id("AsOfDateTextBox"));
                                 asof = IasofDate.GetAttribute("value");
-                                //asof = driver.FindElement(By.XPath("//*[@id='BillDetailTable']/tbody/tr[1]/td")).Text.Trim();
                                 string bulktxt = driver.FindElement(By.XPath("//*[@id='BillDetailTable']/tbody")).Text;
                                 string strbillyear = gc.Between(bulktxt, "Bill Year", "Owner");
                                 billyear = GlobalClass.Before(strbillyear, "Bill");
@@ -835,13 +853,15 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     int i = 0;
                                     driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_ViewPaymentsLinkButton")).SendKeys(Keys.Enter);
-                                    Thread.Sleep(5000);
+                                    Thread.Sleep(2000);
                                     string allbills = driver.FindElement(By.XPath("//*[@id='BillActivityTable']/tbody")).Text;
 
                                     strall_billyear = GlobalClass.After(allbills, "Year");
                                     all_bill = GlobalClass.After(strall_billyear, "Bill");
                                     all_billyear = GlobalClass.Before(strall_billyear, "Bill").Replace("\r\n", "");
                                     gc.CreatePdf(orderNumber, ParcelNumber, "Tax Payment Bill" + all_billyear, driver, "GA", "Cobb");
+
+
                                     IWebElement allbill1 = driver.FindElement(By.Id("molContentContainer"));
                                     IList<IWebElement> TRallbill1 = allbill1.FindElements(By.TagName("tr"));
                                     IList<IWebElement> THallbill1 = allbill1.FindElements(By.TagName("th"));
@@ -854,33 +874,53 @@ namespace ScrapMaricopa.Scrapsource
                                         if (TDallbill1.Count != 0 && TDallbill1.Count == 1 && !text.Text.Contains("Paid By/Reference") && text.Text.Contains("Year"))
                                         {
                                             all_billyear1 = TDallbill1[0].Text;
-
-                                            //string Allbilldetails = all_billyear1 + "~" + all_bill + "~" + TDallbill1[0].Text + "~" + TDallbill1[1].Text + "~" + TDallbill1[2].Text + "~" + TDallbill1[3].Text;
-                                            //gc.insert_date(orderNumber, ParcelNumber, 1256, Allbilldetails, 1, DateTime.Now);
                                         }
                                         if (TDallbill1.Count != 0 && TDallbill1.Count == 1 && !text.Text.Contains("Paid By/Reference") && !text.Text.Contains("Year"))
                                         {
                                             all_bill1 = TDallbill1[0].Text;
-
-                                            //string Allbilldetails = all_billyear1 + "~" + all_bill + "~" + TDallbill1[0].Text + "~" + TDallbill1[1].Text + "~" + TDallbill1[2].Text + "~" + TDallbill1[3].Text;
-                                            //gc.insert_date(orderNumber, ParcelNumber, 1256, Allbilldetails, 1, DateTime.Now);
                                         }
-                                        if (TDallbill1.Count != 0 && TDallbill1.Count == 4 && !text.Text.Contains("Paid By/Reference") && !text.Text.Contains("Bill Year"))
+                                        if (TDallbill1.Count != 0 && TDallbill1.Count == 5 && !text.Text.Contains("Paid By/Reference") && !text.Text.Contains("Bill Year"))
                                         {
-                                            //  string all_bill1 = TDallbill1[0].Text;
-
-                                            string Allbilldetails = all_billyear1 + "~" + all_bill + "~" + TDallbill1[0].Text + "~" + TDallbill1[1].Text + "~" + TDallbill1[2].Text + "~" + TDallbill1[3].Text;
+                                            string Allbilldetails = all_billyear1 + "~" + all_bill + "~" + TDallbill1[0].Text + "~" + TDallbill1[1].Text + "~" + TDallbill1[2].Text + "~" + TDallbill1[3].Text + "~" + TDallbill1[4].Text;
                                             gc.insert_date(orderNumber, ParcelNumber, 1399, Allbilldetails, 1, DateTime.Now);
                                         }
-
                                     }
-
                                     i++;
                                     driver.Navigate().Back();
-                                    //driver.Navigate().Back();
+
+                                    //Chromedrive use
+                                    //int l = 0;
+                                    string fileName1 = "";
+                                    // Pdf download
+                                    try
+                                    {
+                                        var chromeOptions = new ChromeOptions();
+                                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
+                                        chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
+                                        chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
+                                        chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+                                        chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+                                        var chDriver = new ChromeDriver(chromeOptions);
+                                        Array.ForEach(Directory.GetFiles(@downloadDirectory), File.Delete);
+                                        chDriver.Navigate().GoToUrl("https://portal.smyrnaga.gov/MSS/citizens/RealEstate/Default.aspx?mode=new");
+                                        chDriver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_Control_ParcelIdSearchFieldLayout_ctl01_ParcelIDTextBox")).SendKeys(ParcelNumber);
+                                        chDriver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_Control_FormLayoutItem7_ctl01_Button1")).SendKeys(Keys.Enter);
+                                        Thread.Sleep(1000);
+                                        chDriver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_BillsGridView']/tbody/tr[17]/td[7]")).Click();
+                                        Thread.Sleep(1000);
+                                        chDriver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillDocumentLink']")).Click();                                        
+                                        chDriver.SwitchTo().Window(chDriver.WindowHandles.Last());
+                                        //string urdown = chDriver.Url;
+                                        //gc.downloadfile(urdown, orderNumber, ParcelNumber, "Check download", "GA", "Cobb");
+                                        gc.CreatePdf(orderNumber, ParcelNumber, "lk" + all_billyear1, chDriver, "GA", "Cobb");
+                                        fileName1 = latestfilename();
+                                        Thread.Sleep(1000);
+                                        gc.AutoDownloadFile(orderNumber, ParcelNumber, "Cobb", "GA", fileName1);
+                                        chDriver.Quit();
+                                    }
+                                    catch { }                                                                    
                                 }
                                 catch { }
-
                             }
                             try
                             {
@@ -892,7 +932,7 @@ namespace ScrapMaricopa.Scrapsource
                                     IWebElement IAddressSearch1 = driver.FindElement(By.LinkText("All Bills"));
                                     IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                                     js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
-                                    Thread.Sleep(9000);
+                                    Thread.Sleep(3000);
                                 }
                                 catch { }
                                 try
@@ -901,7 +941,7 @@ namespace ScrapMaricopa.Scrapsource
                                     IWebElement IAddressSearch1 = driver.FindElement(By.XPath("//*[@id='submenuselected']"));
                                     IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                                     js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
-                                    Thread.Sleep(9000);
+                                    Thread.Sleep(3000);
                                 }
                                 catch { }
                                 try
@@ -910,21 +950,21 @@ namespace ScrapMaricopa.Scrapsource
                                     IWebElement IAddressSearch1 = driver.FindElement(By.Id("submenuselected"));
                                     IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                                     js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
-                                    Thread.Sleep(9000);
+                                    Thread.Sleep(3000);
                                 }
                                 catch { }
                                 try
                                 {
                                     IWebElement ISpan13 = driver.FindElement(By.Id("submenuselected"));
                                     ISpan13.Click();
-                                    Thread.Sleep(5000);
+                                    Thread.Sleep(3000);
                                 }
                                 catch { }
                                 try
                                 {
                                     IWebElement ISpan13 = driver.FindElement(By.XPath("//*[@id='submenuselected']"));
                                     ISpan13.Click();
-                                    Thread.Sleep(5000);
+                                    Thread.Sleep(3000);
                                 }
                                 catch { }
 
@@ -947,59 +987,66 @@ namespace ScrapMaricopa.Scrapsource
 
                                 }
                             }
-
                             catch { }
+                            
                         }
 
                     }
                     catch { }
                     //2) City of Powder Springs
+
                     if (TaxDistrict1.Contains("City of Powder Springs"))
                     {
                         try
                         {
-                            driver.Navigate().GoToUrl("https://wipp.edmundsassoc.com/Wipp/?wippid=19#taxPage2381");
+                            driver.Navigate().GoToUrl("https://wipp.edmundsassoc.com/Wipp/?wippid=19");
                             Thread.Sleep(4000);
                             //driver.set_page_load_timeout(30);
 
+                            //driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/div/a")).Click();
+                            //ParcelNumber = cityparcelnumber;
+                            // string id1 = cityparcelnumber.Substring(0, 2);
+                            // string id11 = cityparcelnumber.Substring(2, 6);
+                            // cityparcelnumber = id1 + "-" + id11;
+
                             try
                             {
-                                driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/div/a")).Click();
-                                string id1 = ParcelNumber.Substring(0, 2);
-                                string id11 = ParcelNumber.Substring(2, 6);
-                                ParcelNumber = id1 + "-" + id11;
+                                driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[2]/input")).SendKeys(parcelNumber);
+                                gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city", driver, "GA", "Cobb");
+                                driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[3]/button")).SendKeys(Keys.Enter);
+                                Thread.Sleep(5000);
+                                gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city1", driver, "GA", "Cobb");
+                                string a = driver.FindElement(By.XPath(" /html/body/div[2]/div/table/tbody/tr[2]/td[2]/div/table/tbody/tr[1]/td/table/tbody/tr[2]/td[1]")).Text;
                             }
                             catch { }
-
-                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[2]/input")).SendKeys(ParcelNumber);
-                            gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city", driver, "GA", "Cobb");
-                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[3]/button")).SendKeys(Keys.Enter);
-                            gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city1", driver, "GA", "Cobb");
-                            string a = driver.FindElement(By.XPath(" /html/body/div[2]/div/table/tbody/tr[2]/td[2]/div/table/tbody/tr[1]/td/table/tbody/tr[2]/td[1]")).Text;
                             //          
                             string strTaxReal = "";
-                            IWebElement ITaxReal11 = driver.FindElement(By.XPath("/html/body/div[2]/div/table/tbody/tr[2]/td[2]/div/table/tbody/tr[1]/td/table/tbody"));
-                            IList<IWebElement> ITaxRealRow11 = ITaxReal11.FindElements(By.TagName("tr"));
-                            IList<IWebElement> ITaxRealTd11;
-
-                            foreach (IWebElement ItaxReal11 in ITaxRealRow11)
+                            try
                             {
+                                IWebElement ITaxReal11 = driver.FindElement(By.XPath("/html/body/div[2]/div/table/tbody/tr[2]/td[2]/div/table/tbody/tr[1]/td/table/tbody"));
+                                IList<IWebElement> ITaxRealRow11 = ITaxReal11.FindElements(By.TagName("tr"));
+                                IList<IWebElement> ITaxRealTd11;
 
-                                //  strTaxRealestate.Clear();
-                                ITaxRealTd11 = ItaxReal11.FindElements(By.TagName("td"));
-                                if (ItaxReal11.Text.Contains(ParcelNumber))
+                                foreach (IWebElement ItaxReal11 in ITaxRealRow11)
                                 {
 
-                                    //  string yearbill = ITaxRealTd[0].Text;
-                                    IWebElement ITaxBillCount = ITaxRealTd11[0].FindElement(By.TagName("input"));
-                                    strTaxReal = ITaxBillCount.GetAttribute("id");
-                                    strTaxRealestate.Add(strTaxReal);
+                                    //  strTaxRealestate.Clear();
+                                    ITaxRealTd11 = ItaxReal11.FindElements(By.TagName("td"));
+                                    if (ItaxReal11.Text.Contains(parcelNumber))
+                                    {
 
+                                        //  string yearbill = ITaxRealTd[0].Text;
+                                        IWebElement ITaxBillCount = ITaxRealTd11[0].FindElement(By.TagName("input"));
+                                        strTaxReal = ITaxBillCount.GetAttribute("id");
+                                        strTaxRealestate.Add(strTaxReal);
+
+                                    }
                                 }
+                                IWebElement element1 = driver.FindElement(By.Id(strTaxReal));
+                                element1.Click();
+                                Thread.Sleep(2000);
                             }
-                            IWebElement element1 = driver.FindElement(By.Id(strTaxReal));
-                            element1.Click();
-                            Thread.Sleep(4000);
+                            catch { }
 
                             gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city2", driver, "GA", "Cobb");
 
@@ -1007,7 +1054,7 @@ namespace ScrapMaricopa.Scrapsource
 
                             //Account Number~Owner Name~Property Address~Land Value~Improvement Value~Exempt Value~Total Assessed Value~Deductions~Last Paid Date
 
-                            string AccountNumber = "", OwnerName = "", PropertyAddress1 = "", LandValue = "", ImprovementValue = "", ExemptValue = "", TotalAssessedValue = "", Deductions = "", LastPaidDate = "";
+                            string Taxaccountid = "", AccountNumber = "", OwnerName = "", PropertyAddress1 = "", LandValue = "", ImprovementValue = "", ExemptValue = "", TotalAssessedValue = "", Deductions = "", LastPaidDate = "";
 
                             int i = 0;
                             IWebElement tbmulti11 = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[1]/td/table/tbody/tr/td/table/tbody"));
@@ -1020,7 +1067,10 @@ namespace ScrapMaricopa.Scrapsource
                                 if (TDmulti11.Count == 4)
                                 {
                                     if (i == 0)
-                                        AccountNumber = TDmulti11[3].Text;
+                                    {
+                                        AccountNumber = TDmulti11[1].Text;
+                                        Taxaccountid = TDmulti11[3].Text;
+                                    }
 
                                     if (i == 1)
                                         PropertyAddress1 = TDmulti11[1].Text;
@@ -1042,8 +1092,8 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             LastPaidDate = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[2]/td/div/div/table/tbody/tr[3]/td/table/tbody/tr/td/div")).Text.Trim();
                             LastPaidDate = WebDriverTest.After(LastPaidDate, "Last Payment:").Trim();
-                            string Tax_infoCity = AccountNumber + "~" + OwnerName + "~" + PropertyAddress1 + "~" + LandValue + "~" + ImprovementValue + "~" + ExemptValue + "~" + TotalAssessedValue + "~" + Deductions + "~" + LastPaidDate;
-                            gc.insert_date(orderNumber, ParcelNumber, 1401, Tax_infoCity, 1, DateTime.Now);
+                            string Tax_infoCity = Taxaccountid + "~" + OwnerName + "~" + PropertyAddress1 + "~" + LandValue + "~" + ImprovementValue + "~" + ExemptValue + "~" + TotalAssessedValue + "~" + Deductions + "~" + LastPaidDate;
+                            gc.insert_date(orderNumber, AccountNumber, 1401, Tax_infoCity, 1, DateTime.Now);
 
 
                             IWebElement multitableElement1 = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[2]/td/div/div/table/tbody/tr[2]/td/table/tbody"));
@@ -1071,148 +1121,148 @@ namespace ScrapMaricopa.Scrapsource
                     //3) City of Kennesaw Details                
                     if (TaxDistrict1.Contains("City of Kennesaw"))
                     {
-                        try
+
+                        driver.Navigate().GoToUrl("https://www.municipalonlinepayments.com/kennesawga/tax/search");
+                        Thread.Sleep(4000);
+                        //driver.set_page_load_timeout(30);
+
+                        driver.FindElement(By.Id("ParcelNumber")).SendKeys(ParcelNumber);
+                        gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city3 Before", driver, "GA", "Cobb");
+                        driver.FindElement(By.XPath("//*[@id='main']/section/div[1]/form/div[4]/div/button")).Click();
+                        Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city3 After", driver, "GA", "Cobb");
+                        ////*[@id="main"]/section/div[2]/table/tbody/tr/td[1]/ul/li/a
+                        driver.FindElement(By.XPath("//*[@id='main']/section/div[2]/table/tbody/tr/td[1]/ul/li/a")).Click();
+                        Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city3 Parcel click After", driver, "GA", "Cobb");
+
+                        //City of Kennesaw Tax Information Details
+                        string Name = "", District = "";
+                        IWebElement Taxinfo2 = driver.FindElement(By.XPath("//*[@id='main']/section/table[1]/tbody"));
+                        IList<IWebElement> TRTaxinfo2 = Taxinfo2.FindElements(By.TagName("tr"));
+                        IList<IWebElement> Aherftax;
+
+                        foreach (IWebElement row in TRTaxinfo2)
                         {
-                            driver.Navigate().GoToUrl("https://www.municipalonlinepayments.com/kennesawga/tax/search");
-                            Thread.Sleep(4000);
-                            //driver.set_page_load_timeout(30);
+                            Aherftax = row.FindElements(By.TagName("td"));
 
-                            driver.FindElement(By.Id("ParcelNumber")).SendKeys(ParcelNumber);
-                            gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city3 Before", driver, "GA", "Cobb");
-                            driver.FindElement(By.XPath("//*[@id='main']/section/div[1]/form/div[4]/div/button")).Click();
-                            Thread.Sleep(2000);
-                            gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city3 After", driver, "GA", "Cobb");
-
-                            driver.FindElement(By.XPath("//*[@id='main']/section/div[2]/table/tbody/tr/td[1]")).Click();
-                            Thread.Sleep(2000);
-                            gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city3 Parcel click After", driver, "GA", "Cobb");
-
-                            //City of Kennesaw Tax Information Details
-                            string Name = "", District = "";
-                            IWebElement Taxinfo2 = driver.FindElement(By.XPath("//*[@id='main']/section/table[1]/tbody"));
-                            IList<IWebElement> TRTaxinfo2 = Taxinfo2.FindElements(By.TagName("tr"));
-                            IList<IWebElement> Aherftax;
-
-                            foreach (IWebElement row in TRTaxinfo2)
+                            if (Aherftax.Count != 0 && Aherftax.Count == 2 && !row.Text.Contains("Deed Holder") && row.Text.Contains("Name") /*&& !row.Text.Contains("Bill Type")*/)
                             {
-                                Aherftax = row.FindElements(By.TagName("td"));
-
-                                if (Aherftax.Count != 0 && Aherftax.Count == 2 && !row.Text.Contains("Deed Holder") && row.Text.Contains("Name") /*&& !row.Text.Contains("Bill Type")*/)
-                                {
-                                    Name = Aherftax[0].Text;
-                                }
-                                if (Aherftax.Count != 0 && Aherftax.Count == 2 && !row.Text.Contains("Deed Holder") && row.Text.Contains("District") /*&& !row.Text.Contains("Bill Type")*/)
-                                {
-                                    District = Aherftax[1].Text;
-                                }
+                                Name = Aherftax[0].Text;
                             }
-                            string Taxinformationsdetails = Name.Trim() + "~" + District.Trim();
-                            gc.insert_date(orderNumber, ParcelNumber, 1411, Taxinformationsdetails, 1, DateTime.Now);
-
-                            //City of Kennesaw Valuation and Tax Information Details
-                            string ThisYear = "", LastYear = "", title1 = "", FullMarketValue1 = "", Assessed1 = "", FullMarketValue2 = "", Assessed2 = "";
-                            IWebElement Taxinfo3 = driver.FindElement(By.XPath("//*[@id='main']/section/table[2]/tbody"));
-                            IList<IWebElement> TRTaxinfo3 = Taxinfo3.FindElements(By.TagName("tr"));
-                            IList<IWebElement> Aherftax1;
-                            IList<IWebElement> Aherftax2;
-                            IList<IWebElement> Aherftax3;
-                            foreach (IWebElement row1 in TRTaxinfo3)
+                            if (Aherftax.Count != 0 && Aherftax.Count == 2 && !row.Text.Contains("Deed Holder") && row.Text.Contains("District") /*&& !row.Text.Contains("Bill Type")*/)
                             {
-                                Aherftax1 = row1.FindElements(By.TagName("tr"));
-                                Aherftax2 = row1.FindElements(By.TagName("th"));
-                                Aherftax3 = row1.FindElements(By.TagName("td"));
-
-                                if (Aherftax2.Count != 0 && Aherftax2.Count == 3 /*&& !row1.Text.Contains("Deed Holder")*//*&& !row.Text.Contains("Bill Type")*/)
-                                {
-                                    ThisYear = Aherftax2[1].Text.Replace("(This Year)", "").Trim();
-                                    LastYear = Aherftax2[2].Text.Replace("(Last Year)", "").Trim();
-
-                                }
-                                if (Aherftax2.Count != 0 && Aherftax2.Count == 1 /*&& !row1.Text.Contains("Deed Holder")*//*&& !row.Text.Contains("Bill Type")*/)
-                                {
-                                    title1 = Aherftax2[0].Text;
-                                }
-                                if (Aherftax3.Count != 0 && Aherftax3.Count == 4/* && !row1.Text.Contains("Deed Holder") && row1.Text.Contains("District")*/ /*&& !row.Text.Contains("Bill Type")*/)
-                                {
-                                    FullMarketValue1 = Aherftax3[0].Text;
-                                    Assessed1 = Aherftax3[1].Text;
-                                    FullMarketValue2 = Aherftax3[2].Text;
-                                    Assessed2 = Aherftax3[3].Text;
-
-                                    db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + "Title~Year1~Full Market Value1~Assessed Value1~Year2~Full Market Value2~Assessed Value2" + "' where Id = '" + 1412 + "'");
-                                    string ValuationTaxinformationsdetails = title1 + "~" + ThisYear.Trim() + "~" + FullMarketValue1.Trim() + "~" + Assessed1.Trim() + "~" + LastYear.Trim() + "~" + FullMarketValue2.Trim() + "~" + Assessed2.Trim();
-                                    gc.insert_date(orderNumber, ParcelNumber, 1412, ValuationTaxinformationsdetails, 1, DateTime.Now);
-                                }
-
+                                District = Aherftax[1].Text;
                             }
-
-                            //City of Kennesaw Tax History Details
-                            string TaxKennesaw = "", Type = "", Amount = "", Interest = "", Penalty = "", Total = "", BillNumber = "", Specialdrainage = "";
-                            IWebElement Taxinfo4 = driver.FindElement(By.XPath("//*[@id='tax_history']/tbody"));
-                            IList<IWebElement> TRTaxinfo4 = Taxinfo4.FindElements(By.TagName("tr"));
-                            IList<IWebElement> Aherftax4;
-
-                            foreach (IWebElement row4 in TRTaxinfo4)
-                            {
-                                Aherftax4 = row4.FindElements(By.TagName("td"));
-
-                                if (Aherftax4.Count != 0 && Aherftax4.Count == 8 && !row4.Text.Contains("Tax Year") /*&& row4.Text.Contains("Name")*/ /*&& !row.Text.Contains("Bill Type")*/)
-                                {
-                                    TaxKennesaw = Aherftax4[0].Text;
-                                    Type = Aherftax4[1].Text;
-                                    Amount = Aherftax4[2].Text;
-                                    Interest = Aherftax4[3].Text;
-                                    Penalty = Aherftax4[4].Text;
-                                    Total = Aherftax4[5].Text;
-                                    BillNumber = Aherftax4[6].Text;
-                                    Specialdrainage = Aherftax4[7].Text;
-                                }
-                                string TaxHistorydetails = TaxKennesaw.Trim() + "~" + Type.Trim() + "~" + Amount.Trim() + "~" + Interest.Trim() + "~" + Penalty.Trim() + "~" + Total.Trim() + "~" + BillNumber.Trim() + "~" + Specialdrainage.Trim();
-                                gc.insert_date(orderNumber, ParcelNumber, 1418, TaxHistorydetails, 1, DateTime.Now);
-                            }
-                            //Tax Bill Download
-
-                            var SelectDistrict3 = driver.FindElement(By.Id("ReportName"));
-                            var SelectDistrict2 = new SelectElement(SelectDistrict3);
-                            SelectDistrict2.SelectByText("Tax Statement Georgia Multi");
-                            driver.FindElement(By.XPath("//*[@id='report_form']/div/span/button")).Click();
-                            //*[@id="plugin"]
-                            IWebElement Multyaddresstable1 = driver.FindElement(By.Id("form-data"));
-                            driver.SwitchTo().Frame(Multyaddresstable1);
-
-                            IWebElement downl = driver.FindElement(By.Id("plugin"));
-                            string urldowl = downl.GetAttribute("src");
-                            //downl.Click();
-                            //Thread.Sleep(3000);
-                            gc.downloadfile(urldowl, orderNumber, ParcelNumber, "ViewTaxBill", "GA", "Cobb");
-                            //try
-                            //{
-                            //    var chromeOptions = new ChromeOptions();
-                            //    var downloadDirectory = "D:\\AutoPdf\\";
-                            //    chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
-                            //    chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
-                            //    chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
-                            //    chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
-                            //    var driver1 = new ChromeDriver(chromeOptions);
-                            //    driver1.Navigate().GoToUrl(driver.Url);
-                            //    string fileName = "";
-                            //    var SelectDistrict = driver1.FindElement(By.Id("ReportName"));
-                            //    var SelectDistrict1 = new SelectElement(SelectDistrict);
-                            //    SelectDistrict1.SelectByText("Tax Statement Georgia Multi");
-                            //    driver1.FindElement(By.XPath("//*[@id='report_form']/div/span/button")).Click();
-                            //    //*[@id="plugin"]
-
-                            //    gc.AutoDownloadFile(orderNumber, ParcelNumber, "Cobb", "GA", fileName);
-                            //    //string fileName = DateTime.Now.Date.ToString() + ".pdf";//*[@id="icon"]
-                            //    //IWebElement downl = driver.FindElement(By.Id("//*[@id='plugin']"));
-                            //    //downl.Click();
-                            //    //Thread.Sleep(3000);
-                            //    // gc.downloadfile(driver.Url, orderNumber, ParcelNumber, "ViewTaxBill", "GA", "Cobb");
-
-                            //}
-                            //catch { }
                         }
-                        catch { }
+                        string Taxinformationsdetails = Name.Trim() + "~" + District.Trim();
+                        gc.insert_date(orderNumber, ParcelNumber, 1411, Taxinformationsdetails, 1, DateTime.Now);
+
+                        //City of Kennesaw Valuation and Tax Information Details
+                        string ThisYear = "", LastYear = "", title1 = "", FullMarketValue1 = "", Assessed1 = "", FullMarketValue2 = "", Assessed2 = "";
+                        IWebElement Taxinfo3 = driver.FindElement(By.XPath("//*[@id='main']/section/table[2]/tbody"));
+                        IList<IWebElement> TRTaxinfo3 = Taxinfo3.FindElements(By.TagName("tr"));
+                        IList<IWebElement> Aherftax1;
+                        IList<IWebElement> Aherftax2;
+                        IList<IWebElement> Aherftax3;
+                        foreach (IWebElement row1 in TRTaxinfo3)
+                        {
+                            Aherftax1 = row1.FindElements(By.TagName("tr"));
+                            Aherftax2 = row1.FindElements(By.TagName("th"));
+                            Aherftax3 = row1.FindElements(By.TagName("td"));
+
+                            if (Aherftax2.Count != 0 && Aherftax2.Count == 3 /*&& !row1.Text.Contains("Deed Holder")*//*&& !row.Text.Contains("Bill Type")*/)
+                            {
+                                ThisYear = Aherftax2[1].Text.Replace("(This Year)", "").Trim();
+                                LastYear = Aherftax2[2].Text.Replace("(Last Year)", "").Trim();
+
+                            }
+                            if (Aherftax2.Count != 0 && Aherftax2.Count == 1 /*&& !row1.Text.Contains("Deed Holder")*//*&& !row.Text.Contains("Bill Type")*/)
+                            {
+                                title1 = Aherftax2[0].Text;
+                            }
+                            if (Aherftax3.Count != 0 && Aherftax3.Count == 4/* && !row1.Text.Contains("Deed Holder") && row1.Text.Contains("District")*/ /*&& !row.Text.Contains("Bill Type")*/)
+                            {
+                                FullMarketValue1 = Aherftax3[0].Text;
+                                Assessed1 = Aherftax3[1].Text;
+                                FullMarketValue2 = Aherftax3[2].Text;
+                                Assessed2 = Aherftax3[3].Text;
+
+                                db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + "Title~Year1~Full Market Value1~Assessed Value1~Year2~Full Market Value2~Assessed Value2" + "' where Id = '" + 1412 + "'");
+                                string ValuationTaxinformationsdetails = title1 + "~" + ThisYear.Trim() + "~" + FullMarketValue1.Trim() + "~" + Assessed1.Trim() + "~" + LastYear.Trim() + "~" + FullMarketValue2.Trim() + "~" + Assessed2.Trim();
+                                gc.insert_date(orderNumber, ParcelNumber, 1412, ValuationTaxinformationsdetails, 1, DateTime.Now);
+                            }
+
+                        }
+
+                        //City of Kennesaw Tax History Details
+                        string TaxKennesaw = "", Type = "", Amount = "", Interest = "", Penalty = "", Total = "", BillNumber = "", Specialdrainage = "";
+                        IWebElement Taxinfo4 = driver.FindElement(By.XPath("//*[@id='tax_history']/tbody"));
+                        IList<IWebElement> TRTaxinfo4 = Taxinfo4.FindElements(By.TagName("tr"));
+                        IList<IWebElement> Aherftax4;
+
+                        foreach (IWebElement row4 in TRTaxinfo4)
+                        {
+                            Aherftax4 = row4.FindElements(By.TagName("td"));
+
+                            if (Aherftax4.Count != 0 && Aherftax4.Count == 8 && !row4.Text.Contains("Tax Year") /*&& row4.Text.Contains("Name")*/ /*&& !row.Text.Contains("Bill Type")*/)
+                            {
+                                TaxKennesaw = Aherftax4[0].Text;
+                                Type = Aherftax4[1].Text;
+                                Amount = Aherftax4[2].Text;
+                                Interest = Aherftax4[3].Text;
+                                Penalty = Aherftax4[4].Text;
+                                Total = Aherftax4[5].Text;
+                                BillNumber = Aherftax4[6].Text;
+                                Specialdrainage = Aherftax4[7].Text;
+                            }
+                            string TaxHistorydetails = TaxKennesaw.Trim() + "~" + Type.Trim() + "~" + Amount.Trim() + "~" + Interest.Trim() + "~" + Penalty.Trim() + "~" + Total.Trim() + "~" + BillNumber.Trim() + "~" + Specialdrainage.Trim();
+                            gc.insert_date(orderNumber, ParcelNumber, 1418, TaxHistorydetails, 1, DateTime.Now);
+                        }
+                        //Tax Bill Download
+                        var SelectDistrict3 = driver.FindElement(By.Id("ReportName"));
+                        var SelectDistrict2 = new SelectElement(SelectDistrict3);
+                        SelectDistrict2.SelectByText("Tax Statement Georgia Multi");
+                        driver.FindElement(By.XPath("//*[@id='report_form']/div/span/button")).Click();
+                        //driver.SwitchTo().Frame(Multyaddresstable1);
+                        IWebElement Multyaddresstable1 = driver.FindElement(By.TagName("iframe"));
+                        //driver.SwitchTo().Frame(Multyaddresstable1);
+                        //IWebElement downl = driver.FindElement(By.Id("content"));
+                        string urldowl = Multyaddresstable1.GetAttribute("src");
+                        //driver.Navigate().GoToUrl(urldowl);
+                        //Thread.Sleep(15000);
+                        //gc.downloadfile(urldowl, orderNumber, ParcelNumber, "ViewTaxBill dominic", "GA", "Cobb");
+
+                        int l = 0;
+                        gc.downloadfile(urldowl, orderNumber, ParcelNumber, "ViewTaxBill dominic", "GA", "Cobb");
+                        string fileName1 = "";
+                        //Pdf download
+                        //try
+                        //{
+                        //    var chromeOptions = new ChromeOptions();
+                        //    var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
+                        //    chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
+                        //    chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
+                        //    chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+                        //    chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+                        //    var chDriver = new ChromeDriver(chromeOptions);
+                        //    Array.ForEach(Directory.GetFiles(@downloadDirectory), File.Delete);
+                        //    chDriver.Navigate().GoToUrl(urldowl);
+                        //    Thread.Sleep(2000);
+                        //    gc.downloadfile(urldowl, orderNumber, ParcelNumber, "ViewTaxBill chrome", "GA", "Cobb");
+                        //    gc.CreatePdf(orderNumber, ParcelNumber, "Tax Bill Kennasaw1", chDriver, "GA", "Cobb");
+                        //    chDriver.SwitchTo().Window(chDriver.WindowHandles.Last());
+                        //    Thread.Sleep(5000);
+                        //    gc.CreatePdf(orderNumber, ParcelNumber, "Tax Bill1 Kennasaw2", chDriver, "GA", "Cobb");
+
+                        //    Thread.Sleep(5000);
+                        //    fileName1 = latestfilename();
+                        //    Thread.Sleep(2000);
+                        //    gc.AutoDownloadFile(orderNumber, ParcelNumber, "Cobb", "GA", fileName1);
+                        //    chDriver.Quit();
+
+                        //}
+                        //catch { }
                     }
 
 
@@ -1223,7 +1273,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             driver.Navigate().GoToUrl("https://www.mariettageorgia.us/Click2GovTX/");
-                            Thread.Sleep(4000);
+                            Thread.Sleep(2000);
                             var SelectParcelnumber = driver.FindElement(By.Id("searchMethod"));
                             var SelectParcelnumber1 = new SelectElement(SelectParcelnumber);
                             SelectParcelnumber1.SelectByText("Parcel");
@@ -1272,27 +1322,30 @@ namespace ScrapMaricopa.Scrapsource
                             Currenttaxdue = gc.Between(BillingSum.Text, "Current Taxes Due:", "Interest, Penalties, and Collections:").Trim();
                             InterestPenalties = gc.Between(BillingSum.Text, "Interest, Penalties, and Collections:", "Total Due:").Trim();
                             BillTotaldue = GlobalClass.After(BillingSum.Text, "Total Due:").Trim();
-
+                            //Owner Name~Address~Parcel ID~Bill Number1~Location ID~Old Bill Number~Second Owner Name~Acreage~Plat Book Page~Property Use~Subdivision~Township~Bill Assessed Value~Exemptions~Taxable Value~Roll Code~Billed Taxes~Current Taxdue~Interest Penalties and Collections~Totaldue
                             string Billinfodetails = Billownername.Trim() + "~" + BillAddress.Trim() + "~" + BillParceid.Trim() + "~" + BillNumber1.Trim() + "~" + LocationID.Trim() + "~" + OldBillNumber.Trim() + "~" + SecondOwnerName.Trim() + "~" + Acreage.Trim() + "~" + PlatBookPage.Trim() + "~" + Propertyuse.Trim() + "~" + Subdivision.Trim() + "~" + Township.Trim() + "~" + BillAssessedValue.Trim() + "~" + Exemptions.Trim() + "~" + TaxableValue.Trim() + "~" + RollCode.Trim() + "~" + Billedtaxes.Trim() + "~" + Currenttaxdue.Trim() + "~" + InterestPenalties.Trim() + "~" + BillTotaldue.Trim();
                             gc.insert_date(orderNumber, ParcelNumber, 1422, Billinfodetails, 1, DateTime.Now);
 
 
                             //ViewBill Click 
+                            ////*[@id="contentPanel"]/portlet:defineobjects/div[1]/a
+                            driver.FindElement(By.XPath("//*[@id='menuWrapper']/a[5]")).Click();
+                            Thread.Sleep(2000);
+                            gc.CreatePdf(orderNumber, ParcelNumber, "City Tax Marietta viewbillclick", driver, "GA", "Cobb");
+                            string a = driver.CurrentWindowHandle;
                             try
-                            {////*[@id="contentPanel"]/portlet:defineobjects/div[1]/a
-                                driver.FindElement(By.XPath("//*[@id='menuWrapper']/a[5]")).Click();
-                                Thread.Sleep(2000);
-                                gc.CreatePdf(orderNumber, ParcelNumber, "City Tax Marietta viewbillclick", driver, "GA", "Cobb");
-                                string a = driver.CurrentWindowHandle;
+                            {
                                 IWebElement downln = driver.FindElement(By.LinkText("View PDF bill"));
                                 downln.Click();
                                 Thread.Sleep(3000);
-                                driver.SwitchTo().Window(driver.WindowHandles.Last());
-                                gc.CreatePdf(orderNumber, ParcelNumber, "View Bill Tax Marietta ", driver, "GA", "Cobb");
-                                driver.SwitchTo().Window(a);
                             }
                             catch { }
+                            driver.SwitchTo().Window(driver.WindowHandles.Last());
+                            gc.CreatePdf(orderNumber, ParcelNumber, "View Bill Tax Marietta ", driver, "GA", "Cobb");
+                            driver.SwitchTo().Window(a);
+
                             //Historyclick
+
                             driver.FindElement(By.XPath("//*[@id='menuWrapper']/a[6]")).Click();
                             Thread.Sleep(2000);
                             gc.CreatePdf(orderNumber, ParcelNumber, "City Tax Marietta Historyclick", driver, "GA", "Cobb");
@@ -1342,7 +1395,13 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                             }
                         }
-                        catch { }
+                        catch (Exception ex) { }
+
+                        //Valuation Screeshot
+                        driver.FindElement(By.XPath("//*[@id='menuWrapper']/a[7]")).Click();
+                        Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, ParcelNumber, "Valuation", driver, "GA", "Cobb");
+
                     }
 
                     //5) City of Austell
@@ -1362,10 +1421,10 @@ namespace ScrapMaricopa.Scrapsource
                                 ParcelNumber = id1 + "-" + id11;
                             }
                             catch { }
-
-                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[5]/input")).SendKeys(Owner);
+                            ///html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[5]/input
+                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[5]/input")).SendKeys(PropertyAddress);
                             gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city5 Before", driver, "GA", "Cobb");
-                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[6]/button")).SendKeys(Keys.Enter);
+                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[1]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[6]/button")).SendKeys(Keys.Enter);
                             gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city5 After", driver, "GA", "Cobb");
                             //string a = driver.FindElement(By.XPath(" /html/body/div[2]/div/table/tbody/tr[2]/td[2]/div/table/tbody/tr[1]/td/table/tbody/tr[2]/td[1]")).Text;
                             //          
@@ -1379,7 +1438,7 @@ namespace ScrapMaricopa.Scrapsource
 
                                 //  strTaxRealestate.Clear();
                                 ITaxRealTd11 = ItaxReal11.FindElements(By.TagName("td"));
-                                if (ItaxReal11.Text.Contains(ownername))
+                                if (ItaxReal11.Text.Contains(PropertyAddress))
                                 {
 
                                     //  string yearbill = ITaxRealTd[0].Text;
@@ -1399,7 +1458,7 @@ namespace ScrapMaricopa.Scrapsource
 
                             //Account Number~Owner Name~Property Address~Land Value~Improvement Value~Exempt Value~Total Assessed Value~Deductions~Last Paid Date
 
-                            string AccountNumber = "", OwnerName = "", PropertyAddress1 = "", LandValue = "", ImprovementValue = "", ExemptValue = "", TotalAssessedValue = "", Deductions = "", LastPaidDate = "";
+                            string Taxaccid = "", Block = "", OwnerName = "", PropertyAddress1 = "", LandValue = "", ImprovementValue = "", ExemptValue = "", TotalAssessedValue = "", Deductions = "", LastPaidDate = "";
 
                             int i = 0;
                             IWebElement tbmulti11 = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[1]/td/table/tbody/tr/td/table/tbody"));
@@ -1412,7 +1471,10 @@ namespace ScrapMaricopa.Scrapsource
                                 if (TDmulti11.Count == 4)
                                 {
                                     if (i == 0)
-                                        AccountNumber = TDmulti11[3].Text;
+                                    {
+                                        Block = TDmulti11[1].Text;
+                                        Taxaccid = TDmulti11[3].Text;
+                                    }
 
                                     if (i == 1)
                                         PropertyAddress1 = TDmulti11[1].Text;
@@ -1434,7 +1496,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             LastPaidDate = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[2]/td/div/div/table/tbody/tr[3]/td/table/tbody/tr/td/div")).Text.Trim();
                             LastPaidDate = WebDriverTest.After(LastPaidDate, "Last Payment:").Trim();
-                            string Tax_infoCity = AccountNumber + "~" + OwnerName + "~" + PropertyAddress1 + "~" + LandValue + "~" + ImprovementValue + "~" + ExemptValue + "~" + TotalAssessedValue + "~" + Deductions + "~" + LastPaidDate;
+                            string Tax_infoCity = Block + "~" + Taxaccid + "~" + OwnerName + "~" + PropertyAddress1 + "~" + LandValue + "~" + ImprovementValue + "~" + ExemptValue + "~" + TotalAssessedValue + "~" + Deductions + "~" + LastPaidDate;
                             gc.insert_date(orderNumber, ParcelNumber, 1413, Tax_infoCity, 1, DateTime.Now);
 
 
@@ -1466,7 +1528,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             driver.Navigate().GoToUrl("https://wipp.edmundsassoc.com/Wipp/?wippid=ACWR");
-                            Thread.Sleep(4000);
+                            Thread.Sleep(2000);
                             //driver.set_page_load_timeout(30);
 
                             try
@@ -1478,9 +1540,9 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             catch { }
 
-                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[2]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[5]/input")).SendKeys(ownername);
+                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[2]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[5]/input")).SendKeys(PropertyAddress);
                             gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city", driver, "GA", "Cobb");
-                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[2]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[1]/td[6]/button")).SendKeys(Keys.Enter);
+                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table[2]/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[6]/button")).SendKeys(Keys.Enter);
                             gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city1", driver, "GA", "Cobb");
                             //string a = driver.FindElement(By.XPath(" /html/body/div[2]/div/table/tbody/tr[2]/td[2]/div/table/tbody/tr[1]/td/table/tbody/tr[2]/td[1]")).Text;
                             //          
@@ -1494,7 +1556,7 @@ namespace ScrapMaricopa.Scrapsource
 
                                 //  strTaxRealestate.Clear();
                                 ITaxRealTd11 = ItaxReal11.FindElements(By.TagName("td"));
-                                if (ItaxReal11.Text.Contains(ownername))
+                                if (ItaxReal11.Text.Contains(PropertyAddress))
                                 {
 
                                     //  string yearbill = ITaxRealTd[0].Text;
@@ -1506,7 +1568,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             IWebElement element1 = driver.FindElement(By.Id(strTaxReal));
                             element1.Click();
-                            Thread.Sleep(4000);
+                            Thread.Sleep(2000);
 
                             gc.CreatePdf(orderNumber, ParcelNumber, "Taxinfo city2", driver, "GA", "Cobb");
 
@@ -1514,7 +1576,7 @@ namespace ScrapMaricopa.Scrapsource
 
                             //Account Number~Owner Name~Property Address~Land Value~Improvement Value~Exempt Value~Total Assessed Value~Deductions~Last Paid Date
 
-                            string AccountNumber = "", OwnerName = "", PropertyAddress1 = "", LandValue = "", ImprovementValue = "", ExemptValue = "", TotalAssessedValue = "", Deductions = "", LastPaidDate = "";
+                            string Block = "", Taxidacc = "", OwnerName = "", PropertyAddress1 = "", LandValue = "", ImprovementValue = "", ExemptValue = "", TotalAssessedValue = "", Deductions = "", LastPaidDate = "";
 
                             int i = 0;
                             IWebElement tbmulti11 = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[1]/td/table/tbody/tr/td/table/tbody"));
@@ -1527,7 +1589,10 @@ namespace ScrapMaricopa.Scrapsource
                                 if (TDmulti11.Count == 4)
                                 {
                                     if (i == 0)
-                                        AccountNumber = TDmulti11[3].Text;
+                                    {
+                                        Block = TDmulti11[1].Text;
+                                        Taxidacc = TDmulti11[3].Text;
+                                    }
 
                                     if (i == 1)
                                         PropertyAddress1 = TDmulti11[1].Text;
@@ -1549,7 +1614,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             LastPaidDate = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[2]/td/div/div/table/tbody/tr[3]/td/table/tbody/tr/td/div")).Text.Trim();
                             LastPaidDate = WebDriverTest.After(LastPaidDate, "Last Payment:").Trim();
-                            string Tax_infoCity = AccountNumber + "~" + OwnerName + "~" + PropertyAddress1 + "~" + LandValue + "~" + ImprovementValue + "~" + ExemptValue + "~" + TotalAssessedValue + "~" + Deductions + "~" + LastPaidDate;
+                            string Tax_infoCity = Block + "~" + Taxidacc + "~" + OwnerName + "~" + PropertyAddress1 + "~" + LandValue + "~" + ImprovementValue + "~" + ExemptValue + "~" + TotalAssessedValue + "~" + Deductions + "~" + LastPaidDate;
                             gc.insert_date(orderNumber, ParcelNumber, 1416, Tax_infoCity, 1, DateTime.Now);
 
 
@@ -1570,7 +1635,6 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                 }
                                 //Year~Due Date~Type~Tax Amount~Balance~Interest~Total Due~Status
-
                             }
                         }
                         catch { }
@@ -1597,7 +1661,7 @@ namespace ScrapMaricopa.Scrapsource
         //Multiparcel Method
         private void multiparcel(string orderNumber, string address)
         {
-            
+
             IWebElement Multiaddresstable = driver.FindElement(By.Id("searchResults"));
             IList<IWebElement> multiaddressrow = Multiaddresstable.FindElements(By.TagName("tr"));
             IList<IWebElement> Multiaddressid;
@@ -1614,9 +1678,33 @@ namespace ScrapMaricopa.Scrapsource
                     searchcount = searchlist.Count;
                     string multiaddressresult = OWnername + "~" + Address1;
                     gc.insert_date(orderNumber, Multiparcelnumber, 1383, multiaddressresult, 1, DateTime.Now);
-                    
+
                 }
             }
         }
+        //By Visible Method
+        public void ByVisibleElement(IWebElement Element)
+        {
+            IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+            js.ExecuteScript("arguments[0].scrollIntoView();", Element);
+        }
+
+        public string latestfilename()
+        {
+            var downloadDirectory1 = ConfigurationManager.AppSettings["AutoPdf"];
+            var files = new DirectoryInfo(downloadDirectory1).GetFiles("*.*");
+            string latestfile = "";
+            DateTime lastupdated = DateTime.MinValue;
+            foreach (FileInfo file in files)
+            {
+                if (file.LastWriteTime > lastupdated)
+                {
+                    lastupdated = file.LastWriteTime;
+                    latestfile = file.Name;
+                }
+            }
+            return latestfile;
+        }
+
     }
 }

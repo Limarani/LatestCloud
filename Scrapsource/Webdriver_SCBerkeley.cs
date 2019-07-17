@@ -114,11 +114,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + sname + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "SC", "Berkeley");
-
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SCBerkely"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -134,12 +141,22 @@ namespace ScrapMaricopa.Scrapsource
                             parcelNumber = parcelNumber.Replace("-", "");
                         }
 
-                        driver.FindElement(By.Id("srchprcl")).SendKeys(parcelNumber);
+                        driver.FindElement(By.XPath("/html/body/div/form[1]/center/input[1]")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "parcel search", driver, "SC", "Berkeley");
 
-                        driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr[3]/td/div/table/tbody/tr[2]/td[2]/table/tbody/tr[2]/td/form/table/tbody/tr/td/table/tbody/tr[8]/td/input")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.XPath("/html/body/div/form[1]/center/input[2]")).SendKeys(Keys.Enter);
                         Thread.Sleep(5000);
-
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.XPath("/html/body"));
+                            if (Inodata.Text.Contains("not found"))
+                            {
+                                HttpContext.Current.Session["Nodata_SCBerkely"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
 
 
@@ -196,9 +213,12 @@ namespace ScrapMaricopa.Scrapsource
 
                             else
                             {
-
-                                driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr[3]/td/div/table/tbody/tr[3]/td/table/tbody/tr[3]/td[2]/a")).Click();
-                                Thread.Sleep(3000);
+                                try
+                                {
+                                    driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr[3]/td/div/table/tbody/tr[3]/td/table/tbody/tr[3]/td[2]/a")).Click();
+                                    Thread.Sleep(3000);
+                                }
+                                catch { }
                             }
 
 
@@ -207,29 +227,60 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     //407 MOSSY WOOD RD
                     //property_details
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='egtable']"));
+                        IList<IWebElement> InodataRow = Inodata.FindElements(By.TagName("td"));
+                        if (InodataRow.Count == 0)
+                        {
+                            HttpContext.Current.Session["Nodata_SCBerkely"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     string Parcel_ID = "", Owner_Name = "", Property_Address = "", Year_Built = "";
-                    string parceltable = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td[1]")).Text;
+                    string parceltable = driver.FindElement(By.XPath("/html/body/table[1]")).Text;
                     Parcel_ID = gc.Between(parceltable, "TMS:", "Owner Information:").Trim();
                     gc.CreatePdf(orderNumber, Parcel_ID, "property", driver, "SC", "Berkeley");
                     ByVisibleElement(driver.FindElement(By.XPath("/html/body/h3[2]/center")));
                     gc.CreatePdf(orderNumber, Parcel_ID, "taxinforhalf1", driver, "SC", "Berkeley");
 
-                    string Ownr_table = GlobalClass.After(parceltable, "Owner Information:");
-                    string[] Splitowner = Ownr_table.Split('\r');
-                    Owner_Name = Splitowner[1].Replace("\n", "");
-                    Property_Address = driver.FindElement(By.XPath("/html/body/table[3]/tbody")).Text;
-                    string yeartable = driver.FindElement(By.XPath("/html/body/h3[7]")).Text;
-                    Year_Built = gc.Between(yeartable, "Year Built:", "Depreciation").Trim();
-                    string summaryinfo2 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td[2]")).Text;
+                    string Ownr_table = "";
+                    if (parceltable.Contains("Council"))
+                    {
+                        Ownr_table = gc.Between(parceltable.Replace("\r\n", "~").Replace("~~", "~"), "Owner Information:", "Council").TrimEnd('~').TrimStart('~');
+                    }
+                    else
+                    {
+                        Ownr_table = GlobalClass.After(parceltable, "Owner Information:");
+                    }
+                    string[] Splitowner = Ownr_table.Split('~');
+                    if (Splitowner.Count() == 3)
+                    {
+                        Owner_Name = Splitowner[0];
+                        Property_Address = Splitowner[1] + " " + Splitowner[2];
+                    }
+                    if (Splitowner.Count() == 2)
+                    {
+                        Owner_Name = Splitowner[0];
+                        Property_Address = Splitowner[1];
+                    }
+                    try
+                    {
+                        string yeartable = driver.FindElement(By.XPath("/html/body/h3[7]")).Text;
+                        Year_Built = gc.Between(yeartable, "Year Built:", "Depreciation").Trim();
+                    }
+                    catch { }
+                    string summaryinfo2 = driver.FindElement(By.XPath("/html/body/table[1]")).Text;
                     string CouncilDistrict = gc.Between(summaryinfo2, "Council District:", "Fire District:");
                     string FireDistrict = gc.Between(summaryinfo2, "Fire District:", "Tax District:");
                     string TaxDistrict = gc.Between(summaryinfo2, "Tax District:", "TIS Zone:");
                     string Jurisdiction = gc.Between(summaryinfo2, "Jurisdiction:", "Acres:");
                     string Acres = gc.Between(summaryinfo2, "Acres:", "Lots:");
                     string Lots = GlobalClass.After(summaryinfo2, "Lots:");
-                    string summaryinfo3 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td[3]")).Text;
+                    string summaryinfo3 = driver.FindElement(By.XPath("/html/body/table[1]")).Text;
                     string HomesteadExempt = gc.Between(summaryinfo3, "Homestead Exempt:", "Parent TMS:");
                     string property_details = Owner_Name + "~" + Property_Address + "~" + CouncilDistrict + "~" + FireDistrict + "~" + TaxDistrict + "~" + Jurisdiction + "~" + Acres + "~" + Lots + "~" + HomesteadExempt + "~" + Year_Built;
                     gc.insert_date(orderNumber, Parcel_ID, 448, property_details, 1, DateTime.Now);
@@ -256,8 +307,21 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
 
-                    //property card                        /html/body/table[7]/tbody
-                    string valucationtable = driver.FindElement(By.XPath("/html/body/table[7]/tbody")).Text;
+                    //property card 
+                    string valucationtable = "";
+                    try
+                    {
+                        try
+                        {
+                            valucationtable = driver.FindElement(By.XPath("/html/body/table[7]/tbody")).Text;
+                        }
+                        catch { }
+                        if (!valucationtable.Contains("Building Market:"))
+                        {
+                            valucationtable = driver.FindElement(By.XPath("/html/body/table[8]/tbody")).Text;
+                        }
+                    }
+                    catch { }
 
                     string BuildingMarket = "", LandMarket = "", BuildingTaxable1 = "", BuildingTaxable2 = "", BuildingTaxable3 = "", BuildingTaxable4 = "", LandTaxable1 = "", LandTaxable2 = "", LandTaxable3 = "", LandTaxable4 = "";
 
@@ -274,21 +338,76 @@ namespace ScrapMaricopa.Scrapsource
                     LandTaxable2 = gc.Between(valucationtable, "Land Taxable (6% Other):", "Land Taxable (4% Ag):");
                     LandTaxable3 = gc.Between(valucationtable, "Land Taxable (4% Ag):", "Land Taxable (6% Ag):");
                     LandTaxable4 = gc.Between(valucationtable, "Land Taxable (6% Ag):", "Total Taxable Value:");
-                    string totalvalues = driver.FindElement(By.XPath("/html/body/table[7]/tbody/tr[2]")).Text;
+
+                    string totalvalues = "";
+                    try
+                    {
+                        try
+                        {
+                            totalvalues = driver.FindElement(By.XPath("/html/body/table[8]/tbody/tr[2]")).Text;
+                        }
+                        catch { }
+                        if (!totalvalues.Contains("Total Taxable Value"))
+                        {
+                            totalvalues = driver.FindElement(By.XPath("/html/body/table[7]/tbody/tr[2]/td[2]")).Text;
+                        }
+                    }
+                    catch { }
                     string totaltaxable = gc.Between(totalvalues, "Total Taxable Value:", "Total Assessment:");
                     string totalAssessment = GlobalClass.After(totalvalues, "Total Assessment:");
                     string assessment_details = BuildingMarket + "~" + LandMarket + "~" + BuildingTaxable1 + "~" + BuildingTaxable2 + "~" + BuildingTaxable3 + "~" + BuildingTaxable4 + "~" + LandTaxable1 + "~" + LandTaxable2 + "~" + LandTaxable3 + "~" + LandTaxable4 + "~" + totaltaxable + "~" + totalAssessment;
                     gc.insert_date(orderNumber, Parcel_ID, 449, assessment_details, 1, DateTime.Now);
                     // Sales information
-                    string salesinformation1 = driver.FindElement(By.XPath("/html/body/table[6]/tbody/tr/td[1]")).Text;
+                    string salesinformation1 = "";
+                    try
+                    {
+                        try
+                        {
+                            salesinformation1 = driver.FindElement(By.XPath("/html/body/table[6]/tbody/tr/td[1]")).Text;
+                        }
+                        catch { }
+                        if (salesinformation1.Contains("Choose the tax year of the notice you would like to reprint"))
+                        {
+                            salesinformation1 = driver.FindElement(By.XPath("/html/body/table[7]/tbody")).Text;
+                        }
+                    }
+                    catch { }
                     string Lastsale = gc.Between(salesinformation1, "Last Sale Date:", "Recording Date:");
                     string recordingdate = gc.Between(salesinformation1, "Recording Date:", "Sale Price:");
                     string saleprice = GlobalClass.After(salesinformation1, "Sale Price:");
-                    string salesinformation2 = driver.FindElement(By.XPath("/html/body/table[6]/tbody/tr/td[2]")).Text;
+                    string salesinformation2 = "";
+                    try
+                    {
+                        try
+                        {
+                            salesinformation2 = driver.FindElement(By.XPath("/html/body/table[6]/tbody/tr/td[2]")).Text;
+                        }
+                        catch { }
+                        if (!salesinformation2.Contains("Plat Information"))
+                        {
+                            salesinformation2 = driver.FindElement(By.XPath("/html/body/table[7]/tbody/tr/td[2]")).Text;
+                        }
+                    }
+                    catch { }
                     string PlatInformation = gc.Between(salesinformation2, "Plat Information:", "Deed Book:");
                     string Deedbook = gc.Between(salesinformation2, "Deed Book:", "Deed Page:");
                     string DeedPage = GlobalClass.After(salesinformation2, "Deed Page:");
-                    string salesinformation3 = driver.FindElement(By.XPath("/html/body/table[6]/tbody/tr/td[3]")).Text;
+
+                    string salesinformation3 = "";
+                    try
+                    {
+                        try
+                        {
+                            salesinformation3 = driver.FindElement(By.XPath("/html/body/table[6]/tbody/tr/td[3]")).Text;
+                        }
+                        catch { }
+                        if (!salesinformation3.Contains("Sales Validity"))
+                        {
+                            salesinformation3 = driver.FindElement(By.XPath("/html/body/table[7]/tbody/tr/td[3]")).Text;
+                        }
+                    }
+                    catch { }
+
                     string SalesValidity = gc.Between(salesinformation3, "Sales Validity:", "Validity Other:");
                     string ValidityOther = GlobalClass.After(salesinformation3, "Validity Other:");
                     string Saleinforesult = Lastsale + "~" + recordingdate + "~" + saleprice + "~" + PlatInformation + "~" + Deedbook + "~" + DeedPage + "~" + SalesValidity + "~" + ValidityOther;

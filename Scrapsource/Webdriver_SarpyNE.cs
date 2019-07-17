@@ -49,9 +49,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "NE", "Sarpy");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SarpyNE"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -60,9 +67,9 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "address")
                     {
                         driver.Navigate().GoToUrl("https://apps.sarpy.com/sarpyproperty/");
-                        driver.FindElement(By.Id("tabctlMain_SimpleControl2_txtAddress")).SendKeys(address);
+                        driver.FindElement(By.Id("MainContent_SimpleControl2_txtAddress")).SendKeys(address);
                         gc.CreatePdf_WOP(orderNumber, "InputPassed Address Search", driver, "NE", "Sarpy");
-                        driver.FindElement(By.Id("tabctlMain_SimpleControl2_cmdSubmit")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("MainContent_SimpleControl2_cmdSubmit")).SendKeys(Keys.Enter);
                         Thread.Sleep(5000);
                         gc.CreatePdf_WOP(orderNumber, "Address Search Results", driver, "NE", "Sarpy");
                         IWebElement multiaddrtableElement = driver.FindElement(By.XPath("//*[@id='ResultsGrid']/table/tbody/tr[1]/td[1]/table/tbody[2]"));
@@ -78,9 +85,9 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "parcel")
                     {
                         driver.Navigate().GoToUrl("https://apps.sarpy.com/sarpyproperty/");
-                        driver.FindElement(By.Id("tabctlMain_SimpleControl2_txtLocid")).SendKeys(parcelNumber);
+                        driver.FindElement(By.Id("MainContent_SimpleControl2_txtLocid")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Input Passed", driver, "NE", "Sarpy");
-                        driver.FindElement(By.Id("tabctlMain_SimpleControl2_cmdSubmit")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("MainContent_SimpleControl2_cmdSubmit")).SendKeys(Keys.Enter);
                         Thread.Sleep(5000);
                         gc.CreatePdf_WOP(orderNumber, "Parcel Search Result", driver, "NE", "Sarpy");
                     }
@@ -92,9 +99,9 @@ namespace ScrapMaricopa.Scrapsource
                             ownername = ownername.Replace(" ", "%");
                         }
                         Thread.Sleep(3000);
-                        driver.FindElement(By.Id("tabctlMain_SimpleControl2_txtName")).SendKeys(ownername);
+                        driver.FindElement(By.Id("MainContent_SimpleControl2_txtName")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "Ownername Search Input Passed", driver, "NE", "Sarpy");
-                        driver.FindElement(By.Id("tabctlMain_SimpleControl2_cmdSubmit")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("MainContent_SimpleControl2_cmdSubmit")).SendKeys(Keys.Enter);
                         Thread.Sleep(5000);
                         gc.CreatePdf_WOP(orderNumber, "Ownername Search Result", driver, "NE", "Sarpy");
                         IWebElement multiaddrtableElement = driver.FindElement(By.XPath("//*[@id='ResultsGrid']/table/tbody/tr[1]/td[1]/table/tbody[2]"));
@@ -107,8 +114,21 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
 
-                    //property Details
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='ResultsGrid']/table/tbody/tr[1]/td[1]/table"));
+                        if (!INodata.Text.Contains("Property Record File"))
+                        {
+                            HttpContext.Current.Session["Nodata_SarpyNE"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
+
+                    //property Details
                     driver.FindElement(By.LinkText("View Details")).SendKeys(Keys.Enter);
                     Thread.Sleep(2000);
                     string propbulktext = driver.FindElement(By.XPath("//*[@id='AtrControl1_TableMain']/tbody")).Text;

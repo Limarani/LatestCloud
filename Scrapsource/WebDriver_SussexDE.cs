@@ -162,7 +162,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "DE", "Sussex");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SussexDE"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -367,6 +374,19 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
                     gc.CreatePdf(orderNumber, parcelNumber, "Property Details", driver, "DE", "Sussex");
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]")).Text;
+                        if (nodata.Contains("search did not find any records"))
+                        {
+                            HttpContext.Current.Session["Nodata_SussexDE"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string bulktext = driver.FindElement(By.XPath("/html/body")).Text;
                     string parcel_Id = "", PropertyAdd = "", owner_name = "", Unit = "", City = "", State = "", Zip = "", Pro_class = "", Use_Code = "", Legal_Desc = "", mailling_address = "", land_use = "", zoning = "";
                     string town = "", Tax_district = "", School_district = "", Council_district = "", Fire_district = "", Acres = "";

@@ -64,7 +64,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "OH", "Montgomery");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MontgomeryOH"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -89,49 +96,54 @@ namespace ScrapMaricopa.Scrapsource
                         //IWebElement multirecord = driver.FindElement(By.XPath("//*[@id='mMessage']"));
 
                         gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "OH", "Montgomery");
-                        IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
-                        IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
-                        IList<IWebElement> THmultiaddress = multiaddress.FindElements(By.TagName("th"));
-                        IList<IWebElement> TDmultiaddress;
+                        try
+                        {
+                            IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
+                            IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
+                            IList<IWebElement> THmultiaddress = multiaddress.FindElements(By.TagName("th"));
+                            IList<IWebElement> TDmultiaddress;
 
 
-                        if (TRmultiaddress.Count > 28)
-                        {
-                            HttpContext.Current.Session["multiParcel_Montgomery_Maximum"] = "Maimum";
-                            return "Maximum";
-                        }
-                        if (TRmultiaddress.Count > 5)
-                        {
-                            foreach (IWebElement row in TRmultiaddress)
+                            if (TRmultiaddress.Count > 28)
                             {
-                                TDmultiaddress = row.FindElements(By.TagName("td"));
-                                if (!row.Text.Contains("Parcel Location") && row.Text.Trim() != "" && TDmultiaddress.Count != 2)
+                                HttpContext.Current.Session["multiParcel_Montgomery_Maximum"] = "Maimum";
+                                driver.Quit();
+                                return "Maximum";
+                            }
+                            if (TRmultiaddress.Count > 5)
+                            {
+                                foreach (IWebElement row in TRmultiaddress)
                                 {
-                                    try
+                                    TDmultiaddress = row.FindElements(By.TagName("td"));
+                                    if (!row.Text.Contains("Parcel Location") && row.Text.Trim() != "" && TDmultiaddress.Count != 2)
                                     {
-                                        Parcelno = TDmultiaddress[0].Text;
-                                        Ownername = TDmultiaddress[3].Text;
-                                        parcellocation = TDmultiaddress[4].Text;
-                                        string Multi = Ownername + "~" + parcellocation;
-                                        gc.insert_date(orderNumber, Parcelno, 1172, Multi, 1, DateTime.Now);
+                                        try
+                                        {
+                                            Parcelno = TDmultiaddress[0].Text;
+                                            Ownername = TDmultiaddress[3].Text;
+                                            parcellocation = TDmultiaddress[4].Text;
+                                            string Multi = Ownername + "~" + parcellocation;
+                                            gc.insert_date(orderNumber, Parcelno, 1172, Multi, 1, DateTime.Now);
+                                        }
+                                        catch { }
+
                                     }
-                                    catch { }
+
+
 
                                 }
-
-
-
+                                HttpContext.Current.Session["multiParcel_Montgomery"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            HttpContext.Current.Session["multiParcel_Montgomery"] = "Yes";
-                            driver.Quit();
-                            return "MultiParcel";
+                            if (TRmultiaddress.Count <= 4)
+                            {
+                                //TDmultiaddress[0].Click();
+                                driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody/tr/td[2]/font")).Click();
+                                Thread.Sleep(1000);
+                            }
                         }
-                        if (TRmultiaddress.Count <= 4)
-                        {
-                            //TDmultiaddress[0].Click();
-                            driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody/tr/td[2]/font")).Click();
-                            Thread.Sleep(1000);
-                        }
+                        catch { }
                     }
 
                     if (searchType == "parcel")
@@ -173,49 +185,66 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Ownername Search Result", driver, "OH", "Montgomery");
 
                         string ParcelNum = "", Owner_Name = "", ParcelLocation = "";
-                        IWebElement multiadd = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
-                        IList<IWebElement> TRmultiadd = multiadd.FindElements(By.TagName("tr"));
-                        IList<IWebElement> THmultiadd = multiadd.FindElements(By.TagName("th"));
-                        IList<IWebElement> TDmultiadd;
+                        try
+                        {
+                            IWebElement multiadd = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
+                            IList<IWebElement> TRmultiadd = multiadd.FindElements(By.TagName("tr"));
+                            IList<IWebElement> THmultiadd = multiadd.FindElements(By.TagName("th"));
+                            IList<IWebElement> TDmultiadd;
 
 
-                        if (TRmultiadd.Count > 28)
-                        {
-                            HttpContext.Current.Session["multiParcel_Montgomery_Maximum"] = "Maimum";
-                            return "Maximum";
-                        }
-                        if (TRmultiadd.Count > 5)
-                        {
-                            foreach (IWebElement row in TRmultiadd)
+                            if (TRmultiadd.Count > 28)
                             {
-                                TDmultiadd = row.FindElements(By.TagName("td"));
-                                if (!row.Text.Contains("Parcel Location") && row.Text.Trim() != "" && TDmultiadd.Count != 2)
+                                HttpContext.Current.Session["multiParcel_Montgomery_Maximum"] = "Maimum";
+                                driver.Quit();
+                                return "Maximum";
+                            }
+                            if (TRmultiadd.Count > 5)
+                            {
+                                foreach (IWebElement row in TRmultiadd)
                                 {
-                                    try
+                                    TDmultiadd = row.FindElements(By.TagName("td"));
+                                    if (!row.Text.Contains("Parcel Location") && row.Text.Trim() != "" && TDmultiadd.Count != 2)
                                     {
-                                        ParcelNum = TDmultiadd[0].Text;
-                                        Owner_Name = TDmultiadd[3].Text;
-                                        ParcelLocation = TDmultiadd[4].Text;
-                                        string Multi1 = Owner_Name + "~" + ParcelLocation;
-                                        gc.insert_date(orderNumber, ParcelNum, 1172, Multi1, 1, DateTime.Now);
+                                        try
+                                        {
+                                            ParcelNum = TDmultiadd[0].Text;
+                                            Owner_Name = TDmultiadd[3].Text;
+                                            ParcelLocation = TDmultiadd[4].Text;
+                                            string Multi1 = Owner_Name + "~" + ParcelLocation;
+                                            gc.insert_date(orderNumber, ParcelNum, 1172, Multi1, 1, DateTime.Now);
+                                        }
+                                        catch { }
+
                                     }
-                                    catch { }
+
+
 
                                 }
-
-
-
+                                HttpContext.Current.Session["multiParcel_Montgomery"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            HttpContext.Current.Session["multiParcel_Montgomery"] = "Yes";
-                            driver.Quit();
-                            return "MultiParcel";
+                            if (TRmultiadd.Count <= 4)
+                            {
+                                driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody/tr/td[2]/font")).Click();
+                                Thread.Sleep(1000);
+                            }
                         }
-                        if (TRmultiadd.Count <= 4)
+                        catch { }
+                    }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table[2]/tbody/tr/td/table"));
+                        if(INodata.Text.Contains("search did not find any records"))
                         {
-                            driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody/tr/td[2]/font")).Click();
-                            Thread.Sleep(1000);
+                            HttpContext.Current.Session["Nodata_MontgomeryOH"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                     }
+                    catch { }
 
                     // Property Details
 

@@ -58,9 +58,18 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         string Address = "";
+                        if (direction != "")
+                        {
+                            Address = streetno + " " + direction + " " + streetname + " " + streettype + " " +"UNIT "+ unitnumber;
+                        }
+                        else
+                        {
+                            Address = streetno + " " + streetname + " " + streettype + " " + unitnumber;
+                        }
                         gc.TitleFlexSearch(orderNumber, "", ownernm, Address, "MD", "Anne Arundel");
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
@@ -132,7 +141,7 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["Zero_AnneArundelMD"] = "Zero";
                                 driver.Quit();
-                                return "No data Found";
+                                return "No Data Found";
                             }
                         }
                         catch { }
@@ -154,6 +163,20 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_wzrdRealPropertySearch_StepNavigationTemplateContainerID_btnStepNextButton")).Click();
                         Thread.Sleep(2000);
                     }
+
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_lblErr")).Text;
+                        if (nodata.Contains("no records"))
+                        {
+                            HttpContext.Current.Session["Zero_AnneArundelMD"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string Palcel = driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_wzrdRealPropertySearch_ucDetailsSearch_dlstDetaisSearch_lblDetailsStreetHeader_0")).Text.Trim();
                     string District = gc.Between(Palcel, "District - ", "Subdivision");
                     string Subdivision = gc.Between(Palcel, "Subdivision -", "Account Number -");
@@ -311,7 +334,6 @@ namespace ScrapMaricopa.Scrapsource
                                         {
                                             int nxtYr = Convert.ToInt16(DateTime.Now.ToString("yyyy")) + 1;
                                             Good_through_date = new DateTime(nxtYr, 1, DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), 1)).ToString("dd/MM/yyyy");
-
                                         }
                                     }
                                     driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_AsOfDateTextBox")).Clear();
@@ -510,6 +532,32 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch
                         { }
+                        try
+                        {
+                            if (i == 0)
+                            {
+                                IWebElement Utility = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_BillsRepeater_ctl01_BillsGrid']/tbody"));
+                                IList<IWebElement> UtilityTR = Utility.FindElements(By.TagName("tr"));
+                                for (int j = 0; j < UtilityTR.Count; j++)
+                                {
+                                    int check = j % 12;
+                                    if (check == 0 && j >= 12)
+                                    {
+                                        try
+                                        {
+                                            IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+                                            js.ExecuteScript("arguments[0].scrollIntoView();", UtilityTR[j]);
+                                            gc.CreatePdf_Chrome(orderNumber, parcel_number, "Tax Uitility Bill " + j, driver, "MD", "Anne Arundel");
+
+                                        }
+                                        catch { }
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+
+
                         i++;
                     }
                     if (viewlien.Count != 0)

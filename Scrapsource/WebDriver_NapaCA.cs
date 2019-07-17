@@ -43,6 +43,7 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_parcelNo = parcelNumber;
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            // new PhantomJSDriver()
             using (driver = new PhantomJSDriver())
             {
                 //  driver = new ChromeDriver();
@@ -115,11 +116,11 @@ namespace ScrapMaricopa.Scrapsource
 
                                 if (TRmulti.Count > 25)
                                 {
-                                    HttpContext.Current.Session["multiParcel_CAYolo_Multicount"] = "Maximum";
+                                    HttpContext.Current.Session["multiParcel_CANapa_Multicount"] = "Maximum";
                                 }
                                 else
                                 {
-                                    HttpContext.Current.Session["multiparcel_CAYolo"] = "Yes";
+                                    HttpContext.Current.Session["multiparcel_CANapa"] = "Yes";
                                 }
                                 driver.Quit();
                                 gc.mergpdf(orderNumber, "CA", "Napa");
@@ -153,10 +154,13 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     // /html/body/form/table/tbody/tr[2]/td[1]/a
                     Thread.Sleep(2000);
-                    IWebElement runButton = driver.FindElement(By.XPath("/html/body/form/table/tbody/tr[2]/td[1]/a"));
-                    runButton.Click();
-                    Thread.Sleep(4000);
-
+                    try
+                    {
+                        IWebElement runButton = driver.FindElement(By.XPath("/html/body/form/table/tbody/tr[2]/td[1]/a"));
+                        runButton.Click();
+                        Thread.Sleep(4000);
+                    }
+                    catch { }
                     //property details
                     string Parcel_id = "", owner_name = "", ImprovementValue = "", totalValue = "", Bussiness_property = "";
                     string fulltabletext = driver.FindElement(By.XPath("/html/body/form/table/tbody")).Text.Trim();
@@ -199,10 +203,19 @@ namespace ScrapMaricopa.Scrapsource
                     string assess = Land + "~" + Structural_Imprv + "~" + Fixtures_Real_Property + "~" + Growing_Imprv + "~" + TotalLandandImprovements + "~" + FixturesPersonalProperty + "~" + Personal_Property + "~" + ManufacturedHomes + "~" + Homeowners_Exemption + "~" + Other_Exemption + "~" + NetAssessedValue + "~" + Acres;
                     gc.insert_date(orderNumber, Assessor_ID_Number, 1234, assess, 1, DateTime.Now);
 
-                   // pltitle.TaxRateArea = Tax_Rate_Area.Trim();
+                    // pltitle.TaxRateArea = Tax_Rate_Area.Trim();
                     pltitle.Land = Land.Replace(",", "").Replace("$", "").Trim();
+                    if (pltitle.Land =="")
+                    {
+                        pltitle.Land = null;
+                    }
                     pltitle.Improvements = Structural_Imprv.Replace(",", "").Replace("$", "").Trim();
-                   // pltitle.TotalValue = TotalLandandImprovements.Replace(",", "").Replace("$", "").Trim();
+                    if (pltitle.Improvements == "")
+                    {
+                        pltitle.Improvements = null;
+                    }
+
+                    // pltitle.TotalValue = TotalLandandImprovements.Replace(",", "").Replace("$", "").Trim();
 
                     //Land~Structural Imprv~Fixtures Real Property~Growing Imprv~Total Land and Improvements~Fixtures Personal Property~Personal Property~Manufactured Homes~Homeowners Exemption~Other Exemption~Net Assessed Value
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
@@ -285,7 +298,7 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
                     int q = 0;
-
+                    string pyear = "";
                     foreach (string real in strTaxRealestate1)
                     {
                         driver.Navigate().GoToUrl(real);
@@ -295,15 +308,31 @@ namespace ScrapMaricopa.Scrapsource
                         string Installmenttype1 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[1]/h4")).Text;
                         string pdf = pdfassess + " " + pdfyear;
                         string fulltabletextTax1 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[1]/dl")).Text.Trim().Replace("\r\n", "");
-                        First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Delinq. Date").Trim();
-                        First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Delinq. Date", "Total Due").Trim();
+                        if(fulltabletextTax1.Contains("Delinq. Date"))
+                        {
+                            First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Delinq. Date").Trim();
+                            First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Delinq. Date", "Total Due").Trim();
+                        }
+                        else
+                        {
+                            First_Installment_Paid_Status = gc.Between(fulltabletextTax1, "Paid Status", "Paid Date").Trim();
+                            First_Installment_Paid_Date = gc.Between(fulltabletextTax1, "Paid Date", "Total Due").Trim();
+                        }
                         First_Installment_Total_Due = gc.Between(fulltabletextTax1, "Total Due", "Total Paid").Trim();
                         First_Installment_Total_Paid = gc.Between(fulltabletextTax1, "Total Paid", "Balance").Trim();
                         First_Installment_Balance = WebDriverTest.After(fulltabletextTax1, "Balance");
                         string installmenttype2 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[2]/h4")).Text;
                         string fulltabletextTax2 = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[2]/dl")).Text.Trim().Replace("\r\n", "");
-                        Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Delinq. Date").Trim();
-                        Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Delinq. Date", "Total Due").Trim();
+                        if (fulltabletextTax2.Contains("Delinq. Date"))
+                        {
+                            Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Delinq. Date").Trim();
+                            Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Delinq. Date", "Total Due").Trim();
+                        }
+                        else
+                        {
+                            Second_Installment_Paid_Status = gc.Between(fulltabletextTax2, "Paid Status", "Paid Date").Trim();
+                            Second_Installment_Paid_Date = gc.Between(fulltabletextTax2, "Paid Date", "Total Due").Trim();
+                        }                        
                         Second_Installment_Total_Due = gc.Between(fulltabletextTax2, "Total Due", "Total Paid").Trim();
                         Second_Installment_Total_Paid = gc.Between(fulltabletextTax2, "Total Paid", "Balance").Trim();
                         Second_Installment_Balance = WebDriverTest.After(fulltabletextTax2, "Balance");
@@ -313,10 +342,10 @@ namespace ScrapMaricopa.Scrapsource
                         FirstandSecondInstallment_Total_Paid = gc.Between(fulltabletextTax3, "Total Paid", "Total Balance").Trim();
                         FirstandSecondInstallment_Total_Balance = WebDriverTest.After(fulltabletextTax3, "Total Balance");
 
-                        gc.CreatePdf(orderNumber, Assessor_ID_Number, "Taxes" + pdf, driver, "CA", "Napa");
+                        gc.CreatePdf(orderNumber, Assessor_ID_Number, "Taxes" + q, driver, "CA", "Napa");
                         driver.FindElement(By.XPath("/html/body/div[2]/section/div/div[1]/div/div[6]/ul/li[2]/a")).Click();
                         Thread.Sleep(3000);
-                        gc.CreatePdf(orderNumber, Assessor_ID_Number, "Assess info" + pdf, driver, "CA", "Napa");
+                        gc.CreatePdf(orderNumber, Assessor_ID_Number, "Assess info" + q, driver, "CA", "Napa");
                         string fulltabletextTax4 = driver.FindElement(By.XPath("//*[@id='h2tab2']")).Text.Trim();
                         string assessment = gc.Between(fulltabletextTax4, "Assessment", "Taxyear").Trim().Replace("\r\n", " ");
                         Tax_year = gc.Between(fulltabletextTax4, "Taxyear", "Parcel Number").Trim().Replace("\r\n", " ");
@@ -327,7 +356,10 @@ namespace ScrapMaricopa.Scrapsource
                         gc.insert_date(orderNumber, Assessor_ID_Number, 1235, tax, 1, DateTime.Now);
                         string tax1 = assessment + "~" + Roll_Category + "~" + Address + "~" + Tax_year + "~" + installmenttype2 + "~" + Second_Installment_Paid_Status + "~" + Second_Installment_Paid_Date + "~" + Second_Installment_Total_Due + "~" + Second_Installment_Total_Paid + "~" + Second_Installment_Balance + "~" + FirstandSecondInstallment_Total_Due + "~" + FirstandSecondInstallment_Total_Paid + "~" + FirstandSecondInstallment_Total_Balance + "~" + Tax_Authority;
                         gc.insert_date(orderNumber, Assessor_ID_Number, 1235, tax1, 1, DateTime.Now);
-
+                        if (Roll_Category.Contains("CS"))
+                        {
+                            pyear = Tax_year;
+                        }
 
                         if (q < lat)
                         {
@@ -336,13 +368,13 @@ namespace ScrapMaricopa.Scrapsource
                             pltitle.TaxIDNumber = Assessor_ID_Number;
                             pltitle.Year = Convert.ToInt16(Tax_year);
                             pltitle.assyear = Tax_year;
-                            pltitle.FirstTaxesOutDate = "";
-                            pltitle.FirstDueDate = "";
+                            pltitle.FirstTaxesOutDate = null;
+                            pltitle.FirstDueDate = null;
                             pltitle.FirstInstallment = First_Installment_Total_Due.Replace(",", "").Replace("$", "").Trim();
                             pltitle.FirstPaid = First_Installment_Total_Paid.Replace(",", "").Replace("$", "").Trim();
                             pltitle.FirstDue = First_Installment_Balance.Replace(",", "").Replace("$", "").Trim();
-                            pltitle.SecondTaxesOutDate = "";
-                            pltitle.SecondDueDate = "";
+                            pltitle.SecondTaxesOutDate = null;
+                            pltitle.SecondDueDate = null;
                             pltitle.SecondInstallment = Second_Installment_Total_Due.Replace(",", "").Replace("$", "").Trim();
                             pltitle.SecondPaid = Second_Installment_Total_Paid.Replace(",", "").Replace("$", "").Trim();
                             pltitle.SecondDue = Second_Installment_Balance.Replace(",", "").Replace("$", "").Trim();
@@ -438,14 +470,14 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
 
-                        //      Assessment~Roll Category~Address~Tax year~First Installment Paid Status~First Installment Paid Date~First Installment Total Due~First Installment Total Paid~First Installment Balance~Second Installment Paid Status~Second Installment Paid Date~Second Installment Total Due~Second Installment Total Paid~Second Installment Balance~First and Second Installment Total Due~First and Second Installment Total Paid~First and Second Installment Total Balance
+                        //Assessment~Roll Category~Address~Tax year~First Installment Paid Status~First Installment Paid Date~First Installment Total Due~First Installment Total Paid~First Installment Balance~Second Installment Paid Status~Second Installment Paid Date~Second Installment Total Due~Second Installment Total Paid~Second Installment Balance~First and Second Installment Total Due~First and Second Installment Total Paid~First and Second Installment Total Balance
 
                         //download taxbill
                         try
                         {
                             IWebElement Itaxbill = driver.FindElement(By.XPath("/html/body/div[2]/section/div/div[1]/div/div[6]/div/div[1]/div[4]/div/a"));
                             string URL1 = Itaxbill.GetAttribute("href");
-                            gc.downloadfile(URL1, orderNumber, Assessor_ID_Number, "TaxBill" + pdf, "CA", "Napa");
+                            gc.downloadfile(URL1, orderNumber, Assessor_ID_Number, "TaxBill" + q, "CA", "Napa");
 
                         }
                         catch { }
@@ -453,7 +485,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         driver.FindElement(By.XPath("/html/body/div[2]/section/div/div[1]/div/div[6]/ul/li[3]/a")).Click();
                         Thread.Sleep(3000);
-                        gc.CreatePdf(orderNumber, Assessor_ID_Number, "Tax code" + pdf, driver, "CA", "Napa");
+                        gc.CreatePdf(orderNumber, Assessor_ID_Number, "Tax code" + q, driver, "CA", "Napa");
 
                         int count = driver.FindElements(By.XPath("//*[@id='h2tab3']/div")).Count;
                         int divCount2 = count + 1;
@@ -484,7 +516,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             driver.FindElement(By.XPath("/html/body/div[2]/section/div/div[1]/div/div[6]/ul/li[4]/a")).Click();
                             Thread.Sleep(3000);
-                            gc.CreatePdf(orderNumber, Assessor_ID_Number, "Default Tax" + pdf, driver, "CA", "Napa");
+                            gc.CreatePdf(orderNumber, Assessor_ID_Number, "Default Tax" + q, driver, "CA", "Napa");
 
                             Default_Number = driver.FindElement(By.XPath("//*[@id='h2tab4']/div[2]/div[1]/div[2]")).Text;
                             Pay_Plan_in_Effect = driver.FindElement(By.XPath("//*[@id='h2tab4']/div[2]/div[2]/div[2]")).Text;
@@ -502,12 +534,14 @@ namespace ScrapMaricopa.Scrapsource
                             //  pltitle.TaxIDNumber = parcelNumber;
                             if (rollcasttype.Contains("CS"))
                             {
-                                gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, pltitle.ExemptionAdditional, pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 1, pltitle.Year, "Napa County Treasurer-Tax Collector", pltitle.TaxIDNumber, "County",pltitle.TaxIDNumberFurtherDescribed);
+                                gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, pltitle.ExemptionAdditional, pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 1, pltitle.Year, "Napa County Treasurer-Tax Collector", pltitle.TaxIDNumber, "County", pltitle.TaxIDNumberFurtherDescribed);
                             }
                             if (rollcasttype.Contains("SS"))
                             {
-                                gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, pltitle.ExemptionAdditional, pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 100, pltitle.Year, "Napa County Treasurer-Tax Collector", pltitle.TaxIDNumber, "Supplemental",pltitle.TaxIDNumberFurtherDescribed);
-
+                                if (pyear == Tax_year)
+                                {
+                                    gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, pltitle.ExemptionAdditional, pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 100, pltitle.Year, "Napa County Treasurer-Tax Collector", pltitle.TaxIDNumber, "Supplemental", pltitle.TaxIDNumberFurtherDescribed);
+                                }
                             }
                             q++;
                         }

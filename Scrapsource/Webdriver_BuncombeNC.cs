@@ -74,6 +74,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_BuncombeNC"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -137,7 +143,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             string nodata = driver.FindElement(By.Id("ctl00_cph_content_lblErrorMsg")).Text;
-                            if (nodata.Contains("No Results Found.  Execute A New Search."))
+                            if (nodata.Contains("No Results Found"))
                             {
                                 HttpContext.Current.Session["Nodata_BuncombeNC"] = "Yes";
                                 driver.Quit();
@@ -162,7 +168,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             string nodata = driver.FindElement(By.Id("ctl00_cph_content_lblErrorMsg")).Text;
-                            if (nodata.Contains("No Results Found.  Execute A New Search."))
+                            if (nodata.Contains("No Results Found"))
                             {
                                 HttpContext.Current.Session["Nodata_BuncombeNC"] = "Yes";
                                 driver.Quit();
@@ -234,7 +240,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             //No Data Found
                             string nodata = driver.FindElement(By.Id("ctl00_cph_content_lblErrorMsg")).Text;
-                            if (nodata.Contains("No Results Found.  Execute A New Search."))
+                            if (nodata.Contains("No Results Found"))
                             {
                                 HttpContext.Current.Session["Nodata_BuncombeNC"] = "Yes";
                                 driver.Quit();

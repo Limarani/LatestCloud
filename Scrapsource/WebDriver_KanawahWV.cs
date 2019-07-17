@@ -62,10 +62,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + direction + " " + streetname + " " + stype + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "WV", "Kanawha");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_KanawhaWV"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";

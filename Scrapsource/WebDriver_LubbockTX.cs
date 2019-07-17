@@ -40,7 +40,7 @@ namespace ScrapMaricopa.Scrapsource
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver())//
             {
                 try
                 {
@@ -52,10 +52,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string taddress = houseno + " " + sname + " " + stype + " " + direction + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", taddress, "TX", "Lubbock");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LubbockTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -134,6 +140,17 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("grid"));
+                        if (INodata.Text.Contains("No properties found"))
+                        {
+                            HttpContext.Current.Session["Nodata_LubbockTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
                     string ParcelID = "", OwnerName = "", PropertyAddress = "", PropertyStatus = "", PropertyType = "", LegalDescription = "", Neighborhood = "", Account = "", MapNumber = "", OwnerID = "", Exemptions = "", PercentOwnership = "", MailingAddress = "";
 

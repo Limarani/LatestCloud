@@ -53,15 +53,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, Address, "IN", "Hamilton");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
-                        else
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
                         {
-                            //string strTitleAssess = GlobalClass.TitleFlexAssess;
-                            parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
-                            searchType = "parcel";
+                            HttpContext.Current.Session["Nodata_INHamilton"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                     }
 
@@ -89,17 +90,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
                         catch { }
-                        try
-                        {
-                            string Nodata = driver.FindElement(By.XPath("//*[@id='searchResults']/div/div/div")).Text;
-                            if(Nodata.Contains("No results found"))
-                            {
-                                HttpContext.Current.Session["Hamiltion_Nodata"] = "Zero";
-                                return "No Data Found";
-                            }
-                        }
-                        catch { }
-                        if (Muiti.Trim().ToUpper() != "1 RESULTS FOUND")
+                        if ((Muiti.Trim().ToUpper() != "1 RESULTS FOUND") && (!Muiti.Contains("NO RESULTS FOUND")))
                         {
 
                             IWebElement MultiOwnerTable = driver.FindElement(By.XPath("//*[@id='searchResults']"));
@@ -130,8 +121,11 @@ namespace ScrapMaricopa.Scrapsource
                             return "MultiParcel";
 
                         }
-                        driver.FindElement(By.XPath("//*[@id='searchResults']/div[2]/a/div/div/div/div/span[1]")).Click();
-
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='searchResults']/div[2]/a/div/div/div/div/span[1]")).Click();
+                        }
+                        catch { }
                     }
 
                     else if (searchType == "parcel")
@@ -145,9 +139,24 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='search']")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Result", driver, "IN", "Hamilton");
-                        driver.FindElement(By.XPath("//*[@id='searchResults']/div[2]/a/div/div/div/div/span[1]")).Click();
-
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='searchResults']/div[2]/a/div/div/div/div/span[1]")).Click();
+                        }
+                        catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("searchResults"));
+                        if (INodata.Text.Contains("NO RESULTS FOUND"))
+                        {
+                            HttpContext.Current.Session["Nodata_INHamilton"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     Thread.Sleep(2000);
                     driver.FindElement(By.XPath("//*[@id='propertyAssessment']")).Click();
                     Thread.Sleep(4000);

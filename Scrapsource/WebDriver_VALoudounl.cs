@@ -30,7 +30,7 @@ namespace ScrapMaricopa.Scrapsource
         string Assessment_Details = "", Fair_Marketland = "", FairMarket_Land = "", Fair_marketBuild = "", FiarMarket_Building = "", Bldg = "", Protaded_Bldg = "", Date = "", Effective_Date = "", FarMkt_tl = "", FairMarket_total = "", Land_USe = "", LandUse_Value = "", Ttl_Tax = "", Totltax_Value = "", Deffered = "", Deffered_Value = "", TaxExmpt_Code = "", TaxExempt_Code = "", TaxExmpt_lnd = "", TaxExempt_Land = "", TaxExmpt_bld = "", TaxExmpt_Building = "", TaxExmpt_ttl = "", TaxExmpt_Total = "", Revitalized = "", Revitalized_RealEstate = "", Solar = "", Solar_Exemption = "";
         string TaxPayment_details = "", invoice = "", year = "", Inst = "", Tax_Type = "", Due_Date = "", Date_Paid = "", Status = "", Tax_Amount = "", Penalty = "", Interest = "", Total_due = "";
         string Tax_Details = "", Tax_Ownername = "", Tx_Add = "", Tax_Address = "", Tx_lgl = "", Tax_LegalDescription = "", TX_Accnt = "", Tax_AccntNumber = "", TX_Bill = "", Tax_BillNumber = "", TX_Due = "", TAx_DueDate = "", TX_year = "", Tax_BillYear = "", TX_Inst = "", Tax_Installment = "", TX_Invoice = "", Tax_InvoiceType = "", TX_sta = "", Tax_Status = "", TX_dtpaid = "", Tax_DatePaid = "", TX_Bilamnt = "", Tax_BillAmount = "", TX_pen = "", Tax_Penalty = "", TX_Int = "", Tax_Interest = "", TX_Paid = "", Tax_PaidAmount = "", TX_blnce_Due = "", Tax_BillBalnceDue = "", Tx_bildue = "", Tax_BillsDueasof = "", Tx_bilafter = "", Tax_BillDueAfter = "", Tx_totldue = "", Tax_TotalDueforAllBills = "";
-        string Taxing = "", Taxing_Authority = "", Taxauthority_Details = "";
+        string Taxing = "", Taxing_Authority = "", Taxauthority_Details = "", Nodata = "";
 
         IWebElement CurrentTB;
         IWebDriver driver;
@@ -58,9 +58,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, "", "VA", "Loudoun");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Loudoun_Zero"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -77,6 +84,18 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Address search", driver, "VA", "Loudoun");
                         driver.FindElement(By.Id("btSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
+
+                        try
+                        {
+                            Nodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]/tbody/tr[1]/td/div/p")).Text;
+                            if (Nodata.Contains("Your search did not find any records."))
+                            {
+                                HttpContext.Current.Session["Loudoun_Zero"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
 
                     if (searchType == "parcel")
@@ -88,7 +107,20 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "VA", "Loudoun");
                         driver.FindElement(By.Id("btSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
+
+                        try
+                        {
+                            Nodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]/tbody/tr[1]/td/div/p")).Text;
+                            if (Nodata.Contains("Your search did not find any records."))
+                            {
+                                HttpContext.Current.Session["Loudoun_Zero"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
+
                     //Property Details
                     try
                     {
@@ -338,7 +370,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         if (p < 8)
                         {
-                            driver.FindElement(By.XPath("/html/body/form/div[4]/div[3]/div/strong/div[1]/div/div/div/div[2]/div/div/div/div/div/table/tbody/tr[" + p + "]/td[12]/a")).Click();
+                            driver.FindElement(By.Id("ctl00_cphMainContent_SkeletonCtrl_3_gvRecords_ctl0" + p + "_btnSelectRecord")).Click();
                             Thread.Sleep(3000);
 
                             try
@@ -479,23 +511,32 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                 }
 
-                                gc.CreatePdf(orderNumber, parcelno, "Tax Details", driver, "VA", "Loudoun");
+                                gc.CreatePdf(orderNumber, parcelno, "Tax Details" + Tax_BillYear, driver, "VA", "Loudoun");
 
                                 Tax_Details = Tax_Ownername + "~" + Tax_Address + "~" + Tax_LegalDescription + "~" + Tax_AccntNumber + "~" + Tax_BillNumber + "~" + TAx_DueDate + "~" + Tax_BillYear + "~" + Tax_Installment + "~" + Tax_InvoiceType + "~" + Tax_BillsDueasof + "~" + Tax_BillDueAfter + "~" + Tax_TotalDueforAllBills + "~" + Tax_Status + "~" + Tax_DatePaid + "~" + Tax_BillAmount + "~" + Tax_Penalty + "~" + Tax_Interest + "~" + Tax_PaidAmount + "~" + Tax_BillBalnceDue;
                                 gc.insert_date(orderNumber, parcelno, 1818, Tax_Details, 1, DateTime.Now);
 
-                                //Releated Invoices
-                                driver.FindElement(By.XPath("//*[@id='navTabs']/li[2]/a")).Click();
-                                Thread.Sleep(4000);
+                                try
+                                {
+                                    //Releated Invoices
+                                    driver.FindElement(By.XPath("//*[@id='navTabs']/li[2]/a")).Click();
+                                    Thread.Sleep(4000);
 
-                                gc.CreatePdf(orderNumber, parcelno, "Tax Releated Invoices Details", driver, "VA", "Loudoun");
+                                    gc.CreatePdf(orderNumber, parcelno, "Tax Releated Invoices Details" + Tax_BillYear, driver, "VA", "Loudoun");
+                                }
+                                catch
+                                { }
 
-                                //Tax BIll
-                                driver.FindElement(By.XPath("//*[@id='ctl00_cphMainContent_SkeletonCtrl_3_tbreceipt']/a")).Click();
-                                Thread.Sleep(4000);
+                                try
+                                {
+                                    //Tax BIll
+                                    driver.FindElement(By.XPath("//*[@id='ctl00_cphMainContent_SkeletonCtrl_3_tbreceipt']/a")).Click();
+                                    Thread.Sleep(4000);
 
-                                gc.CreatePdf(orderNumber, parcelno, "Tax Bill Details", driver, "VA", "Loudoun");
-
+                                    gc.CreatePdf(orderNumber, parcelno, "Tax Bill Details" + Tax_BillYear, driver, "VA", "Loudoun");
+                                }
+                                catch
+                                { }
                             }
                             catch
                             { }
@@ -504,7 +545,7 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(3000);
 
                             driver.FindElement(By.XPath("//*[@id='accordion2']/div/div[1]/table/tbody/tr/td[1]/a[2]")).Click();
-                            Thread.Sleep(2000);
+                            Thread.Sleep(4000);
                         }
                     }
 
@@ -545,8 +586,8 @@ namespace ScrapMaricopa.Scrapsource
                         IList<IWebElement> ParcelTR = ParcelTB.FindElements(By.TagName("tr"));
                         ParcelTR.Reverse();
                         int rows_count = ParcelTR.Count;
-
-                        for (int row = 0; row < rows_count; row++)
+                        gc.CreatePdf(orderNumber, parcelno, "Town Parcel", driver, "VA", "Loudoun");
+                        for (int row = 0; row <= rows_count; row++)
                         {
                             if (row == rows_count - 1 || row == rows_count - 2 || row == rows_count - 3)
                             {
@@ -556,139 +597,202 @@ namespace ScrapMaricopa.Scrapsource
 
                                 for (int column = 0; column < columns_count; column++)
                                 {
-                                   
-                                        if (column == columns_count - 2)
-                                        {
-                                            IWebElement ParcelBill_link = Columns_row[column].FindElement(By.TagName("a"));
-                                            string Parcelurl = ParcelBill_link.GetAttribute("href");
-                                            ParcelSearch.Add(Parcelurl);
-                                        }
+
+                                    if (column == columns_count - 2)
+                                    {
+                                        IWebElement ParcelBill_link = Columns_row[column].FindElement(By.TagName("a"));
+                                        string Parcelurl = ParcelBill_link.GetAttribute("id");
+                                        ParcelSearch.Add(Parcelurl);
+                                    }
                                 }
                             }
                         }
                     }
                     catch
-                    {
-                    }
+                    { }
+
                     int i = 0;
-                    foreach (string Parcelbill in ParcelSearch)
+                    string currentwindow = driver.Url;
+
+                    try
                     {
 
-                        driver.Navigate().GoToUrl(Parcelbill);
-                        Thread.Sleep(7000);
-                        string Asof = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_AsOfDateUpdatePanel")).Text;
-                        string Billyear = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_FiscalYearLabel")).Text;
-                        string Billno = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillNumberLabel")).Text;
-                        string Ownercity = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_OwnerLabel")).Text;
-                        IWebElement InstallmentTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillDetailsUpdatePanel']/table/tbody"));
-                        IList<IWebElement> InstallmentTR = InstallmentTB.FindElements(By.TagName("tr"));
-                        IList<IWebElement> InstallmentTD;
-                        foreach (IWebElement Installment in InstallmentTR)
+                        foreach (string Parcelbill in ParcelSearch)
                         {
-                            InstallmentTD = Installment.FindElements(By.TagName("td"));
-                            if (InstallmentTD.Count != 0 && Installment.Text.Contains("TOTAL"))
-                            {
-                                string Installmentresult = Asof + "~" + Billyear + "~" + Billno + "~" + Ownercity + "~" + InstallmentTD[0].Text + "~" + InstallmentTD[1].Text + "~" + InstallmentTD[2].Text + "~" + InstallmentTD[3].Text + "~" + InstallmentTD[4].Text + "~" + InstallmentTD[5].Text + "~" + InstallmentTD[6].Text;
-                                gc.insert_date(orderNumber, parcelno, 1822, Taxauthority_Details, 1, DateTime.Now);
-                            }
-                            if (Installment.Text.Contains("TOTAL"))
-                            {
-                                string Installmentresult = Asof + "~" + Billyear + "~" + Billno + "~" + Ownercity + "~" + InstallmentTD[0].Text + "~" + "" + "~" + InstallmentTD[1].Text + "~" + InstallmentTD[2].Text + "~" + InstallmentTD[3].Text + "~" + InstallmentTD[4].Text + "~" + InstallmentTD[5].Text;
-                                gc.insert_date(orderNumber, parcelno, 1822, Taxauthority_Details, 1, DateTime.Now);
-                            }
-                        }
-                        //Charges
-                        driver.FindElement(By.Id("submenuselected")).Click();
-                        Thread.Sleep(2000);
-                        IWebElement TaxChargesTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillDetailsUpdatePanel']/table/tbody"));
-                        IList<IWebElement> TaxChargesTR = TaxChargesTB.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TaxChargesTD;
-                        IList<IWebElement> TaxChargesTH;
-                        foreach (IWebElement TaxCharges in TaxChargesTR)
-                        {
-                            TaxChargesTD = TaxCharges.FindElements(By.TagName("td"));
-                            TaxChargesTH = TaxCharges.FindElements(By.TagName("td"));
-                            if (TaxChargesTD.Count > 1 && TaxCharges.Text.Contains("Taxable Value"))
-                            {
-                                string TaxChargesresult = Billyear + "~" + TaxChargesTH[0].Text + "~" + TaxChargesTD[0].Text + "~" + TaxChargesTD[1].Text + "~" + TaxChargesTD[3].Text;
-                                gc.insert_date(orderNumber, parcelno, 1822, TaxChargesresult, 1, DateTime.Now);
-                            }
-                            if (TaxChargesTD.Count == 1)
-                            {
-                                string TaxChargesresult = Billyear + "~" + TaxChargesTH[0].Text + "~" + TaxChargesTD[0].Text;
-                                gc.insert_date(orderNumber, parcelno, 1822, TaxChargesresult, 1, DateTime.Now);
-                            }
-                        }
-
-                        //Propert detail
-                        string Alterparcel = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_AlternateIdLabel")).Text;
-                        string Location = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_LocationLabel")).Text;
-                        string LegalDescription = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_LegalDescriptionLabel")).Text;
-                        string Ownerasof = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_OwnerOfRecordLabel")).Text;
-                        string CustomerID = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_CustomerIdLabel")).Text;
-                        string Jurisdiction = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_JurisdictionLabel")).Text;
-                        string Acres = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_AcresLabel")).Text;
-                        string AssessedValue = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_AssessedValueLabel")).Text;
-                        string chargespro = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_TaxLabel")).Text;
-                        string propertydetail = Billyear + "~" + Alterparcel + "~" + Location + "~" + LegalDescription + "~" + Ownerasof + "~" + CustomerID + "~" + Jurisdiction + "~" + Acres + "~" + AssessedValue + "~" + chargespro;
-                        gc.insert_date(orderNumber, parcelno, 1825, propertydetail, 1, DateTime.Now);
-                        //Town Assessment
-                        IWebElement TownAssessmentTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillDetailsUpdatePanel']/table/tbody"));
-                        IList<IWebElement> TownAssessmentTR = TownAssessmentTB.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TownAssessmentTD;
-                        IList<IWebElement> TownAssessmentTH;
-                        foreach (IWebElement TownAssessment in TownAssessmentTR)
-                        {
-                            TownAssessmentTD = TownAssessment.FindElements(By.TagName("td"));
-                            TownAssessmentTH = TownAssessment.FindElements(By.TagName("td"));
-                            if (TownAssessmentTD.Count > 1 && !TownAssessment.Text.Contains("Gross Assessment"))
-                            {
-                                string TaxChargesresult = Billyear + "~" + TownAssessmentTH[0].Text + "~" + TownAssessmentTD[0].Text;
-                                gc.insert_date(orderNumber, parcelno, 1826, TaxChargesresult, 1, DateTime.Now);
-                            }
-                        }
-                        //Assessment
-                        IWebElement AssessmentTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillDetailsUpdatePanel']/table/tbody"));
-                        IList<IWebElement> AssessmentTR = AssessmentTB.FindElements(By.TagName("tr"));
-                        IList<IWebElement> AssessmentTD;
-                        IList<IWebElement> AssessmentTH;
-                        foreach (IWebElement Assessment in TownAssessmentTR)
-                        {
-                            AssessmentTD = Assessment.FindElements(By.TagName("td"));
-                            AssessmentTH = Assessment.FindElements(By.TagName("td"));
-                            if (AssessmentTD.Count > 1 && !Assessment.Text.Contains("Total"))
-                            {
-                                string TaxChargesresult = Billyear + "~" + AssessmentTD[0].Text + "~" + AssessmentTD[1].Text + "~" + AssessmentTD[2].Text + "~" + AssessmentTD[3].Text + "~" + AssessmentTD[4].Text + "~" + AssessmentTD[5].Text;
-                                gc.insert_date(orderNumber, parcelno, 1827, TaxChargesresult, 1, DateTime.Now);
-                            }
-                            if (Assessment.Text.Contains("Total"))
-                            {
-                                string TaxChargesresult = Billyear + "~" + AssessmentTH[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + AssessmentTD[0].Text;
-                                gc.insert_date(orderNumber, parcelno, 1827, TaxChargesresult, 1, DateTime.Now);
-                            }
-                        }
-                        //Assessment History
-                        if (i == 0)
-                        {
-                            driver.FindElement(By.Id("submenuselected")).Click();
+                            driver.Navigate().GoToUrl(currentwindow);
                             Thread.Sleep(2000);
-                            IWebElement AssessmentHistoryTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillDetailsUpdatePanel']/table/tbody"));
-                            IList<IWebElement> AssessmentHistoryTR = AssessmentHistoryTB.FindElements(By.TagName("tr"));
-                            IList<IWebElement> AssessmentHistoryTD;
-                            IList<IWebElement> AssessmentHistoryTH;
-                            foreach (IWebElement AssessmentHistory in AssessmentHistoryTR)
+                            driver.FindElement(By.Id(Parcelbill)).Click();
+                            Thread.Sleep(3000);
+                            gc.CreatePdf(orderNumber, parcelno, "Town Bill" + i, driver, "VA", "Loudoun");
+                            IWebElement test = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_AsOfDateTextBox']"));
+                            string Asof = test.GetAttribute("value");
+                           
+                            string Billyear = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_FiscalYearLabel")).Text;
+                            string Billno = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillNumberLabel")).Text;
+                            string Ownercity = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_OwnerLabel")).Text;
+                            IWebElement InstallmentTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_BillDetailsUpdatePanel']/table/tbody"));
+                            IList<IWebElement> InstallmentTR = InstallmentTB.FindElements(By.TagName("tr"));
+                            IList<IWebElement> InstallmentTD;
+                            foreach (IWebElement Installment in InstallmentTR)
                             {
-                                AssessmentHistoryTD = AssessmentHistory.FindElements(By.TagName("td"));
-                                AssessmentHistoryTH = AssessmentHistory.FindElements(By.TagName("td"));
-                                if (AssessmentHistoryTD.Count !=0 )
+                                InstallmentTD = Installment.FindElements(By.TagName("td"));
+                                if (InstallmentTD.Count != 0 && !Installment.Text.Contains("TOTAL") && !Installment.Text.Contains("Pay By"))
                                 {
-                                    string TaxChargesresult = AssessmentHistoryTD[0].Text + "~" + AssessmentHistoryTD[1].Text + "~" + AssessmentHistoryTD[2].Text + "~" + AssessmentHistoryTD[3].Text + "~" + AssessmentHistoryTD[4].Text ;
-                                    gc.insert_date(orderNumber, parcelno, 1828, TaxChargesresult, 1, DateTime.Now);
+                                    string Installmentresult = Asof + "~" + Billyear + "~" + Billno + "~" + Ownercity + "~" + InstallmentTD[0].Text + "~" + InstallmentTD[1].Text + "~" + InstallmentTD[2].Text + "~" + InstallmentTD[3].Text + "~" + InstallmentTD[4].Text + "~" + InstallmentTD[5].Text + "~" + InstallmentTD[6].Text + "~" + "";
+                                    gc.insert_date(orderNumber, parcelno, 1822, Installmentresult, 1, DateTime.Now);
+                                }
+                                if (Installment.Text.Contains("TOTAL"))
+                                {
+                                    string InstallmentresultTotal = Asof + "~" + Billyear + "~" + Billno + "~" + Ownercity + "~" + InstallmentTD[0].Text + "~" + "" + "~" + InstallmentTD[1].Text + "~" + InstallmentTD[2].Text + "~" + InstallmentTD[3].Text + "~" + InstallmentTD[4].Text + "~" + InstallmentTD[5].Text + "~" + "Leesburg Town Hall  25 West Market Street  Leesburg, Virginia 20176 703-777-2420";
+                                    gc.insert_date(orderNumber, parcelno, 1822, InstallmentresultTotal, 1, DateTime.Now);
                                 }
                             }
+
+                            //Payemnts&Adjustments
+                            string BarCityPayBillYear = "", BarCityPayBillNo = "", Activity = "", Posted = "", PaidBy = "", Amount = "";
+                            driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ViewBill1_ViewPaymentsLinkButton")).SendKeys(Keys.Enter);
+                            Thread.Sleep(4000);
+                            gc.CreatePdf(orderNumber, parcelno, "Tax Bill Details", driver, "VA", "Loudoun");
+                            BarCityPayBillYear = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_FiscalYearLabel")).Text;
+                            BarCityPayBillNo = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_BillNumberLabel")).Text;
+                            try
+                            {
+                                IWebElement IBarCityPayment = driver.FindElement(By.XPath("//*[@id='molContentMainDiv']/table[2]/tbody"));
+                                IList<IWebElement> IBarCityPaymentRow = IBarCityPayment.FindElements(By.TagName("tr"));
+                                IList<IWebElement> IBarCityPaymentTD;
+                                foreach (IWebElement Payment in IBarCityPaymentRow)
+                                {
+                                    IBarCityPaymentTD = Payment.FindElements(By.TagName("td"));
+                                    if (IBarCityPaymentTD.Count != 0)
+                                    {
+                                        Activity = IBarCityPaymentTD[0].Text;
+                                        Posted = IBarCityPaymentTD[1].Text;
+                                        PaidBy = IBarCityPaymentTD[2].Text;
+                                        Amount = IBarCityPaymentTD[3].Text;
+
+                                        string PaymentHistoty = BarCityPayBillYear + "~" + BarCityPayBillNo + "~" + Activity + "~" + Posted + "~" + PaidBy + "~" + Amount;
+                                        gc.insert_date(orderNumber, parcelno, 1856, PaymentHistoty, 1, DateTime.Now);
+                                    }
+                                }
+                            }
+                            catch { }
+
+                            //Charges
+                            driver.FindElement(By.XPath("//*[@id='primarynav']/li[6]/ul/li[2]/a")).Click();
+                            Thread.Sleep(6000);
+                            gc.CreatePdf(orderNumber, parcelno, "Tax Charges" + i, driver, "VA", "Loudoun");
+                            IWebElement TaxChargesTB = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_TaxChargesTable"));
+                            IList<IWebElement> TaxChargesTR = TaxChargesTB.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TaxChargesTD;
+                            IList<IWebElement> TaxChargesTH;
+                            foreach (IWebElement TaxCharges in TaxChargesTR)
+                            {
+                                TaxChargesTD = TaxCharges.FindElements(By.TagName("td"));
+                                TaxChargesTH = TaxCharges.FindElements(By.TagName("th"));
+                                if (TaxChargesTD.Count > 1 && !TaxCharges.Text.Contains("Taxable Value"))
+                                {
+                                    string TaxChargesresult = Billyear + "~" + TaxChargesTH[0].Text + "~" + TaxChargesTD[0].Text + "~" + TaxChargesTD[1].Text + "~" + TaxChargesTD[2].Text;
+                                    gc.insert_date(orderNumber, parcelno, 1824, TaxChargesresult, 1, DateTime.Now);
+                                }
+                                if (TaxChargesTD.Count == 1)
+                                {
+                                    string TaxChargesresult = Billyear + "~" + TaxChargesTH[0].Text + "~" + TaxChargesTD[0].Text;
+                                    gc.insert_date(orderNumber, parcelno, 1824, TaxChargesresult, 1, DateTime.Now);
+                                }
+                            }
+
+                            //Propert detail
+                            driver.FindElement(By.XPath("//*[@id='primarynav']/li[6]/ul/li[3]/a")).Click();
+                            Thread.Sleep(6000);
+                            //IWebElement Propertdetaillink = driver.FindElement(By.XPath("//*[@id='primarynav']/li[6]/ul/li[3]")).FindElement(By.TagName("a"));
+                            //string Propertyhref = Propertdetaillink.GetAttribute("href");
+                            //driver.Navigate().GoToUrl(Propertyhref);
+                            //Thread.Sleep(2000);
+                            gc.CreatePdf(orderNumber, parcelno, "Town Property detail" + i, driver, "VA", "Loudoun");
+                            string Alterparcel = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_ParcelIdLabel")).Text;
+                            string Location = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_LocationLabel")).Text;
+                            string LegalDescription = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_LegalDescriptionLabel")).Text;
+                            string Ownerasof = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_OwnerOfRecordLabel")).Text;
+                            string CustomerID = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_CustomerIdLabel")).Text;
+                            string Jurisdiction = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_JurisdictionLabel")).Text;
+                            string Acres = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_AcresLabel")).Text;
+                            string AssessedValue = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_AssessedValueLabel")).Text;
+                            string chargespro = driver.FindElement(By.Id("ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_TaxLabel")).Text;
+                            string propertydetail = Billyear + "~" + Alterparcel + "~" + Location + "~" + LegalDescription + "~" + Ownerasof + "~" + CustomerID + "~" + Jurisdiction + "~" + Acres + "~" + AssessedValue + "~" + chargespro;
+                            gc.insert_date(orderNumber, parcelno, 1825, propertydetail, 1, DateTime.Now);
+                             
+                            //Town Assessment
+                            driver.FindElement(By.XPath("//*[@id='primarynav']/li[6]/ul/li[3]/a")).Click();
+                            Thread.Sleep(4000);
+                            //IWebElement townassess = driver.FindElement(By.XPath("//*[@id='primarynav']/li[6]/ul/li[5]")).FindElement(By.TagName("a"));
+                            //string townassesshref = townassess.GetAttribute("href");
+                            //driver.Navigate().GoToUrl(townassesshref);
+                            //Thread.Sleep(2000);
+                            gc.CreatePdf(orderNumber, parcelno, "Town Assessment" + i, driver, "VA", "Loudoun");
+                            IWebElement TownAssessmentTB = driver.FindElement(By.XPath("//*[@id='molContentMainDiv']/table[2]/tbody"));
+                            IList<IWebElement> TownAssessmentTR = TownAssessmentTB.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TownAssessmentTD;
+                            IList<IWebElement> TownAssessmentTH;
+                            foreach (IWebElement TownAssessment in TownAssessmentTR)
+                            {
+                                TownAssessmentTD = TownAssessment.FindElements(By.TagName("td"));
+                                TownAssessmentTH = TownAssessment.FindElements(By.TagName("th"));
+                                if (TownAssessmentTD.Count != 0 && !TownAssessment.Text.Contains("Gross Assessment"))
+                                {
+                                    string TaxChargesresult = Billyear + "~" + TownAssessmentTH[0].Text + "~" + TownAssessmentTD[0].Text;
+                                    gc.insert_date(orderNumber, parcelno, 1826, TaxChargesresult, 1, DateTime.Now);
+                                }
+                            }
+
+                            //Assessment
+                            IWebElement AssessmentTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_AssessmentsGrid']/tbody"));
+                            IList<IWebElement> AssessmentTR = AssessmentTB.FindElements(By.TagName("tr"));
+                            IList<IWebElement> AssessmentTD;
+                            IList<IWebElement> AssessmentTH;
+                            foreach (IWebElement Assessment in AssessmentTR)
+                            {
+                                AssessmentTD = Assessment.FindElements(By.TagName("td"));
+                                AssessmentTH = Assessment.FindElements(By.TagName("th"));
+                                if (AssessmentTD.Count > 1 && !Assessment.Text.Contains("Total") && !Assessment.Text.Contains("Description"))
+                                {
+                                    string TaxAssessmentresult = Billyear + "~" + AssessmentTD[0].Text + "~" + AssessmentTD[1].Text + "~" + AssessmentTD[2].Text + "~" + AssessmentTD[3].Text + "~" + AssessmentTD[4].Text + "~" + AssessmentTD[5].Text;
+                                    gc.insert_date(orderNumber, parcelno, 1827, TaxAssessmentresult, 1, DateTime.Now);
+                                }
+                                if (Assessment.Text.Contains("Total"))
+                                {
+                                    string TaxAssessmentresultotal = Billyear + "~" + AssessmentTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + AssessmentTD[0].Text;
+                                    gc.insert_date(orderNumber, parcelno, 1827, TaxAssessmentresultotal, 1, DateTime.Now);
+                                }
+                            }
+
+                            //Assessment History
+                            if (i == 0)
+                            {
+                                driver.FindElement(By.XPath("//*[@id='submenuselected']")).Click();
+                                Thread.Sleep(4000);
+                                gc.CreatePdf(orderNumber, parcelno, "Town Assessment History", driver, "VA", "Loudoun");
+                                IWebElement AssessmentHistoryTB = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_PrimaryPlaceHolder_ContentPlaceHolderMain_BillsRepeater_ctl00_BillsGrid']/tbody"));
+                                IList<IWebElement> AssessmentHistoryTR = AssessmentHistoryTB.FindElements(By.TagName("tr"));
+                                IList<IWebElement> AssessmentHistoryTD;
+                                IList<IWebElement> AssessmentHistoryTH;
+                                foreach (IWebElement AssessmentHistory in AssessmentHistoryTR)
+                                {
+                                    AssessmentHistoryTD = AssessmentHistory.FindElements(By.TagName("td"));
+                                    AssessmentHistoryTH = AssessmentHistory.FindElements(By.TagName("td"));
+                                    if (AssessmentHistoryTD.Count != 0)
+                                    {
+                                        string TaxAssessmentHistoryresultotal = AssessmentHistoryTD[0].Text + "~" + AssessmentHistoryTD[1].Text + "~" + AssessmentHistoryTD[2].Text + "~" + AssessmentHistoryTD[3].Text + "~" + AssessmentHistoryTD[4].Text;
+                                        gc.insert_date(orderNumber, parcelno, 1828, TaxAssessmentHistoryresultotal, 1, DateTime.Now);
+                                    }
+                                }
+
+                            }
+                            i++;
                         }
 
                     }
+                    catch
+                    { }
                     driver.Quit();
                     gc.mergpdf(orderNumber, "VA", "Loudoun");
                     return "Data Inserted Successfully";
@@ -702,6 +806,5 @@ namespace ScrapMaricopa.Scrapsource
             }
 
         }
-
     }
 }

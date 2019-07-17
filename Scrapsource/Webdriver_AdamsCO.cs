@@ -59,9 +59,16 @@ namespace ScrapMaricopa.Scrapsource
                             Address = Streetno + " " + sname + " " + streettype + " " + unitnumber;
                         }
                         gc.TitleFlexSearch(orderNumber, "", ownername, Address, "CO", "Adams");
-                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Adams_Zero"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         searchType = "parcel";
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace(".", "");
@@ -129,20 +136,45 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "parcel")
                     {
-                        if (parcelNumber.Substring(0).Length == 0)
+                        string Parcel = parcelNumber.Substring(0, 1);
+                        if (Convert.ToInt16(Parcel) == 0)
                         {
                             driver.FindElement(By.Id("ctl00_ContentPlaceHolder_SearchInput")).SendKeys(parcelNumber.Replace("-", "").Trim());
                         }
-                        if (parcelNumber.Substring(0).Length != 0)
+                        if (Convert.ToInt16(Parcel) != 0)
                         {
-                            driver.FindElement(By.Id("ctl00_ContentPlaceHolder_SearchInput")).SendKeys("0"+parcelNumber.Replace("-", "").Trim());
+                            driver.FindElement(By.Id("ctl00_ContentPlaceHolder_SearchInput")).SendKeys("0" + parcelNumber.Replace("-", "").Trim());
                         }
                         driver.FindElement(By.Id("ctl00_ContentPlaceHolder_SearchSubmitLink")).Click();
                         Thread.Sleep(2000);
+                        try
+                        {
+                            string Nodata = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder_QuickSearchResultsDisplay']/tbody/tr/td")).Text;
+                            if (Nodata.Contains("Sorry, there are no data"))
+                            {
+                                HttpContext.Current.Session["Adams_Zero"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         IWebElement ParcelLink = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder_QuickSearchResultsDisplay']/tbody/tr[2]/td[1]/a"));
                         string Parcelhref = ParcelLink.GetAttribute("href");
                         driver.Navigate().GoToUrl(Parcelhref);
                         Thread.Sleep(2000);
+                    }
+                    if (searchType == "Account")
+                    {
+                        driver.FindElement(By.Id("ctl00_ContentPlaceHolder_SearchOptions_1")).Click();
+                        Thread.Sleep(2000);
+                        driver.FindElement(By.Id("ctl00_ContentPlaceHolder_SearchInput")).SendKeys(unitnumber);
+                        gc.CreatePdf_WOP(orderNumber, "Account search", driver, "CO", "Adams");
+                        driver.FindElement(By.Id("ctl00_ContentPlaceHolder_SearchSubmitLink")).Click();
+                        Thread.Sleep(20000);
+                        gc.CreatePdf_WOP(orderNumber, "Account Click", driver, "CO", "Adams");
+                        IWebElement Accountlink = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder_QuickSearchResultsDisplay']/tbody/tr[2]/td[1]")).FindElement(By.TagName("a"));
+                        string Accounthref = Accountlink.GetAttribute("href");
+                        driver.Navigate().GoToUrl(Accounthref);
                     }
                     //*[@id="propertyReport"]/span[3]/span[1]/div/span[2]
                     Parcel_number = driver.FindElement(By.XPath("//*[@id='propertyReport']/span[3]/span[1]/div/span[2]")).Text;
@@ -157,6 +189,7 @@ namespace ScrapMaricopa.Scrapsource
                     string Legal = driver.FindElement(By.XPath(" //*[@id='propertyReport']/span[5]/span[3]/div/span")).Text;
                     string Subdevision = driver.FindElement(By.XPath("//*[@id='propertyReport']/span[5]/span[6]/div/span")).Text;
                     string MillLevyAss = driver.FindElement(By.XPath("//*[@id='propertyReport']/span[6]/span[3]/div/table/tbody/tr[2]/td[4]/span")).Text;
+                    string Permit = driver.FindElement(By.XPath("//*[@id='propertyReport']/span[8]/span[3]/div")).Text;
                     Thread.Sleep(2000);
                     try
                     {
@@ -165,7 +198,7 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
                     string Buildas = driver.FindElement(By.XPath("//*[@id='propertyReport']/span[14]/span[2]/div/table/tbody/tr[1]/td[2]/span")).Text;
                     string Buildingtype = driver.FindElement(By.XPath("//*[@id='propertyReport']/span[14]/span[2]/div/table/tbody/tr[3]/td[2]/span")).Text;
-                    string Propertydetailresult = owner + "~" + AddressPro + "~" + Account + "~" + Taxdistrist + "~" + Legal + "~" + Subdevision + "~" + MillLevyAss + "~" + Buildas + "~" + Buildingtype + "~" + yearbuild;
+                    string Propertydetailresult = owner + "~" + AddressPro + "~" + Account + "~" + Taxdistrist + "~" + Legal + "~" + Subdevision + "~" + MillLevyAss + "~" + Buildas + "~" + Buildingtype + "~" + yearbuild + "~" + Permit;
                     gc.insert_date(orderNumber, Parcel_number, 1613, Propertydetailresult, 1, DateTime.Now);
                     IWebElement landvaluetable = driver.FindElement(By.XPath("//*[@id='propertyReport']/span[12]/span[3]/div/table/tbody"));
                     IList<IWebElement> landvaluerow = landvaluetable.FindElements(By.TagName("tr"));
@@ -173,9 +206,14 @@ namespace ScrapMaricopa.Scrapsource
                     foreach (IWebElement landvalue in landvaluerow)
                     {
                         landvalueid = landvalue.FindElements(By.TagName("td"));
+                        if (!landvalue.Text.Contains("Land Subtotal") && !landvalue.Text.Contains("Account Number") && landvalueid[0].Text.Trim() != "")
+                        {
+                            string LandResult1 = landvalueid[0].Text + "~" + landvalueid[1].Text + "~" + landvalueid[2].Text + "~" + landvalueid[3].Text + "~" + landvalueid[4].Text + "~" + landvalueid[5].Text + "~" + landvalueid[6].Text + "~" + landvalueid[7].Text + "~" + landvalueid[8].Text;
+                            gc.insert_date(orderNumber, Parcel_number, 1628, LandResult1, 1, DateTime.Now);
+                        }
                         if (landvalue.Text.Contains("Land Subtotal"))
                         {
-                            string Landresult = landvalueid[0].Text + "~" + landvalueid[7].Text + "~" + landvalueid[8].Text;
+                            string Landresult = landvalueid[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + landvalueid[7].Text + "~" + landvalueid[8].Text;
                             gc.insert_date(orderNumber, Parcel_number, 1628, Landresult, 1, DateTime.Now);
                         }
                     }
@@ -187,7 +225,7 @@ namespace ScrapMaricopa.Scrapsource
                         Improvementid = Improvement.FindElements(By.TagName("td"));
                         if (Improvement.Text.Contains("Improvements Subtotal:"))
                         {
-                            string impromentresult = Improvementid[0].Text + "~" + Improvementid[1].Text + "~" + Improvementid[2].Text;
+                            string impromentresult = Improvementid[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + Improvementid[1].Text + "~" + Improvementid[2].Text; ;
                             gc.insert_date(orderNumber, Parcel_number, 1628, impromentresult, 1, DateTime.Now);
                         }
                     }
@@ -199,7 +237,7 @@ namespace ScrapMaricopa.Scrapsource
                         TotalPropertytid = TotalProperty.FindElements(By.TagName("td"));
                         if (TotalPropertytid.Count != 0)
                         {
-                            string TotalPropertyresult = TotalPropertytid[0].Text + "~" + TotalPropertytid[1].Text + "~" + TotalPropertytid[2].Text;
+                            string TotalPropertyresult = TotalPropertytid[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + TotalPropertytid[1].Text + "~" + TotalPropertytid[2].Text;
                             gc.insert_date(orderNumber, Parcel_number, 1628, TotalPropertyresult, 1, DateTime.Now);
                         }
                     }
@@ -292,8 +330,8 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 paymenttype = driver.FindElement(By.XPath("//*[@id='inquiryForm']/table/tbody/tr[2]/td[2]/label[1]")).Text;
                                 driver.FindElement(By.Id("paymentTypeFirst")).Click();
-                                Thread.Sleep(1000);
-                                gc.CreatePdf(orderNumber, Parcel_number, "first", driver, "CO", "Adams");
+                                Thread.Sleep(3000);
+                                gc.CreatePdf(orderNumber, Parcel_number, "first Due", driver, "CO", "Adams");
                             }
                             else
                             {
@@ -307,23 +345,23 @@ namespace ScrapMaricopa.Scrapsource
                                 if (paymenttype == "Second")
                                 {
                                     driver.FindElement(By.Id("paymentTypeSecond")).Click();
-                                    gc.CreatePdf(orderNumber, Parcel_number, "second", driver, "CO", "Adams");
+                                    Thread.Sleep(3000);
+                                    gc.CreatePdf(orderNumber, Parcel_number, "second Due", driver, "CO", "Adams");
                                 }
                             }
 
                             Total_Due = GlobalClass.After(Inquirytable.Text, "Total Due").Trim();
-                            try
+                            if (Inquirytable.Text.Contains("Taxes Due"))
                             {
                                 TaxesDue = gc.Between(Inquirytable.Text, "Taxes Due", "Total Due").Trim();
                             }
-                            catch { }
                             string cuttenttaxresult1 = As_of + "~" + paymenttype + "~" + TaxesDue + "~" + Total_Due;
                             gc.insert_date(orderNumber, Parcel_number, 1635, cuttenttaxresult1, 1, DateTime.Now);
                             z++;
                         }
                     }
                     catch { }
-                    if (z == 0)
+                    if (z > 1)
                     {
                         for (int i = 1; i < 3; i++)
                         {
@@ -374,25 +412,47 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     driver.FindElement(By.Id("paymentTypeFull")).Click();
                                     Thread.Sleep(2000);
+                                    gc.CreatePdf(orderNumber, Parcel_number, "Full", driver, "CO", "Adams");
+                                }
+                                if (paymenttype == "Second")
+                                {
+                                    driver.FindElement(By.Id("paymentTypeSecond")).Click();
+                                    Thread.Sleep(2000);
                                     gc.CreatePdf(orderNumber, Parcel_number, "Second", driver, "CO", "Adams");
                                 }
                             }
                             IWebElement As_off = driver.FindElement(By.Id("paymentDate"));
                             As_of = As_off.GetAttribute("value");
+                            string strTaxesDue = "", strInterestDue = "", strPenalty = "", strTotal = "";
                             IWebElement Totaltable = driver.FindElement(By.Id("totals"));
                             IList<IWebElement> Totalrow = Totaltable.FindElements(By.TagName("tr"));
                             IList<IWebElement> totalth;
                             foreach (IWebElement Total in Totalrow)
                             {
                                 totalth = Total.FindElements(By.TagName("td"));
-                                if (totalth.Count != 0)
+                                if (totalth.Count != 0 && Total.Text.Contains("Taxes Due"))
                                 {
-                                    string Totalresult = paymenttype + "~" + totalth[0].Text + "~" + totalth[1].Text + "~" + As_of;
-                                    gc.insert_date(orderNumber, Parcel_number, 1640, Totalresult, 1, DateTime.Now);
+                                    strTaxesDue = totalth[1].Text;
+                                }
+                                if (totalth.Count != 0 && Total.Text.Contains("Penalty"))
+                                {
+                                    strPenalty = totalth[1].Text;
+                                }
+                                if (totalth.Count != 0 && Total.Text.Contains("Interest Due"))
+                                {
+                                    strInterestDue = totalth[1].Text;
+                                }
+                                if (totalth.Count != 0 && Total.Text.Contains("Total Due"))
+                                {
+                                    strTotal = totalth[1].Text;
                                 }
                             }
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + "Payment Type~Taxes Due~Interest Due~Total Due~As of" + "' where Id = '" + 1640 + "'");
+                            string Totalresult = paymenttype + "~" + strTaxesDue + "~" + strInterestDue + "~" + strTotal + "~" + As_of;
+                            gc.insert_date(orderNumber, Parcel_number, 1640, Totalresult, 1, DateTime.Now);
                         }
                     }
+
                     driver.FindElement(By.LinkText("Transaction Detail")).Click();
                     Thread.Sleep(2000);
                     IWebElement Transationtable = driver.FindElement(By.XPath("//*[@id='middle']/table[2]/tbody"));
@@ -439,28 +499,93 @@ namespace ScrapMaricopa.Scrapsource
                     //Adams County Property
                     try
                     {
-                        driver.FindElement(By.LinkText("Adams County Property Tax Notice")).Click();
-                        Thread.Sleep(9000);
-                        //*[@id="myReports"]/form/table[1]/tbody
-                        gc.CreatePdf(orderNumber, Parcel_number, "County Property Tax Notice", driver, "CO", "Adams");
-                        //driver.FindElement(By.XPath("//*[@id='myReports']/form/table[1]/tbody/tr[2]/td[2]/a"))
-                        driver.FindElement(By.LinkText("Adams County Property Tax Notice")).Click();
-                        Thread.Sleep(5000);
-                        gc.CreatePdf(orderNumber, Parcel_number, "Adams County Property", driver, "CO", "Adams");
-                        // string Adamsproperty = Countyadmslink.GetAttribute("href");
-                        driver.Navigate().GoToUrl(geturl);
-                        //Redemption Certificate
-                        driver.FindElement(By.LinkText("Redemption Certificate")).Click();
-                        Thread.Sleep(4000);
-                        driver.FindElement(By.LinkText("Redemption Certificate")).Click();
-                        Thread.Sleep(4000);
-                        gc.CreatePdf(orderNumber, Parcel_number, "Redemption County Property", driver, "CO", "Adams");
-                        driver.Navigate().GoToUrl(geturl);
-                        driver.FindElement(By.LinkText("Account Balance")).Click();
-                        Thread.Sleep(4000);
-                        driver.FindElement(By.LinkText("Account Balance")).Click();
-                        Thread.Sleep(4000);
-                        gc.CreatePdf(orderNumber, Parcel_number, "Account Balance", driver, "CO", "Adams");
+                        IWebElement IPropertyTax = driver.FindElement(By.LinkText("Adams County Property Tax Notice"));
+                        string strPropertyTax = IPropertyTax.GetAttribute("href");
+                        IWebElement IReedemedTax = driver.FindElement(By.LinkText("Redemption Certificate"));
+                        string strReedemedTax = IReedemedTax.GetAttribute("href");
+                        IWebElement IAccountBalance = driver.FindElement(By.LinkText("Account Balance"));
+                        string strAccountBalance = IAccountBalance.GetAttribute("href");
+                        IWebElement IStatementTaxDue = driver.FindElement(By.LinkText("Statement Of Taxes Due"));
+                        string strStatementTaxDue = IStatementTaxDue.GetAttribute("href");
+                        IWebElement ISummaryTax = driver.FindElement(By.LinkText("Summary of Taxes Due"));
+                        string strSummaryTax = ISummaryTax.GetAttribute("href");
+
+                        driver.Navigate().GoToUrl(strPropertyTax);
+                        Thread.Sleep(6000);
+                        try
+                        {
+                            IWebElement IPropertyTaxClick = driver.FindElement(By.LinkText("Adams County Property Tax Notice"));
+                            IPropertyTaxClick.Click();
+                            Thread.Sleep(4000);
+                            gc.CreatePdf(orderNumber, Parcel_number, "Account Adams County Property Tax", driver, "CO", "Adams");
+                        }
+                        catch { }
+                        driver.Navigate().GoToUrl(strReedemedTax);
+                        Thread.Sleep(6000);
+                        try
+                        {
+                            IWebElement IReedemedTaxClick = driver.FindElement(By.LinkText("Redemption Certificate"));
+                            IReedemedTaxClick.Click();
+                            Thread.Sleep(4000);
+                            gc.CreatePdf(orderNumber, Parcel_number, "Account Redemption Certificate", driver, "CO", "Adams");
+                        }
+                        catch { }
+                        driver.Navigate().GoToUrl(strAccountBalance);
+                        Thread.Sleep(6000);
+                        try
+                        {
+                            IWebElement IAccountTaxClick = driver.FindElement(By.LinkText("Account Balance"));
+                            IAccountTaxClick.Click();
+                            Thread.Sleep(4000);
+                            gc.CreatePdf(orderNumber, Parcel_number, "Account Account Balance", driver, "CO", "Adams");
+                        }
+                        catch { }
+                        driver.Navigate().GoToUrl(strStatementTaxDue);
+                        Thread.Sleep(6000);
+                        try
+                        {
+                            IWebElement IStatementTaxClick = driver.FindElement(By.LinkText("Statement Of Taxes Due"));
+                            IStatementTaxClick.Click();
+                            Thread.Sleep(4000);
+                            gc.CreatePdf(orderNumber, Parcel_number, "Account Statement Of Taxes Due", driver, "CO", "Adams");
+                        }
+                        catch { }
+                        driver.Navigate().GoToUrl(strSummaryTax);
+                        Thread.Sleep(6000);
+                        try
+                        {
+                            IWebElement ISummaryTaxClick = driver.FindElement(By.LinkText("Summary of Taxes Due"));
+                            ISummaryTaxClick.Click();
+                            Thread.Sleep(4000);
+                            gc.CreatePdf(orderNumber, Parcel_number, "Account Summary of Taxes Due", driver, "CO", "Adams");
+                        }
+                        catch { }
+
+
+                        //driver.FindElement(By.LinkText("Adams County Property Tax Notice")).Click();
+                        //Thread.Sleep(9000);
+                        ////*[@id="myReports"]/form/table[1]/tbody
+                        //gc.CreatePdf(orderNumber, Parcel_number, "County Property Tax Notice", driver, "CO", "Adams");
+                        ////driver.FindElement(By.XPath("//*[@id='myReports']/form/table[1]/tbody/tr[2]/td[2]/a"))
+                        //driver.FindElement(By.LinkText("Adams County Property Tax Notice")).Click();
+                        //Thread.Sleep(5000);
+                        //gc.CreatePdf(orderNumber, Parcel_number, "Adams County Property", driver, "CO", "Adams");
+                        //// string Adamsproperty = Countyadmslink.GetAttribute("href");
+                        //driver.Navigate().GoToUrl(geturl);
+                        ////Redemption Certificate
+                        //driver.FindElement(By.LinkText("Redemption Certificate")).Click();
+                        //Thread.Sleep(4000);
+                        //IWebElement RedemWeb = driver.FindElement(By.LinkText("Redemption Certificate"));
+                        //string Hrefred = RedemWeb.GetAttribute("href");
+                        //gc.downloadfile(Hrefred, orderNumber, Parcel_number, "ViewTaxBill", "SC", "Lexington");
+                        //Thread.Sleep(4000);
+                        //gc.CreatePdf(orderNumber, Parcel_number, "Redemption County Property", driver, "CO", "Adams");
+                        //driver.Navigate().GoToUrl(geturl);
+                        //driver.FindElement(By.LinkText("Account Balance")).Click();
+                        //Thread.Sleep(4000);
+                        //driver.FindElement(By.LinkText("Account Balance")).Click();
+                        //Thread.Sleep(4000);
+                        //gc.CreatePdf(orderNumber, Parcel_number, "Account Balance", driver, "CO", "Adams");
                     }
                     catch { }
                     driver.Quit();

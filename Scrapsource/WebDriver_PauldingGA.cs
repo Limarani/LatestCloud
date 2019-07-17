@@ -38,11 +38,15 @@ namespace ScrapMaricopa.Scrapsource
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "", accountnumber = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            //driver = new PhantomJSDriver();
+            //driver = new ChromeDriver();
             using (driver = new PhantomJSDriver())
             {
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
+                    //Tax Authority
+
                     driver.Navigate().GoToUrl("https://qpublic.schneidercorp.com/Application.aspx?App=PauldingCountyGA&Layer=Parcels&PageType=Search");
                     try
                     {
@@ -61,9 +65,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetNo + " " + direction + " " + streetName + " " + streetType + " " + accountNo;
                         gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "GA", "Paulding");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_PauldingGA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -81,6 +92,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (Convert.ToInt32(strmulti) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Paulding_Maximum"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                             IWebElement Imultitable = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl00_ctl01_gvwParcelResults']/tbody"));
@@ -138,9 +150,9 @@ namespace ScrapMaricopa.Scrapsource
                     else if (searchType == "account")
                     {
                         accountNo = accountNo.TrimStart('0').TrimEnd('0').Trim();
-                        driver.FindElement(By.Id("ctlBodyPane_ctl02_ctl01_txtAlternateID")).SendKeys(accountNo);
+                        driver.FindElement(By.Id("ctlBodyPane_ctl02_ctl01_txtAlternateIDExactMatch")).SendKeys(accountNo);
                         gc.CreatePdf_WOP(orderNumber, "Account Search Before", driver, "GA", "Paulding");
-                        driver.FindElement(By.Id("ctlBodyPane_ctl02_ctl01_btnSearch")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("ctlBodyPane_ctl02_ctl01_btnSearchExactMatch")).SendKeys(Keys.Enter);
                         gc.CreatePdf_WOP(orderNumber, "Account Search After", driver, "GA", "Paulding");
                         try
                         {
@@ -189,6 +201,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (Convert.ToInt32(strmulti) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Paulding_Maximum"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                             IWebElement Imultitable = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl00_ctl01_gvwParcelResults']/tbody"));
@@ -224,25 +237,27 @@ namespace ScrapMaricopa.Scrapsource
 
                     //Property Details
                     string Owner = "", OwnerAddress = "", ParcelNumber = "", AccountAndRealkey = "", LocationAddress = "", ZipCode = "", Class = "", TaxDistrict = "", MillageRate = "", Acres = "", Neighborhood = "", HomesteadExemption = "", LandlotAndDistrictAndSection = "", Subdivision = "", YearBuilt = "";
+                    string Taxauthority = "";
                     try
                     {
-                        string bulktext1 = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl00_mSection']/div")).Text.Trim();
-                        string[] Propdata1 = bulktext1.Split('\r');
+                        Owner = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl00_mSection']/div")).Text.Trim();
+                        //string[] Propdata1 = bulktext1.Split('\r');
 
-                        if (Propdata1.Count() == 4)
-                        {
-                            Owner = Propdata1[0].Replace("\r\n", "").Trim() + "&" + Propdata1[1].Replace("\r\n", "").Trim();
-                            OwnerAddress = Propdata1[2].Replace("\r\n", "").Trim() + Propdata1[3].Replace("\r\n", "").Trim();
-                        }
-                        if (Propdata1.Count() == 3)
-                        {
-                            Owner = Propdata1[0].Replace("\r\n", "").Trim();
-                            OwnerAddress = Propdata1[1].Replace("\r\n", "").Trim() + Propdata1[2].Replace("\r\n", "").Trim();
-                        }
-                        if (Propdata1.Count() == 2)
-                        {
-                            OwnerAddress = Propdata1[1].Replace("\r\n", "").Trim() + Propdata1[2].Replace("\r\n", "").Trim();
-                        }
+                        //if (Propdata1.Count() == 4)
+                        //{
+                        //    Owner = Propdata1[0].Replace("\r\n", "").Trim() + " " + "&" + " " + Propdata1[1].Replace("\r\n", "").Trim();
+                        //    OwnerAddress = Propdata1[2].Replace("\r\n", "").Trim() + " " + Propdata1[3].Replace("\r\n", "").Trim();
+                        //}
+                        //if (Propdata1.Count() == 3)
+                        //{
+                        //    Owner = Propdata1[0].Replace("\r\n", "").Trim();
+                        //    OwnerAddress = Propdata1[1].Replace("\r\n", "").Trim() + Propdata1[2].Replace("\r\n", "").Trim();
+                        //}
+                        //if (Propdata1.Count() == 2)
+                        //{
+                        //    OwnerAddress = Propdata1[1].Replace("\r\n", "").Trim() + Propdata1[2].Replace("\r\n", "").Trim();
+                        //}
+
                         ParcelNumber = driver.FindElement(By.Id("ctlBodyPane_ctl01_ctl01_lblParcelID")).Text.Trim();
                         gc.CreatePdf(orderNumber, ParcelNumber, "Property Details and Assessment Details Pdf", driver, "GA", "Paulding");
                         AccountAndRealkey = driver.FindElement(By.Id("ctlBodyPane_ctl01_ctl01_lblRealKey")).Text.Trim();
@@ -265,8 +280,6 @@ namespace ScrapMaricopa.Scrapsource
                             YearBuilt = driver.FindElement(By.Id("ctlBodyPane_ctl05_ctl01_rptResidential_ctl00_lblYearBuilt")).Text.Trim();
                         }
                         catch { }
-                        string PropertyDetails = Owner.Trim() + "~" + OwnerAddress.Trim() + "~" + AccountAndRealkey.Trim() + "~" + LocationAddress.Trim() + "~" + ZipCode.Trim() + "~" + Class.Trim() + "~" + TaxDistrict.Trim() + "~" + MillageRate.Trim() + "~" + Acres.Trim() + "~" + Neighborhood.Trim() + "~" + HomesteadExemption.Trim() + "~" + LandlotAndDistrictAndSection.Trim() + "~" + Subdivision.Trim() + "~" + YearBuilt.Trim();
-                        gc.insert_date(orderNumber, ParcelNumber, 885, PropertyDetails, 1, DateTime.Now);
 
                     }
                     catch { }
@@ -278,17 +291,23 @@ namespace ScrapMaricopa.Scrapsource
                         AssessmentYear = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl11_ctl01_grdValuation']/thead/tr/th[3]")).Text.Trim();
                     }
                     catch { }
+                    try
+                    {
+
+                        AssessmentYear = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl11_ctl01_grdValuation']/thead/tr/th")).Text.Trim();
+                    }
+                    catch { }
                     // gc.CreatePdf(orderNumber, ParcelNumber, "Assessment Details ", driver, "GA", "Paulding");
                     try
                     {
-                        string AssessmentTitle = "", AssessmentValue = "";
+                        string AssessmentTitle = "", AssessmentValue = "";//ctlBodyPane_ctl11_ctl01_grdValuation
                         IWebElement tbcurasses12 = driver.FindElement(By.Id("ctlBodyPane_ctl11_ctl01_grdValuation"));
                         IList<IWebElement> TRcurasses2 = tbcurasses12.FindElements(By.TagName("tr"));
                         IList<IWebElement> TDmulti12;
                         foreach (IWebElement row in TRcurasses2)
                         {
                             TDmulti12 = row.FindElements(By.TagName("td"));
-                            if (TDmulti12.Count != 0 && !row.Text.Contains("Year"))
+                            if (row.Text.Trim() != "" && TDmulti12.Count != 0 && TDmulti12.Count != 2 && !row.Text.Contains("Year"))
                             {
                                 AssessmentTitle += TDmulti12[1].Text + "~";
                                 AssessmentValue += TDmulti12[2].Text + "~";
@@ -299,17 +318,18 @@ namespace ScrapMaricopa.Scrapsource
                         gc.insert_date(orderNumber, ParcelNumber, 888, AssessmentYear + "~" + AssessmentValue.Remove(AssessmentValue.Length - 1, 1), 1, DateTime.Now);
                     }
                     catch { }
-                    //Tax Authority
-                    string Taxauthority = "";
+
                     try
                     {
                         driver.Navigate().GoToUrl("http://www.paulding.gov/gov/taxcommissioner.asp");
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, ParcelNumber, "TaxAuthority Pdf", driver, "GA", "Paulding");
-                        Taxauthority = driver.FindElement(By.XPath("//*[@id='divEditor29a70aaf-9fe1-4f88-901c-9912918f3c57']/div/p[5]")).Text.Trim();
+                        Taxauthority = driver.FindElement(By.XPath("//*[@id='divEditor1ad27fed-3cf3-4768-be2f-72f8da981da9']/div/p[2]")).Text.Trim();
 
                     }
                     catch { }
+                    string PropertyDetails = Owner.Trim() + "~" + AccountAndRealkey.Trim() + "~" + LocationAddress.Trim() + "~" + ZipCode.Trim() + "~" + Class.Trim() + "~" + TaxDistrict.Trim() + "~" + MillageRate.Trim() + "~" + Acres.Trim() + "~" + Neighborhood.Trim() + "~" + HomesteadExemption.Trim() + "~" + LandlotAndDistrictAndSection.Trim() + "~" + Subdivision.Trim() + "~" + YearBuilt.Trim() + "~" + Taxauthority.Trim();
+                    gc.insert_date(orderNumber, ParcelNumber, 885, PropertyDetails, 1, DateTime.Now);
                     //Tax information Details
                     try
                     {
@@ -344,7 +364,22 @@ namespace ScrapMaricopa.Scrapsource
 
                     try
                     {
-                        IWebElement PaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table"));
+                        IWebElement PaymentTB = null;
+                        try
+                        {
+                            PaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table"));
+                        }
+                        catch { }
+                        try
+                        {
+                            if (PaymentTB == null)
+                            {
+                                PaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table"));
+                            }
+                        }
+                        catch { }
+
+                        //IWebElement PaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table"));
                         IList<IWebElement> PaymentTR = PaymentTB.FindElements(By.TagName("tr"));
                         IList<IWebElement> PaymentTD;
 
@@ -373,7 +408,21 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         //Tax Info Details
-                        IWebElement Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        IWebElement Receipttable = null;
+                        try
+                        {
+                            Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        }
+                        catch { }
+                        try
+                        {
+                            if (Receipttable == null)
+                            {
+                                Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                            }
+                        }
+                        catch { }
+                        //IWebElement Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
                         IList<IWebElement> ReceipttableRow = Receipttable.FindElements(By.TagName("tr"));
                         int rowcount = ReceipttableRow.Count;
 
@@ -381,8 +430,17 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             if (p < 4)
                             {
-
-                                driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p + "]/td[8]/button")).Click();
+                                try
+                                {
+                                    driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p + "]/td[8]/button")).Click();
+                                }
+                                catch { }
+                                try
+                                {
+                                    driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody/tr[" + p + "]/td[8]/button")).Click();
+                                }
+                                catch { }
+                                Thread.Sleep(2000);
                                 try
                                 {
                                     driver.FindElement(By.XPath("/html/body/div[1]/div/div/div[2]/button[2]")).Click();
@@ -450,11 +508,13 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 catch
                                 { }
-                                string Taxinfownername = "", Taxaddress1 = "", Account = "", RecordType = "", BillNumber = "", BillTaxYear = "", taxown = "";
+                                string Taxinfownername = "", Taxaddress1 = "", Account = "", RecordType = "", BillNumber = "", BillTaxYear = "", taxown = "", addcheck = "";
                                 //Tax information details
+                                IWebElement ownernamedetails = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[1]/div[1]/table/tbody"));
+                                string ownernameaddress = gc.Between(ownernamedetails.Text, "Owner Name", "Account");
                                 try
                                 {
-                                    //Bill information
+                                    //Bill information////*[@id="avalon"]/div/div/div/div[1]/div[1]/div[1]/table/tbody
                                     IWebElement TaxTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[1]/div[1]/table/tbody"));
                                     IList<IWebElement> TaxTR = TaxTB.FindElements(By.TagName("tr"));
                                     IList<IWebElement> TaxTD;
@@ -463,18 +523,9 @@ namespace ScrapMaricopa.Scrapsource
                                         TaxTD = Tax.FindElements(By.TagName("td"));
                                         if (TaxTD.Count != 0 && Tax.Text != "")
                                         {
-                                            if (Tax.Text.Contains("Owner Name"))
-                                            {
-                                                Taxinfownername = TaxTD[1].Text;
-                                                taxown = "Owner";
-                                            }
-                                            if (!Tax.Text.Contains("Owner Name") && taxown == "Owner" && !Tax.Text.Contains("Account"))
-                                            {
-                                                Taxaddress1 += TaxTD[1].Text + " ";
-                                            }
+
                                             if (Tax.Text.Contains("Account"))
                                             {
-                                                taxown = "";
                                                 Account = TaxTD[1].Text;
                                             }
                                             if (Tax.Text.Contains("Record Type"))
@@ -571,7 +622,7 @@ namespace ScrapMaricopa.Scrapsource
                                             }
                                         }
                                     }
-                                    string Taxinfo_details1 = Taxinfownername + "~" + Taxaddress1.Trim() + "~" + Account + "~" + RecordType + "~" + BillNumber + "~" + BillTaxYear + "~" + Propertyid + "~" + Description + "~" + Totalorginallevy + "~" + Fairmarketval + "~" + Assessedval + "~" + TotaldueTax + "~" + DueDate + "~" + PaymentStatus + "~" + LastPaymentDate + "~" + TotalAmountPaid + "~" + TotalDuePayment + "~" + Taxauthority;
+                                    string Taxinfo_details1 = ownernameaddress + "~" + Account + "~" + RecordType + "~" + BillNumber + "~" + BillTaxYear + "~" + Propertyid + "~" + Description + "~" + Totalorginallevy + "~" + Fairmarketval + "~" + Assessedval + "~" + TotaldueTax + "~" + DueDate + "~" + PaymentStatus + "~" + LastPaymentDate + "~" + TotalAmountPaid + "~" + TotalDuePayment;
                                     gc.insert_date(orderNumber, ParcelNumber, 897, Taxinfo_details1, 1, DateTime.Now);
                                 }
                                 catch { }

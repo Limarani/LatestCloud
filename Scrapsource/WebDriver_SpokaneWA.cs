@@ -70,6 +70,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SpokaneWA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -147,7 +153,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             //No Data Found
                             string nodata = driver.FindElement(By.Id("MainContent_lblMsg")).Text;
-                            if (nodata.Contains("There were no records found."))
+                            if (nodata.Contains("There were no records found.") || nodata.Contains("No record found by that search criteria."))
                             {
                                 HttpContext.Current.Session["Nodata_SpokaneWA"] = "Yes";
                                 driver.Quit();
@@ -387,7 +393,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         // int pcount = 1,Ocount=3;
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

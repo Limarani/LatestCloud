@@ -37,19 +37,20 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_parcelNo = parcelNumber;
 
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
-            string Address = "", lastName = "", firstName = "", Acnumber = "", PropertyAdd = "", Strownername = "", Pin = "", AccountNo = "";
+            string Address = "", lastName = "", firstName = "", Acnumber = "", PropertyAdd = "", Strownername = "", subdivision="", Pin = "", AccountNo = "", TaxAuth="";
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
 
-            using (driver = new PhantomJSDriver())
+                 //                        using (driver = new ChromeDriver())
+                                           using (driver = new PhantomJSDriver())
             {
-                // driver = new ChromeDriver();
+
 
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-
+                    
                     try
                     {
                         driver.Navigate().GoToUrl("https://www.co.weld.co.us/apps1/propertyportal/");
@@ -64,7 +65,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "CO", "Weld");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Weld"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -78,85 +86,37 @@ namespace ScrapMaricopa.Scrapsource
 
                         Thread.Sleep(4000);
                         gc.CreatePdf_WOP(orderNumber, "Address search", driver, "CO", "Weld");
-                        try
+                        string check = "";
+                        try { 
+                        check = driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/p")).Text;
+                        if (check.Contains("found 0 records"))
                         {
-                            driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/div[2]/div[3]/a")).SendKeys(Keys.Enter);
-                            Thread.Sleep(3000);
+                            HttpContext.Current.Session["Zero_Weld"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
-                        catch { }
+                        }
+                        catch
+                        {
+
+                        }
+                    
                         try
                         {
                             int Max = 0;
                             string strowner = "", strAddress = "", strCity = "";
                             string Record = "";
-                            IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='tab_name']/div/div[1]/div[1]/small"));
-                            Record = Irecord.Text;
-                            Record = GlobalClass.After(Record, "of").Trim();
-                            if (Record != "1")
+                            try
                             {
-
-                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_name']/div/table"));
-                                IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
-                                IList<IWebElement> multiTD;
-                                foreach (IWebElement multi in multiRow)
-                                {
-                                    multiTD = multi.FindElements(By.TagName("td"));
-                                    if (multiTD.Count != 0 && multiRow.Count >= 3 && multiRow.Count <= 25 && !multi.Text.Contains("Subdivision") && multi.Text.Trim() != "")
-                                    {
-                                        Strownername = multiTD[2].Text;
-                                        Acnumber = multiTD[0].Text;
-                                        parcelNumber = multiTD[1].Text;
-                                        PropertyAdd = multiTD[3].Text + " " + multiTD[4].Text;
-
-                                        string multidetails = Strownername + "~" + Acnumber + "~" + PropertyAdd;
-                                        gc.insert_date(orderNumber, parcelNumber, 1616, multidetails, 1, DateTime.Now);
-                                        Max++;
-                                    }
-                                    if (multiTD.Count != 0 && multiRow.Count > 25)
-                                    {
-                                        HttpContext.Current.Session["multiparcel_Weld_Maximum"] = "Maximum";
-                                        driver.Quit();
-                                        return "Maximum";
-                                    }
-
-                                }
-                                if (Max > 1 && Max < 26)
-                                {
-                                    HttpContext.Current.Session["multiparcel_Weld"] = "Yes";
-                                    driver.Quit();
-                                    return "MultiParcel";
-                                }
-                                if (Max == 0)
-                                {
-                                    HttpContext.Current.Session["Zero_Weld"] = "Zero";
-                                    driver.Quit();
-                                    return "No Record Found";
-                                }
+                                IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/ul/li/a/h4"));
+                                Record = Irecord.Text;
+                                Record = gc.Between(Record, "Address Search:", "record").Trim();
                             }
-                        }
-                        catch { }
-                    }
-
-                    if (searchType == "account")
-                    {
-
-
-                        driver.FindElement(By.Id("pin")).SendKeys(account);
-                        Thread.Sleep(4000);
-                        gc.CreatePdf_WOP(orderNumber, "Pin or Schedule search", driver, "CO", "Weld");
-
-                        try
-                        {
-                            int Max = 0;
-                            string strowner = "", strAddress = "", strCity = "";
-                            string Record = "";
-                            IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='tab_name']/div/div[1]/div[1]/small"));
-                            Record = Irecord.Text;
-                            Record = GlobalClass.After(Record, "of").Trim();
+                            catch { }
                             if (Record != "1")
                             {
 
-                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_name']/div/table"));
+                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_address']/div/table"));
                                 IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
                                 IList<IWebElement> multiTD;
                                 foreach (IWebElement multi in multiRow)
@@ -164,139 +124,12 @@ namespace ScrapMaricopa.Scrapsource
                                     multiTD = multi.FindElements(By.TagName("td"));
                                     if (multiTD.Count != 0 && multiRow.Count >= 3 && multiRow.Count <= 25 && !multi.Text.Contains("Subdivision") && multi.Text.Trim() != "")
                                     {
-                                        Strownername = multiTD[2].Text;
+                                        PropertyAdd = multiTD[2].Text;
                                         Acnumber = multiTD[0].Text;
                                         parcelNumber = multiTD[1].Text;
-                                        PropertyAdd = multiTD[3].Text + " " + multiTD[4].Text;
+                                        subdivision = multiTD[3].Text;
 
-                                        string multidetails = Strownername + "~" + Acnumber + "~" + PropertyAdd;
-                                        gc.insert_date(orderNumber, parcelNumber, 1616, multidetails, 1, DateTime.Now);
-                                        Max++;
-                                    }
-                                    if (multiTD.Count != 0 && multiRow.Count > 25)
-                                    {
-                                        HttpContext.Current.Session["multiparcel_Weld_Maximum"] = "Maximum";
-                                        driver.Quit();
-                                        return "Maximum";
-                                    }
-
-                                }
-                                if (Max > 1 && Max < 26)
-                                {
-                                    HttpContext.Current.Session["multiparcel_Weld"] = "Yes";
-                                    driver.Quit();
-                                }
-                                if (Max == 0)
-                                {
-                                    HttpContext.Current.Session["Zero_Weld"] = "Zero";
-                                    driver.Quit();
-                                    return "No Record Found";
-                                }
-                            }
-                        }
-                        catch { }
-                    }
-
-
-                    else if (searchType == "parcel")
-                    {
-
-                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[1]")).SendKeys(parcelNumber);
-                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[2]")).SendKeys(Keys.Enter);
-
-                        Thread.Sleep(4000);
-                        gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "CO", "Weld");
-                        driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/div[2]/div[3]/a")).SendKeys(Keys.Enter);
-                        Thread.Sleep(3000);
-
-                        try
-                        {
-                            int Max = 0;
-                            string strowner = "", strAddress = "", strCity = "";
-                            string Record = "";
-                            IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='tab_name']/div/div[1]/div[1]/small"));
-                            Record = Irecord.Text;
-                            Record = GlobalClass.After(Record, "of").Trim();
-                            if (Record != "1")
-                            {
-
-                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_name']/div/table"));
-                                IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
-                                IList<IWebElement> multiTD;
-                                foreach (IWebElement multi in multiRow)
-                                {
-                                    multiTD = multi.FindElements(By.TagName("td"));
-                                    if (multiTD.Count != 0 && multiRow.Count >= 3 && multiRow.Count <= 25 && !multi.Text.Contains("Subdivision") && multi.Text.Trim() != "")
-                                    {
-                                        Strownername = multiTD[2].Text;
-                                        Acnumber = multiTD[0].Text;
-                                        parcelNumber = multiTD[1].Text;
-                                        PropertyAdd = multiTD[3].Text + " " + multiTD[4].Text;
-
-                                        string multidetails = Strownername + "~" + Acnumber + "~" + PropertyAdd;
-                                        gc.insert_date(orderNumber, parcelNumber, 1616, multidetails, 1, DateTime.Now);
-                                        Max++;
-                                    }
-                                    if (multiTD.Count != 0 && multiRow.Count > 25)
-                                    {
-                                        HttpContext.Current.Session["multiparcel_Weld_Maximum"] = "Maximum";
-                                        driver.Quit();
-                                        return "Maximum";
-                                    }
-
-                                }
-                                if (Max > 1 && Max < 26)
-                                {
-                                    HttpContext.Current.Session["multiparcel_Weld"] = "Yes";
-                                    driver.Quit();
-                                    return "MultiParcel";
-                                }
-                                if (Max == 0)
-                                {
-                                    HttpContext.Current.Session["Zero_Weld"] = "Zero";
-                                    driver.Quit();
-                                    return "No Record Found";
-                                }
-                            }
-                        }
-                        catch { }
-                    }
-
-                    if (searchType == "ownername")
-                    {
-
-                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[1]")).SendKeys(ownername);
-                        Thread.Sleep(5000);
-
-                        gc.CreatePdf_WOP(orderNumber, "OwnerName search", driver, "CO", "Weld");
-                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[2]")).SendKeys(Keys.Enter);
-                        Thread.Sleep(5000);
-                        gc.CreatePdf_WOP(orderNumber, "OwnerName search Result", driver, "CO", "Weld");
-                        try
-                        {
-                            int Max = 0;
-                            string strowner = "", strAddress = "", strCity = "";
-                            string Record = "";
-                            IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='tab_name']/div/div[1]/div[1]/small"));
-                            Record = Irecord.Text;
-                            Record = GlobalClass.After(Record, "of").Trim();
-                            if (Record != "1")
-                            {
-
-                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_name']/div/table"));
-                                IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
-                                IList<IWebElement> multiTD;
-                                foreach (IWebElement multi in multiRow)
-                                {
-                                    multiTD = multi.FindElements(By.TagName("td"));
-                                    if (multiTD.Count != 0 && multiRow.Count >= 3 && multiRow.Count <= 25 && !multi.Text.Contains("Subdivision") && multi.Text.Trim() != "")
-                                    {
-                                        Strownername = multiTD[2].Text;
-                                        Acnumber = multiTD[0].Text;
-                                        parcelNumber = multiTD[1].Text;
-                                        PropertyAdd = multiTD[3].Text + " " + multiTD[4].Text;
-
-                                        string multidetails = Strownername + "~" + Acnumber + "~" + PropertyAdd;
+                                        string multidetails = Acnumber + "~" + PropertyAdd + "~" + subdivision;
                                         gc.insert_date(orderNumber, parcelNumber, 1616, multidetails, 1, DateTime.Now);
                                         Max++;
                                     }
@@ -324,16 +157,220 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
-                    //No record Found
+
+                    if (searchType == "account")
+                    {
+
+
+                        driver.FindElement(By.Id("pin")).SendKeys(account);
+                        Thread.Sleep(4000);
+                        gc.CreatePdf_WOP(orderNumber, "Pin or Schedule search", driver, "CO", "Weld");
+                        try
+                        {
+                            int Max = 0;
+                            string strowner = "", strAddress = "", strCity = "";
+                            string Record = "";
+                            try
+                            {
+                                IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/ul/li/a/h4"));
+                                Record = Irecord.Text;
+                                Record = gc.Between(Record, "Address Search:", "record").Trim();
+                            }
+                            catch { }
+                            if (Record != "1")
+                            {
+
+                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_address']/div/table"));
+                                IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
+                                IList<IWebElement> multiTD;
+                                foreach (IWebElement multi in multiRow)
+                                {
+                                    multiTD = multi.FindElements(By.TagName("td"));
+                                    if (multiTD.Count != 0 && multiRow.Count >= 3 && multiRow.Count <= 25 && !multi.Text.Contains("Subdivision") && multi.Text.Trim() != "")
+                                    {
+                                        PropertyAdd = multiTD[2].Text;
+                                        Acnumber = multiTD[0].Text;
+                                        parcelNumber = multiTD[1].Text;
+                                        subdivision = multiTD[3].Text;
+
+                                        string multidetails = Acnumber + "~" + PropertyAdd + "~" + subdivision;
+                                        gc.insert_date(orderNumber, parcelNumber, 1616, multidetails, 1, DateTime.Now);
+                                        Max++;
+                                    }
+                                    if (multiTD.Count != 0 && multiRow.Count > 25)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_Weld_Maximum"] = "Maximum";
+                                        driver.Quit();
+                                        return "Maximum";
+                                    }
+                                }
+                                if (Max > 1 && Max < 26)
+                                {
+                                    HttpContext.Current.Session["multiparcel_Weld"] = "Yes";
+                                    driver.Quit();
+                                    return "MultiParcel";
+                                }
+                                if (Max == 0)
+                                {
+                                    HttpContext.Current.Session["Zero_Weld"] = "Zero";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
+
+                    else if (searchType == "parcel")
+                    {
+
+                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[1]")).SendKeys(parcelNumber);
+                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[2]")).SendKeys(Keys.Enter);
+
+                        Thread.Sleep(4000);
+                        gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "CO", "Weld");
+                        try
+                        {           
+                            //driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/div[2]/div[3]/a")).SendKeys(Keys.Enter);
+                            driver.FindElement(By.Id("fullRpt")).SendKeys(Keys.Enter);
+                            Thread.Sleep(3000);
+                        }
+                        catch { }
+
+                        try
+                        {
+                            int Max = 0;
+                            string strowner = "", strAddress = "", strCity = "";
+                            string Record = "";
+                            try
+                            {
+                                IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/ul/li/a/h4"));
+                                Record = Irecord.Text;
+                                Record = gc.Between(Record, "Address Search:", "record").Trim();
+                            }
+                            catch { }
+                            if (Record != "1")
+                            {
+
+                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_address']/div/table"));
+                                IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
+                                IList<IWebElement> multiTD;
+                                foreach (IWebElement multi in multiRow)
+                                {
+                                    multiTD = multi.FindElements(By.TagName("td"));
+                                    if (multiTD.Count != 0 && multiRow.Count >= 3 && multiRow.Count <= 25 && !multi.Text.Contains("Subdivision") && multi.Text.Trim() != "")
+                                    {
+                                        PropertyAdd = multiTD[2].Text;
+                                        Acnumber = multiTD[0].Text;
+                                        parcelNumber = multiTD[1].Text;
+                                        subdivision = multiTD[3].Text;
+
+                                        string multidetails = Acnumber + "~" + PropertyAdd + "~" + subdivision;
+                                        gc.insert_date(orderNumber, parcelNumber, 1616, multidetails, 1, DateTime.Now);
+                                        Max++;
+                                    }
+                                    if (multiTD.Count != 0 && multiRow.Count > 25)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_Weld_Maximum"] = "Maximum";
+                                        driver.Quit();
+                                        return "Maximum";
+                                    }
+
+                                }
+                                if (Max > 1 && Max < 26)
+                                {
+                                    HttpContext.Current.Session["multiparcel_Weld"] = "Yes";
+                                    driver.Quit();
+                                    return "MultiParcel";
+                                }
+                                if (Max == 0)
+                                {
+                                    HttpContext.Current.Session["Zero_Weld"] = "Zero";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
+                    if (searchType == "ownername")
+                    {
+
+                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[1]")).SendKeys(ownername);
+                        Thread.Sleep(5000);
+
+                        gc.CreatePdf_WOP(orderNumber, "OwnerName search", driver, "CO", "Weld");
+                        driver.FindElement(By.XPath("//*[@id='searchBar']/div[2]/form/input[2]")).SendKeys(Keys.Enter);
+                        Thread.Sleep(5000);                       
+
+                        gc.CreatePdf_WOP(orderNumber, "OwnerName search Result", driver, "CO", "Weld");
+                        try
+                        {
+                            int Max = 0;
+                            string strowner = "", strAddress = "", strCity = "";
+                            string Record = "";
+                            try
+                            {
+                                IWebElement Irecord = driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/ul/li/a/h4"));
+                                Record = Irecord.Text;
+                                Record = gc.Between(Record, "Name Search:", "record").Trim();
+                            }
+                            catch { }
+                            if (Record != "1")
+                            {
+
+                                IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='tab_name']/div/table"));
+                                IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
+                                IList<IWebElement> multiTD;
+                                foreach (IWebElement multi in multiRow)
+                                {
+                                    multiTD = multi.FindElements(By.TagName("td"));
+                                    if (multiTD.Count != 0 && multiRow.Count >= 3 && multiRow.Count <= 25 && !multi.Text.Contains("Subdivision") && multi.Text.Trim() != "")
+                                    {
+                                        PropertyAdd = multiTD[2].Text +" "+ multiTD[3].Text;
+                                        Acnumber = multiTD[0].Text;
+                                        parcelNumber = multiTD[1].Text;
+                                        subdivision = multiTD[4].Text;
+
+                                        string multidetails = Acnumber + "~" + PropertyAdd + "~" + subdivision;
+                                        gc.insert_date(orderNumber, parcelNumber, 1616, multidetails, 1, DateTime.Now);
+                                        Max++;
+                                    }
+                                    if (multiTD.Count != 0 && multiRow.Count > 25)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_Weld_Maximum"] = "Maximum";
+                                        driver.Quit();
+                                        return "Maximum";
+                                    }
+
+                                }
+                                if (Max > 1 && Max < 26)
+                                {
+                                    HttpContext.Current.Session["multiparcel_Weld"] = "Yes";
+                                    driver.Quit();
+                                    return "MultiParcel";
+                                }
+                                if (Max == 0)
+                                {
+                                    HttpContext.Current.Session["Zero_Weld"] = "Zero";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                        }
+                        catch { }
+                    }
                     try
                     {
-                        string check = "";
-                        check = driver.FindElement(By.XPath("//*[@id='mainContent']/div/div/p")).Text;
-                        if (check.Contains("found 0 records"))
+                        //No Data Found
+                        string nodata = driver.FindElement(By.Id("mainContent")).Text;
+                        if (nodata.Contains("returned: 0 records"))
                         {
                             HttpContext.Current.Session["Zero_Weld"] = "Zero";
                             driver.Quit();
-                            return "No Record Found";
+                            return "No Data Found";
                         }
                     }
                     catch { }
@@ -344,19 +381,41 @@ namespace ScrapMaricopa.Scrapsource
                     string Proadd1 = "", Proadd2 = "", PropertyAddress = "", YearBuilt = "", LegalDesc = "", OwnerName1 = "", OwnerName2 = "";
 
                     //IWebElement Iframe = driver.FindElement(By.XPath("/html/body/noscript/text()"));
+                    //driver.SwitchTo().Window(driver.WindowHandles.Last());
+
+                   
+                    try
+                    {
+                        driver.FindElement(By.Id("fullRpt")).SendKeys(Keys.Enter);
+                        Thread.Sleep(2000);
+                        gc.CreatePdf_WOP(orderNumber, "search Result", driver, "CO", "Weld");
+                    }
+                    catch
+                    { }
                     driver.SwitchTo().Window(driver.WindowHandles.Last());
 
-                    driver.FindElement(By.XPath("/html/body/div[3]/button/p")).Click();
-                    Thread.Sleep(4000);
+                    try
+                    {
+                        driver.FindElement(By.XPath("/html/body/div[3]/button")).Click();
+                        Thread.Sleep(4000);
+                    }
+                    catch { }
+                                     
                     parcelNumber = driver.FindElement(By.XPath("/html/body/div[5]/table[1]/tbody/tr/td[2]")).Text;
                     AccountNo = driver.FindElement(By.XPath("/html/body/div[5]/table[1]/tbody/tr/td[1]")).Text;
                     space = driver.FindElement(By.XPath("/html/body/div[5]/table[1]/tbody/tr/td[3]")).Text;
                     PropertyType = driver.FindElement(By.XPath("/html/body/div[5]/table[1]/tbody/tr/td[4]")).Text;
                     Tax_Year = driver.FindElement(By.XPath("/html/body/div[5]/table[1]/tbody/tr/td[5]")).Text;
+
+                    try
+                    {
+                        LegalDesc = driver.FindElement(By.XPath("/html/body/div[5]/table[2]/tbody")).Text;
+                    }
+                    catch { }
                     //try
                     //{
                     //    driver.FindElement(By.Id("owner")).SendKeys(Keys.Enter);
-                    //    Thread.Sleep(4000);
+                    //    Thread.Sleep(4000);                       
                     //}
 
                     //catch { }
@@ -364,7 +423,15 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         OwnerName1 = driver.FindElement(By.XPath("/html/body/div[6]/table[2]/tbody/tr[1]/td[2]")).Text;
                         OwnerName2 = driver.FindElement(By.XPath("/html/body/div[6]/table[2]/tbody/tr[2]/td[2]")).Text;
-
+                    }
+                    catch { }
+                    try
+                    {
+                        if(OwnerName1=="")
+                        {
+                            OwnerName1 = driver.FindElement(By.XPath("/html/body/div[6]/table[2]/tbody/tr/td[2]")).Text;
+                        }                      
+                       
                     }
                     catch { }
                     OwnerName = OwnerName1 + " " + OwnerName2;
@@ -372,17 +439,30 @@ namespace ScrapMaricopa.Scrapsource
                     PropertyCity = driver.FindElement(By.XPath("/html/body/div[5]/table[4]/tbody/tr/td[2]")).Text;
                     Zip = driver.FindElement(By.XPath("/html/body/div[5]/table[4]/tbody/tr/td[3]")).Text;
                     MailingAddress = driver.FindElement(By.XPath("/html/body/div[6]/table[2]/tbody/tr[1]/td[3]")).Text;
+                    try
+                    {
+                        if (MailingAddress=="")
+                        {
+                            MailingAddress = driver.FindElement(By.XPath("/html/body/div[6]/table[2]/tbody/tr/td[3]")).Text;
+                        }
+                    }
+                    catch { }
+                    
                     //try
                     //{
                     //    driver.FindElement(By.Id("buildings")).SendKeys(Keys.Enter);
-                    //    Thread.Sleep(2000);
+                    //    Thread.Sleep(2000);                     
                     //}
                     //catch { }
 
                     try
                     {
                         YearBuilt = driver.FindElement(By.XPath("/html/body/div[8]/table[6]/tbody/tr/td[4]")).Text.Trim();
-                        LegalDesc = driver.FindElement(By.XPath("/html/body/div[5]/table[2]/tbody/tr/td")).Text;
+                        if(LegalDesc == "")
+                        {
+                            LegalDesc = driver.FindElement(By.XPath("/html/body/div[5]/table[2]/tbody")).Text;
+                        }
+                        
                     }
                     catch { }
 
@@ -398,7 +478,7 @@ namespace ScrapMaricopa.Scrapsource
                     //try
                     //{
                     //    driver.FindElement(By.Id("valuation")).SendKeys(Keys.Enter);
-                    //    Thread.Sleep(2000);
+                    //    Thread.Sleep(2000);                        
                     //}
                     //catch { }
 
@@ -423,7 +503,21 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderNumber, parcelNumber, "Property Details", driver, "CO", "Weld");
 
                     // Tax Information Details
-                    string taxAuth = "", taxauth1 = "", taxauth2 = "";
+                   
+                    try
+                    {
+                        driver.Navigate().GoToUrl("https://www.weldtax.com/treasurer/web/");
+                        Thread.Sleep(4000);
+                        string ta1 = "", ta2 = "", ta3 = "";
+                        ta1 = driver.FindElement(By.Id("left")).Text.Replace("John R. Lefebvre", "");
+                        ta2 = GlobalClass.Before(ta1, "Mailing Address:").Replace("\r\n", " ").Replace("\r\n", " ").Trim();
+                        ta3 = gc.Between(ta1, "Phone:", "Fax:");
+                        TaxAuth = ta2 + " " + "Phone: " + ta3;
+                        gc.CreatePdf(orderNumber, parcelNumber, "Tax Authority", driver, "CO", "Weld");
+
+                    }
+                    catch { }
+
                     driver.Navigate().GoToUrl("https://www.weldtax.com/treasurer/web/login.jsp?submit=I+Have+Read+The+Above+Statement+");
                     Thread.Sleep(5000);
                     try
@@ -454,6 +548,49 @@ namespace ScrapMaricopa.Scrapsource
                     strownername = gc.Between(bulkdata, "Owners", "Address").Trim();
                     strProAdd = gc.Between(bulkdata, "Situs Address", "Legal").Trim();
                     strMailingAdd = gc.Between(bulkdata, "Address", "Situs Address").Trim();
+
+                    string MiscDue1 = "", LienDue1 = "", LienInterestDue1 = "", MiscDue2 = "", LienDue2 = "", LienInterestDue2 = "", MiscDue3 = "", LienDue3 = "", LienInterestDue3 = "";
+
+                    //try
+                    //{
+                    //    IWebElement TaxInfo = driver.FindElement(By.XPath("//*[@id='totals']/table/tbody"));
+                    //    IList<IWebElement> TRTaxInfo = TaxInfo.FindElements(By.TagName("tr"));
+                    //    IList<IWebElement> THTaxInfo = TaxInfo.FindElements(By.TagName("th"));
+                    //    IList<IWebElement> TDTaxInfo;
+                    //    foreach (IWebElement row in TRTaxInfo)
+                    //    {
+                    //        TDTaxInfo = row.FindElements(By.TagName("td"));
+                    //        if (TRTaxInfo.Count != 0 && row.Text.Trim() != "")
+                    //        {
+                    //            if (row.Text.Contains("Taxes Due"))
+                    //            {
+                    //                TaxesDue3 = TDTaxInfo[1].Text;
+                    //            }
+                    //            if (row.Text.Contains("Interest Due") && !row.Text.Contains("Lien"))
+                    //            {
+                    //                InterestDue3 = TDTaxInfo[1].Text;
+                    //            }
+                    //            if (row.Text.Contains("Misc Due"))
+                    //            {
+                    //                MiscDue3 = TDTaxInfo[1].Text;
+                    //            }
+                    //            if (row.Text.Contains("Lien Due"))
+                    //            {
+                    //                LienDue3 = TDTaxInfo[1].Text;
+                    //            }
+                    //            if (row.Text.Contains("Lien Interest Due"))
+                    //            {
+                    //                LienInterestDue3 = TDTaxInfo[1].Text;
+                    //            }
+                    //            if (row.Text.Contains("Total Due"))
+                    //            {
+                    //                TotalDue_Full = TDTaxInfo[1].Text;
+                    //            }
+
+                    //        }
+                    //    }
+                    //}
+                    //catch { }
 
                     try
                     {
@@ -505,7 +642,6 @@ namespace ScrapMaricopa.Scrapsource
                                     {
                                         int nxtYr = Convert.ToInt16(DateTime.Now.ToString("yyyy")) + 1;
                                         Good_through_date = new DateTime(nxtYr, 1, DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), 1)).ToString("MM/dd/yyyy");
-
                                     }
                                 }
                                 driver.FindElement(By.Id("paymentDate")).Clear();
@@ -519,8 +655,14 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 catch { }
 
-                                IWebElement Iday = driver.FindElement(By.Id("paymentDate"));
-                                IList<IWebElement> IdayRow = Iday.FindElements(By.TagName("a"));
+                                try
+                                {
+                                    driver.FindElement(By.XPath("//*[@id='inquiryForm']/table/tbody/tr[1]/td[2]/img")).Click();
+                                    Thread.Sleep(3000);
+                                }
+                                catch { }
+                                IWebElement Iday = driver.FindElement(By.Id("calendarContainer"));
+                                IList<IWebElement> IdayRow = Iday.FindElements(By.TagName("button"));
                                 foreach (IWebElement day in IdayRow)
                                 {
                                     if (day.Text != "" && day.Text == daysplit[1])
@@ -528,8 +670,6 @@ namespace ScrapMaricopa.Scrapsource
                                         day.SendKeys(Keys.Enter);
                                         Thread.Sleep(4000);
                                         gc.CreatePdf(orderNumber, parcelNumber, "Good Through Date", driver, "CO", "Weld");
-
-
                                     }
                                 }
 
@@ -539,10 +679,9 @@ namespace ScrapMaricopa.Scrapsource
                     catch
                     { }
                     string bulkdata3 = "";
-                    string MiscDue1 = "", LienDue1 = "", LienInterestDue1 = "", MiscDue2 = "", LienDue2 = "", LienInterestDue2 = "", MiscDue3 = "", LienDue3 = "", LienInterestDue3 = "";
+
                     if (Good_through_date != "" || Installment1 != "")
                     {
-
                         try
                         {
                             IWebElement TaxInfo = driver.FindElement(By.XPath("//*[@id='totals']/table/tbody"));
@@ -558,7 +697,7 @@ namespace ScrapMaricopa.Scrapsource
                                     {
                                         TaxesDue1 = TDTaxInfo[1].Text;
                                     }
-                                    if (row.Text.Contains("Interest Due"))
+                                    if (row.Text.Contains("Interest Due") && !row.Text.Contains("Lien"))
                                     {
                                         InterestDue1 = TDTaxInfo[1].Text;
                                     }
@@ -614,7 +753,7 @@ namespace ScrapMaricopa.Scrapsource
                                     {
                                         TaxesDue2 = TDTaxInfo[1].Text;
                                     }
-                                    if (row.Text.Contains("Interest Due"))
+                                    if (row.Text.Contains("Interest Due") && !row.Text.Contains("Lien"))
                                     {
                                         InterestDue2 = TDTaxInfo[1].Text;
                                     }
@@ -646,14 +785,14 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.Id("paymentTypeFull")).Click();
-                        Thread.Sleep(4000);
+                        Thread.Sleep(7000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Full Payment", driver, "CO", "Weld");
                         Installment_Full = driver.FindElement(By.XPath("//*[@id='inquiryForm']/table/tbody/tr[2]/td[2]/label[2]")).Text;
                         //TotalDue_Full = driver.FindElement(By.XPath("//*[@id='totals']/table/tbody/tr/td[2]")).Text;
                     }
                     catch { }
 
-                    if (Good_through_date != "" && Installment_Full != "")
+                    if (Good_through_date != "" || Installment_Full != "")
                     {
                         try
                         {
@@ -670,7 +809,7 @@ namespace ScrapMaricopa.Scrapsource
                                     {
                                         TaxesDue3 = TDTaxInfo[1].Text;
                                     }
-                                    if (row.Text.Contains("Interest Due"))
+                                    if (row.Text.Contains("Interest Due") && !row.Text.Contains("Lien"))
                                     {
                                         InterestDue3 = TDTaxInfo[1].Text;
                                     }
@@ -702,7 +841,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.Id("paymentTypeFirst")).Click();
-                        Thread.Sleep(4000);
+                        Thread.Sleep(5000);
                         // gc.CreatePdf(orderNumber, parcelNumber, "First Payment", driver, "CO", "Weld");
                         //Installment1 = driver.FindElement(By.XPath("//*[@id='inquiryForm']/table/tbody/tr[2]/td[2]/label[1]")).Text;
                         //    TotalDue1 = driver.FindElement(By.XPath("//*[@id='totals']/table/tbody/tr/td[2]")).Text;
@@ -724,7 +863,7 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     TaxesDue1 = TDTaxInfo[1].Text;
                                 }
-                                if (row.Text.Contains("Interest Due"))
+                                if (row.Text.Contains("Interest Due") && !row.Text.Contains("Lien"))
                                 {
                                     InterestDue1 = TDTaxInfo[1].Text;
                                 }
@@ -769,6 +908,10 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (Installment_Full != "")
                     {
+                        if (InterestDue3 == "$0.00")
+                        {
+                            Good_through_date = DateTime.Now.ToShortDateString();
+                        }
                         string TaxInfo3 = strAccNo + "~" + strownername + "~" + strProAdd + "~" + strMailingAdd + "~" + Installment3 + "~" + TaxesDue3 + "~" + InterestDue3 + "~" + MiscDue3 + "~" + LienDue3 + "~" + LienInterestDue3 + "~" + TotalDue_Full + "~" + DueDate3 + "~" + Good_through_date;
                         gc.insert_date(orderNumber, parcelNumber, 1617, TaxInfo3, 1, DateTime.Now);
                     }
@@ -793,7 +936,7 @@ namespace ScrapMaricopa.Scrapsource
                             TDTaxDistribution = row.FindElements(By.TagName("td"));
                             if (TDTaxDistribution.Count != 0 && !row.Text.Contains("Tax Rate") && !row.Text.Contains("Credit Levy"))
                             {
-                                string TaxDistributiondetails = TDTaxDistribution[0].Text + "~" + TDTaxDistribution[1].Text + "~" + TDTaxDistribution[2].Text + "~" + TDTaxDistribution[3].Text;
+                                string TaxDistributiondetails = TDTaxDistribution[0].Text + "~" + TDTaxDistribution[1].Text + "~" + TDTaxDistribution[2].Text + "~" + TDTaxDistribution[3].Text + "~" + TaxAuth;
                                 gc.insert_date(orderNumber, parcelNumber, 1619, TaxDistributiondetails, 1, DateTime.Now);
                             }
                         }
@@ -849,124 +992,96 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
-                    //try
-                    //{
-                    //    driver.FindElement(By.LinkText("Web Tax Notice")).Click();
-                    //    Thread.Sleep(7000);
-                    //}
-                    //catch { }
-                    // string fileName = "";
-                    //  try
-                    //  {
-                    //IWebElement Iclick = driver.FindElement(By.LinkText("Web Tax Notice"));
-                    //Thread.Sleep(2000);
-                    //Iclick.Click();
-                    //Thread.Sleep(12000);
-
-
-
-                    //try
-                    //{
-                    //    IWebElement TaxDistribution = driver.FindElement(By.XPath("//*[@id='myReports']/table/tbody"));
-                    //    IList<IWebElement> TRTaxDistribution = TaxDistribution.FindElements(By.TagName("tr"));
-                    //   // IList<IWebElement> THTaxDistribution;
-                    //    IList<IWebElement> TDTaxDistribution;
-                    //    foreach (IWebElement row in TRTaxDistribution)
-                    //    {
-                    //       // THTaxDistribution = row.FindElements(By.TagName("th"));
-                    //        TDTaxDistribution = row.FindElements(By.TagName("td"));
-                    //        if (TDTaxDistribution.Count != 0 && !row.Text.Contains("Report Name") && row.Text.Trim() != "")
-                    //        {
-                    //            TDTaxDistribution[0].Click();
-                    //            Thread.Sleep(7000);
-                    //            gc.CreatePdf(orderNumber, parcelNumber, "Tax Bill Download", driver, "CO", "Weld");
-                    //        }
-                    //    }
-                    //}
-                    //catch { }
-
-
-
-                    //  }
-                    // catch { }
-
-
-                    int i = 1;
-                    string tableassess = "";
+                    // Tax Notice Download
                     try
                     {
-                        var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
-                        chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
-                        chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
-                        chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
-                        chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
-                        var driver1 = new ChromeDriver(chromeOptions);
-                        driver1.Navigate().GoToUrl(driver.Url);
-                        Thread.Sleep(7000);
-                        try
-                        {
-                            driver1.FindElement(By.XPath("//*[@id='middle_left']/form/input[1]")).Click();
-                            Thread.Sleep(4000);
-                        }
-                        catch { }
-                        try
-                        {
-                            driver1.FindElement(By.Id("AccountId")).SendKeys(AccountNo);
-                            //gc.CreatePdf(orderNumber, parcelNumber, "Tax Search", driver, "CO", "Weld");
-                            driver1.FindElement(By.XPath("//*[@id='middle']/b/form/table[4]/tbody/tr/td[1]/input")).Click();
-                            Thread.Sleep(4000);
-                            //gc.CreatePdf(orderNumber, parcelNumber, "Tax Search Result", driver, "CO", "Weld");
-
-                        }
-                        catch { }
-
-
-                        try
-                        {
-                            driver1.FindElement(By.LinkText("Web Tax Notice")).Click();
-                            Thread.Sleep(7000);
-                        }
-                        catch { }
-
-                        try
-                        {
-                            driver1.FindElement(By.LinkText("Web Tax Notice")).Click();
-                            Thread.Sleep(7000);
-                            gc.CreatePdf(orderNumber, parcelNumber, "Tax Notice Download", driver, "CO", "Weld");
-                        }
-                        catch { }
-
-                        //string FileName = "";
-                        //try
-                        //{
-                        //    IWebElement TaxDistribution = driver1.FindElement(By.XPath("//*[@id='myReports']/table/tbody"));
-                        //    IList<IWebElement> TRTaxDistribution = TaxDistribution.FindElements(By.TagName("tr"));
-                        //    IList<IWebElement> THTaxDistribution = TaxDistribution.FindElements(By.TagName("th"));
-                        //    IList<IWebElement> TDTaxDistribution;
-                        //    foreach (IWebElement row in TRTaxDistribution)
-                        //    {
-                        //        TDTaxDistribution = row.FindElements(By.TagName("td"));
-                        //        if (TDTaxDistribution.Count != 0 && !row.Text.Contains("Tax Authority") && row.Text.Trim() != "")
-                        //        {
-                        //            TDTaxDistribution[0].Click();
-                        //            Thread.Sleep(10000);
-
-                        //            IWebElement Receipttable = driver1.FindElement(By.XPath("//*[@id='receiptHistory']/a[" + i + "]"));
-                        //            string BillTax2 = Receipttable.GetAttribute("href");
-                        //            FileName = gc.Between(BillTax2, "taxreceipt/", "?id=").Replace("-", "_");
-                        //            gc.AutoDownloadFile(orderNumber, parcelNumber, "Weld", "CO", FileName);
-                        //            Thread.Sleep(10000);
-
-                        //        }
-                        //    }
-                        //}
-                        //catch { }
+                        driver.FindElement(By.LinkText("Web Tax Notice")).Click();
+                        Thread.Sleep(10000);
+                       // gc.CreatePdf(orderNumber, parcelNumber, "Web Tax Notice Page", driver, "CO", "Weld");
                     }
-                    catch (Exception ex) { }
+                    catch { }
+                    try
+                    {
+                        IWebElement assessme = driver.FindElement(By.LinkText("Web Tax Notice"));
+                        assessme.Click();
+                        Thread.Sleep(7000);
+                        gc.CreatePdf(orderNumber, parcelNumber, "Tax Notice", driver, "CO", "Weld");
+                        // string download = assessme.GetAttribute("href");
+                        // driver.Navigate().GoToUrl(download);
+                       // Thread.Sleep(4000);
+                      //  driver.SwitchTo().Window(driver.WindowHandles.Last());
+                       // Thread.Sleep(2000);
+                       
+                       // gc.downloadfile(download, orderNumber, parcelNumber, "Tax Download", "CO", "Weld");
+                    }
+                    catch { }
 
+                  //  // Tax Notice Download
+                  //  var chromeOptions = new ChromeOptions();
 
+                  //  var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
+                  //  chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
+                  //  chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
+                  //  chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+                  //  chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+                  //  var driver1 = new ChromeDriver(chromeOptions);
+                  //  driver1.Navigate().GoToUrl(driver.Url);
+                    
+                  //  try
+                  //  {
+                  //      driver1.FindElement(By.XPath("//*[@id='middle_left']/form/input[1]")).Click();
+                  //      Thread.Sleep(4000);
+                  //  }
+                  //  catch { }
+
+                  //  string fileName = "";
+                  //  try
+                  //  {
+                  //      driver1.FindElement(By.LinkText("Web Tax Notice")).Click();
+                  //      Thread.Sleep(7000);
+                  //      gc.CreatePdf(orderNumber, parcelNumber, "Web Tax Notice Page", driver1, "CO", "Weld");
+                  //  }
+                  //  catch { }
+                  // // driver1.SwitchTo().Window(driver1.WindowHandles.Last());
+                  ////  Thread.Sleep(2000);
+                  //  try
+                  //  {
+                  //      IWebElement TaxBody = driver1.FindElement(By.Id("myReports"));
+                  //      IList<IWebElement> TRTaxBody = TaxBody.FindElements(By.TagName("tr"));
+                  //      IList<IWebElement> THTaxBody = TaxBody.FindElements(By.TagName("th"));
+                  //      IList<IWebElement> TDTaxBody;
+                  //      foreach (IWebElement row in TRTaxBody)
+                  //      {
+                  //          TDTaxBody = row.FindElements(By.TagName("td"));
+                  //          if (TDTaxBody.Count != 0 && !row.Text.Contains("Report Name") && row.Text.Trim() != "")
+                  //          {
+                  //              IWebElement ItaxReceipt = TDTaxBody[0].FindElement(By.TagName("a"));
+                  //              string strTaxtURL = ItaxReceipt.GetAttribute("href");
+                  //              driver1.Navigate().GoToUrl(strTaxtURL);
+                  //              Thread.Sleep(7000);
+                  //              gc.CreatePdf(orderNumber, parcelNumber, "Tax Notice", driver1, "CO", "Weld");
+
+                  //          }
+                  //      }
+                      
+                  //  }
+                  //  catch { }
+                  //  fileName = "Web Tax Notice.pdf";
+                  //  try
+                  //  {
+                  //      IWebElement Iclick = driver1.FindElement(By.LinkText("Web Tax Notice"));
+
+                  //      gc.AutoDownloadFile(orderNumber, parcelNumber, "Weld", "CO", fileName);
+                  //      Thread.Sleep(5000);
+                       
+                  //  }
+                  //  catch (Exception ex)
+                  //  {
+                  //      driver1.Quit();
+                  //  }
+
+                   
 
 
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
@@ -974,6 +1089,7 @@ namespace ScrapMaricopa.Scrapsource
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");
                     gc.insert_TakenTime(orderNumber, "CO", "Weld", StartTime, AssessmentTime, TaxTime, CitytaxTime, LastEndTime);
 
+                    //driver1.Quit();
                     driver.Quit();
                     gc.mergpdf(orderNumber, "CO", "Weld");
                     return "Data Inserted Successfully";

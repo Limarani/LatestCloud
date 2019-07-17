@@ -59,7 +59,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "SC", "Charleston");
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_WilliamsonTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -95,6 +102,19 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.XPath("//*[@id='panelData']")).Text;
+                            if (nodata.Contains("No records were found"))
+                            {
+                                HttpContext.Current.Session["Nodata_StLouis"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     else if (searchType == "parcel")
                     {
@@ -112,7 +132,18 @@ namespace ScrapMaricopa.Scrapsource
                         driver.SwitchTo().DefaultContent();
                         iframeElement1 = driver.FindElement(By.XPath("/html/frameset/frameset/frame[2]"));
                         driver.SwitchTo().Frame(iframeElement1);
-
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.XPath("//*[@id='panelData']")).Text;
+                            if (nodata.Contains("No records were found"))
+                            {
+                                HttpContext.Current.Session["Nodata_StLouis"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
 
                     }
 
@@ -197,6 +228,18 @@ namespace ScrapMaricopa.Scrapsource
                         { }
 
 
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.XPath("//*[@id='panelData']")).Text;
+                            if (nodata.Contains("No records were found"))
+                            {
+                                HttpContext.Current.Session["Nodata_StLouis"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
 
                     //Thread.Sleep(3000);

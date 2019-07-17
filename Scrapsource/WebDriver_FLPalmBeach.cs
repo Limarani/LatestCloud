@@ -25,7 +25,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_FLPalmBeach
     {
-
+        Amrock amck = new Amrock();
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
@@ -51,6 +51,7 @@ namespace ScrapMaricopa.Scrapsource
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             string[] stringSeparators1 = new string[] { "\r\n" };
+           // driver = new ChromeDriver();
             using (driver = new PhantomJSDriver())
             {
 
@@ -63,7 +64,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", address, "FL", "Palm Beach");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLPalmBeach"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -202,24 +210,26 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch
                         { }
-                        try
-                        {
-                            string Nodata = driver.FindElement(By.Id("MainContent_lblMsg")).Text;
-                            if (Nodata == "No Results matched your search criteria. Please modify your search and try again.")
-                            {
-                                HttpContext.Current.Session["Zero_FLPalmBeach"] = "Zero";
-                                driver.Quit();
-                                return "No Data Found";
-                            }
-                        }
-                        catch
-                        { }
                     }
+                    
+                    try
+                    {
+                        string Nodata = driver.FindElement(By.Id("MainContent_lblMsg")).Text;
+                        if (Nodata == "No Results matched your search criteria. Please modify your search and try again.")
+                        {
+                            HttpContext.Current.Session["Nodata_FLPalmBeach"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch
+                    { }
 
                     //Scraped Data
                     Location_Address = driver.FindElement(By.XPath("//*[@id='tdDetail']/table/tbody/tr[2]/td[2]")).Text;
                     Municipality = driver.FindElement(By.XPath("//*[@id='tdDetail']/table/tbody/tr[3]/td[2]")).Text;
                     ParcelNo = driver.FindElement(By.XPath("//*[@id='tdDetail']/table/tbody/tr[4]/td[2]")).Text;
+                    amck.TaxId = ParcelNo;
                     gc.CreatePdf(orderNumber, ParcelNo, "Property Result", driver, "FL", "Palm Beach");
                     try
                     {
@@ -249,6 +259,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (YearTD.Count != 0 && Year.Text.Contains("Year Built"))
                             {
                                 Year_Built = YearTD[2].Text;
+                                
                             }
                         }
 
@@ -627,6 +638,10 @@ namespace ScrapMaricopa.Scrapsource
                                         TaxGross_Tax = TaxAssementTD[0].Text;
                                         Credit = TaxAssementTD[1].Text;
                                         Net_Tax = TaxAssementTD[2].Text;
+                                        if(Tax_Type == "Non Ad Valorem")
+                                        {
+                                            amck.Instamount1 = Net_Tax;
+                                        }
                                         Savings = TaxAssementTD[3].Text;
                                         TaxAssement_Details = Billtaxyear + "~" + Tax_Type + "~" + Description + "~" + TaxGross_Tax + "~" + Credit + "~" + Net_Tax + "~" + Savings;
                                         gc.insert_date(orderNumber, ParcelNo, 363, TaxAssement_Details, 1, DateTime.Now);
@@ -663,6 +678,24 @@ namespace ScrapMaricopa.Scrapsource
                                         Penality = TaxInstallmentTD[3].Text;
                                         Interest1 = TaxInstallmentTD[4].Text;
                                         Total_Due = TaxInstallmentTD[5].Text;
+                                        if (s == 0)
+                                        {
+                                            if (TaxInstallmentTR.Count == 3)
+                                            {
+                                                if (Total_Due == "$0.00")
+                                                {
+                                                    amck.IsDelinquent = "No";
+                                                    amck.InstPaidDue1 = "Paid";
+                                                    gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                                                }
+                                                else if (Total_Due != "$0.00" && Interest1 != "$0.00")
+                                                {
+                                                    amck.IsDelinquent = "Yes";
+                                                    amck.InstPaidDue1 = "Due";
+                                                    gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                                                }
+                                            }
+                                        }
                                     }
                                     else
                                     {
@@ -670,6 +703,10 @@ namespace ScrapMaricopa.Scrapsource
                                         BillNumber = TaxInstallmentTD[1].Text;
                                         Due_Date = TaxInstallmentTD[2].Text;
                                         BillYear = TaxInstallmentTD[3].Text;
+                                        if (BillYear != "")
+                                        {
+                                            amck.TaxYear = BillYear;
+                                        }
                                         Tax = TaxInstallmentTD[4].Text;
                                         Discount1 = TaxInstallmentTD[5].Text;
                                         Penality = TaxInstallmentTD[6].Text;
@@ -701,6 +738,10 @@ namespace ScrapMaricopa.Scrapsource
                                     Payment_BillNumber = PaymentTD[1].Text;
                                     Receipt_Number = PaymentTD[2].Text;
                                     Amount_Paid = PaymentTD[3].Text;
+                                    if (Amount_Paid != "")
+                                    {
+                                        amck.Instamountpaid1 = Amount_Paid;
+                                    }
                                     Last_Paid = PaymentTD[4].Text;
                                     Paid_By = PaymentTD[5].Text;
 
@@ -731,6 +772,8 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");
+
+                   
                     gc.insert_TakenTime(orderNumber, "FL", "Palm Beach", StartTime, AssessmentTime, TaxTime, CitytaxTime, LastEndTime);
 
                     driver.Quit();

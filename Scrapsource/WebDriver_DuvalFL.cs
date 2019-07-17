@@ -42,6 +42,7 @@ namespace ScrapMaricopa.Scrapsource
             string outparcelno = "", siteaddr = "", mail_addr = "", owner1 = "", tax_dist = "", legal_desc = "", year_built = "", subdivision = "", propuse = "";
             string valued_year = "", tax_year = "", assess_land = "", ass_improve = "", ass_total = "", tax_value = "", exem = "", pathid = "", Total_taxes = "";
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
+            int amccount = 0;
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             using (driver = new PhantomJSDriver())
@@ -57,8 +58,16 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "FL", "Duval");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_DuvalFL"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -79,6 +88,18 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+
+                        try
+                        {
+                            string nodata = driver.FindElement(By.XPath("//*[@id='noResults']/h3")).Text;
+                            if (nodata.Contains("No Results Found"))
+                            {
+                                HttpContext.Current.Session["Nodata_DuvalFL"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
 
                     }
 
@@ -120,6 +141,17 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.Quit();
                                 return "MultiParcel";
                             }
+                            try
+                            {
+                                string nodata = driver.FindElement(By.XPath("//*[@id='noResults']/h3")).Text;
+                                if (nodata.Contains("No Results Found"))
+                                {
+                                    HttpContext.Current.Session["Nodata_DuvalFL"] = "Zero";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                            catch { }
 
                         }
                     }
@@ -140,8 +172,22 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        try
+                        {
+                            string nodata = driver.FindElement(By.XPath("//*[@id='noResults']/h3")).Text;
+                            if (nodata.Contains("No Results Found"))
+                            {
+                                HttpContext.Current.Session["Nodata_DuvalFL"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+
+                            }
+                        }
+                        catch { }
 
                     }
+
+                    Amrock amc = new Amrock();
 
                     //property details
                     Thread.Sleep(3000);
@@ -157,11 +203,13 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
                     siteaddr = driver.FindElement(By.XPath("//*[@id='primaryAddr']/div")).Text.Trim().Replace("\r\n", ",");
                     outparcelno = driver.FindElement(By.Id("ctl00_cphBody_lblRealEstateNumber")).Text.Trim();
+                    amc.TaxId = outparcelno;
                     tax_dist = driver.FindElement(By.Id("ctl00_cphBody_lblTaxDistrict")).Text.Trim();
                     propuse = driver.FindElement(By.Id("ctl00_cphBody_lblPropertyUse")).Text.Trim();
                     subdivision = driver.FindElement(By.Id("ctl00_cphBody_lblSubdivision")).Text.Trim();
                     try
                     {
+                        //amc Year Built
                         year_built = driver.FindElement(By.Id("ctl00_cphBody_repeaterBuilding_ctl00_lblYearBuilt")).Text.Trim();
                     }
                     catch { }
@@ -262,6 +310,7 @@ namespace ScrapMaricopa.Scrapsource
                             else if (i == 7)
                             {
                                 AssessedValue.Add(valuerowTD[0].Text);
+                                //amc.TotalAssessedValue = valuerowTD[0].Text;
                                 AssessedValue.Add(valuerowTD[1].Text);
                             }
 
@@ -379,6 +428,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (IUnpaidTd.Count != 0)
                             {
                                 strTaxYear = IUnpaidTd[0].Text;
+                                amc.TaxYear = IUnpaidTd[0].Text;
                                 strTaxFolio = IUnpaidTd[1].Text;
                                 strTaxCertificateYear = IUnpaidTd[2].Text;
                                 strTaxCertificateNo = IUnpaidTd[3].Text;
@@ -506,6 +556,37 @@ namespace ScrapMaricopa.Scrapsource
                                     {
                                         taxdue = tax_year + "~" + priortaxdettablerowTD[1].Text + "~" + priortaxdettablerowTD[2].Text + "~" + priortaxdettablerowTD[3].Text + "~" + priortaxdettablerowTD[4].Text + "~" + priortaxdettablerowTD[5].Text + "~" + priortaxdettablerowTD[6].Text + "~" + priortaxdettablerowTD[7].Text + "~" + priortaxdettablerowTD[8].Text;
                                         gc.insert_date(orderNumber, outparcelno, 341, taxdue, 1, DateTime.Now);
+                                        if (amccount < 1)
+                                        {
+                                            amc.Instamount1 = priortaxdettablerowTD[2].Text;
+                                            amc.Instamountpaid1 = priortaxdettablerowTD[6].Text;
+                                            if (!priortaxdettablerowTD[6].Text.Contains("$0.00"))
+                                            {
+                                                amc.InstPaidDue1 = "Paid";
+                                            }
+                                            if (priortaxdettablerowTD[3].Text.Contains("$0.00") && priortaxdettablerowTD[4].Text.Contains("$0.00") && priortaxdettablerowTD[6].Text.Contains("$0.00"))
+                                            {
+                                                amc.InstPaidDue1 = "Due";
+                                            }
+                                            if((priortaxdettablerowTD[3].Text.Contains("$0.00") || priortaxdettablerowTD[4].Text.Contains("$0.00"))  && !priortaxdettablerowTD[8].Text.Contains("$0.00"))
+                                            {
+                                                amc.IsDelinquent = "Yes";
+                                            }
+                                            if((priortaxdettablerowTD[3].Text.Contains("$0.00") && priortaxdettablerowTD[4].Text.Contains("$0.00")) && priortaxdettablerowTD[8].Text.Contains("$0.00"))
+                                            {
+                                                amc.IsDelinquent = "No";
+                                            }
+                                            if (amc.IsDelinquent == "Yes")
+                                            {
+                                                gc.InsertAmrockTax(orderNumber, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                                            }
+
+                                            if (amc.IsDelinquent == "No")
+                                            {
+                                                gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+                                            }
+                                            amccount++;
+                                        }
                                     }
                                 }
                                 f++;
@@ -609,6 +690,9 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                     }
+                  
+                    //gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
                     driver.Quit();
                     gc.mergpdf(orderNumber, "FL", "Duval");

@@ -46,21 +46,36 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            // driver = new ChromeDriver();
+            //driver = new PhantomJSDriver()
             using (driver = new PhantomJSDriver())
             {
 
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-
+                    string taddress = "";
                     if (searchType == "titleflex")
                     {
-
-                        gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, "", "CA", "Contra Costa");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if (directParcel != null)
                         {
+                            taddress = houseno + " " + directParcel + " " + sname  ;
+                        }
+                        else
+                        {
+                            taddress = houseno + " " + directParcel + " " + sname ;
+                        }
+                        gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, taddress, "CA", "Contra Costa");
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
+                        {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CAContraCosta"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         searchType = "parcel";
                         parcelNumber = GlobalClass.global_parcelNo.Replace("-", "");
@@ -148,7 +163,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "parcel")
                     {
-                        driver.Navigate().GoToUrl("https://tcpws2.co.contra-costa.ca.us/taxpaymentrev3/lookup/");
+                        driver.Navigate().GoToUrl("https://taxcolp.cccounty.us/taxpaymentrev3/lookup/");
                         Thread.Sleep(4000);
 
                         var SelectParcel = driver.FindElement(By.Id("searchtypeselect"));
@@ -162,13 +177,25 @@ namespace ScrapMaricopa.Scrapsource
                         parcel3 = parcel.Substring(6, 3);
                         ParcelId = parcel1 + parcel2 + parcel3;
                         Thread.Sleep(8000);
-
+                        driver.FindElement(By.Id("searchfield")).Clear();
+                        driver.FindElement(By.Id("searchfield")).Click();
                         driver.FindElement(By.Id("searchfield")).SendKeys(ParcelId);
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "CA", "Contra Costa");
                         driver.FindElement(By.XPath("/html/body/div/div[3]/div[2]/form/div/div/div[6]/input")).SendKeys(Keys.Enter);
                         Thread.Sleep(8000);
                     }
 
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("error"));
+                        if(Inodata.Text.Contains("Address Not Found") || Inodata.Text.Contains("APN not found"))
+                        {
+                            HttpContext.Current.Session["Nodata_CAContraCosta"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property Details
                     driver.FindElement(By.XPath("//*[@id='results']/div[1]/div[1]/a")).SendKeys(Keys.Enter);
                     Thread.Sleep(6000);

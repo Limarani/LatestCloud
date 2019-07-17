@@ -59,7 +59,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownernm, "", "CA", "Merced");
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MercedCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
                         searchType = "parcel";
@@ -140,6 +147,18 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("/html/body/form/center/table"));
+                        if (INodata.Text.Contains("Assessor Inquiry: Please enter search criteria"))
+                        {
+                            HttpContext.Current.Session["Nodata_MercedCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property detail
                     IWebElement propertytable = driver.FindElement(By.XPath("/html/body/form/center/table/tbody/tr/td/table/tbody"));
@@ -253,10 +272,19 @@ namespace ScrapMaricopa.Scrapsource
                         string TotalBalance = GlobalClass.After(compain.Text, "Total Balance");
                         for (int j = 1; j < 3; j++)
                         {
+                            string PaidStatus1 = "", Due_PaidDate = "";
                             IWebElement firstinstalment = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[" + j + "]"));
                             string instalfirst = GlobalClass.Before(firstinstalment.Text, "Paid Status");
-                            string PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Delinq. Date").Trim();
-                            string Due_PaidDate = gc.Between(firstinstalment.Text, "Delinq. Date", "Total Due").Trim();
+                            if(instalfirst.Contains("Delinq. Date"))
+                            {
+                                PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Delinq. Date").Trim();
+                                Due_PaidDate = gc.Between(firstinstalment.Text, "Delinq. Date", "Total Due").Trim();
+                            }
+                            else
+                            {
+                                PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Paid Date").Trim();
+                                Due_PaidDate = gc.Between(firstinstalment.Text, "Paid Date", "Total Due").Trim();
+                            }
                             string totaldue = gc.Between(firstinstalment.Text, "Total Due", "Total Paid").Trim();
                             string TotalPaid = gc.Between(firstinstalment.Text, "Total Paid", "Balance").Trim();
                             if (firstinstalment.Text.Contains("\r\nADD"))

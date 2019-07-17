@@ -40,7 +40,9 @@ namespace ScrapMaricopa.Scrapsource
             driverService.HideCommandPromptWindow = true;
             //driver = new PhantomJSDriver();
             // driver = new ChromeDriver();
-            using (driver = new ChromeDriver())
+            var option = new ChromeOptions();
+            option.AddArgument("No-Sandbox");
+            using (driver = new ChromeDriver(option))
             {
                 try
                 {
@@ -63,9 +65,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", ownername.Replace(",", ""), addAddress.Trim(), "KS", "Johnson");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_JohnsonKS"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -215,7 +224,7 @@ namespace ScrapMaricopa.Scrapsource
                     string nodata = driver.FindElement(By.Id("spanTaxPropertyID")).Text;
                     if (nodata.Trim() == "")
                     {
-                        HttpContext.Current.Session["Zero_Johnson"] = "Zero";
+                        HttpContext.Current.Session["Nodata_JohnsonKS"] = "Yes";
                         driver.Quit();
                         return "No Data Found";
                     }

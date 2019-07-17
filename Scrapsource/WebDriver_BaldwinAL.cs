@@ -39,10 +39,9 @@ namespace ScrapMaricopa.Scrapsource
             string address = houseno + " " + sname + " " + account;
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "", AssessTakenTime = "", TaxTakentime = "", CityTaxtakentime = "";
             string TotaltakenTime = "";
-            string TaxAuthority = "";
-            if (houseno.Trim() != "" && sname.Trim() != "" && searchType != "parcel")
-            { searchType = "address"; }
+            string TaxAuthority = "";          
             string Address = houseno.Trim() + " " + sname.Trim();
+
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             // driver = new ChromeDriver();
@@ -64,12 +63,19 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "titleflex")
                     {
-
+                        string straddress = "";                       
+                        
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "AL", "Baldwin");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Baldwin"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -309,6 +315,7 @@ namespace ScrapMaricopa.Scrapsource
 
 
                                         string Url = MultiOwnerTA[0].GetAttribute("href");
+                                        gc.CreatePdf(orderNumber, parcelNumber, "Parcel Result", driver, "AL", "Baldwin");
                                         driver.Navigate().GoToUrl(Url);
                                         break;
 
@@ -405,7 +412,7 @@ namespace ScrapMaricopa.Scrapsource
                         MultiOwnerPropertyTD = row1.FindElements(By.TagName("td"));
                         if (MultiOwnerPropertyTD.Count != 0)
                         {
-                            if (row1.Text.Contains("PARCEL") && !row1.Text.Contains("OLD PARCEL"))
+                            if (row1.Text.Contains("PARCEL") && !row1.Text.Contains("OLD PARCEL") && row1.Text.Contains("PPIN"))
                             {
                                 parcelNumber = MultiOwnerPropertyTD[1].Text.Trim();
                                 PPIN = MultiOwnerPropertyTD[2].Text;
@@ -427,23 +434,28 @@ namespace ScrapMaricopa.Scrapsource
                                 TAXABLEVALUE = MultiOwnerPropertyTD[1].Text.Trim();
                                 ASSESSMENTVALUE = MultiOwnerPropertyTD[2].Text.Replace("ASSESSMENT VALUE ", "").Trim();
                             }
-                            else if (CHK == "OK")
+                            else if (row1.Text.Contains("DESCRIPTION"))
                             {
                                 try
                                 {
-                                    DESCRIPTION = DESCRIPTION + " " + MultiOwnerPropertyTD[1].Text.Trim();
+                                    DESCRIPTION = GlobalClass.After(MultiOwnerProperty.Text, "DESCRIPTION").Replace("\r\n","").Replace("  ", " ").Trim();
                                 }
                                 catch { }
-
-                                //CHK = "";
                             }
-                            else if (row1.Text.Contains("DESCRIPTION"))
-                            {
-                                CHK = "OK";
-                            }
+                            //else if (CHK == "OK")
+                            //{
+                            //    try
+                            //    {
+                            //        DESCRIPTION = DESCRIPTION + " " + MultiOwnerPropertyTD[1].Text.Trim();
+                            //    }
+                            //    catch { }
 
-
-
+                            //    //CHK = "";
+                            //}
+                            //else if (row1.Text.Contains("DESCRIPTION"))
+                            //{
+                            //    CHK = "OK";
+                            //}
                         }
 
                     }
@@ -508,7 +520,10 @@ namespace ScrapMaricopa.Scrapsource
                             else if (row5.Text.Contains("TOTAL PARCEL VALUE:"))
                             {
                                 TotalPriceValue = MultiOwnerPropertyTD[1].Text.Trim();
-
+                            }
+                            else if (row5.Text.Contains("ESTIMATED TAX:"))
+                            {
+                                EstimatedTax = MultiOwnerPropertyTD[1].Text.Trim();
                             }
                         }
 
@@ -652,7 +667,6 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             string TaxDisDetail = "" + "~" + "" + "~" + TaxDisTD[0].Text + "~" + "" + "~" + "" + "~" + "";
                             gc.insert_date(orderNumber, parcelNumber, 1681, TaxDisDetail, 1, DateTime.Now);
-
                         }
 
                     }

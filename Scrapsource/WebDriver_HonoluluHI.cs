@@ -81,11 +81,13 @@ namespace ScrapMaricopa.Scrapsource
                         //gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "HI", "Honolulu");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
-                        if ((HttpContext.Current.Session["TitleFlex_Search"] == null))
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
                         {
-                            HttpContext.Current.Session["Zero_Honolulu"] = "Zero";
+                            HttpContext.Current.Session["Nodata_HonoluluHI"] = "Yes";
+                            driver.Quit();
                             return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
@@ -138,9 +140,10 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (TRmultiaddress.Count > 28)
                         {
-                            HttpContext.Current.Session["multiParcel_Honolulu_Maximum"] = "Maimum";
-                            return "Maximum";
                             Max++;
+                            HttpContext.Current.Session["multiParcel_Honolulu_Maximum"] = "Maimum";
+                            driver.Quit();
+                            return "Maximum";                           
                         }
                         if (TRmultiaddress.Count == 7)
                         {
@@ -205,7 +208,7 @@ namespace ScrapMaricopa.Scrapsource
                         //}
                         if (Max == 0)
                         {
-                            HttpContext.Current.Session["Zero_Honolulu"] = "Zero";
+                            HttpContext.Current.Session["Nodata_HonoluluHI"] = "Yes";
                             driver.Quit();
                             return "No Data Found";
                         }
@@ -260,9 +263,10 @@ namespace ScrapMaricopa.Scrapsource
 
                             if (TRmultiaddress.Count > 28)
                             {
-                                HttpContext.Current.Session["multiParcel_Honolulu_Maximum"] = "Maimum";
-                                return "Maximum";
                                 Max++;
+                                HttpContext.Current.Session["multiParcel_Honolulu_Maximum"] = "Maimum";
+                                driver.Quit();
+                                return "Maximum";                                
                             }
                             if (TRmultiaddress.Count == 7)
                             {
@@ -306,7 +310,7 @@ namespace ScrapMaricopa.Scrapsource
                             //}
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Honolulu"] = "Zero";
+                                HttpContext.Current.Session["Nodata_HonoluluHI"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }

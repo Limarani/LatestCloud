@@ -53,10 +53,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + sname + " " + stype + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TX", "Hidalgo");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Hidalgo"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -157,12 +163,25 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     else
                     {
-                        HttpContext.Current.Session["multiparcel_Hidalgo"] = "Yes";
-                        driver.Quit();
-                        return "MultiParcel";
+                        if (maxCheck != 0)
+                        {
+                            HttpContext.Current.Session["multiparcel_Hidalgo"] = "Yes";
+                            driver.Quit();
+                            return "MultiParcel";
+                        }
                     }
 
-
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
+                        if(INodata.Text.Contains("None found"))
+                        {
+                            HttpContext.Current.Session["Nodata_Hidalgo"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
 
 
@@ -666,7 +685,7 @@ namespace ScrapMaricopa.Scrapsource
                                 string URL1 = Itaxbill.GetAttribute("href");
                                 //gc.downloadfile(URL1, orderNumber, PropertyID, "City TaxBill", "TX", "Hidalgo");
                                 var chromeOptions = new ChromeOptions();
-                                var downloadDirectory = "F:\\AutoPdf\\";
+                                var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                                 chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                                 chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                                 chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

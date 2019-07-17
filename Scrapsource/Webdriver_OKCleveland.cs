@@ -58,9 +58,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + sname;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "OK", "Cleveland");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_OKCleveland"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -85,46 +92,53 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
                         gc.CreatePdf_WOP(orderNumber, "Address search Result", driver, "OK", "Cleveland");
 
-
-
-                        string Muiti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_lblNumberOfResults']")).Text;
-
-
-                        if (Muiti != "1 Results")
+                        try
                         {
 
-                            IWebElement MultiOwnerTable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
-                            IList<IWebElement> MultiOwnerRow = MultiOwnerTable.FindElements(By.TagName("tr"));
-                            IList<IWebElement> MultiOwnerTD;
+                            string Muiti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_lblNumberOfResults']")).Text;
 
-                            //string AlterNateID = "", PropertyAddress = "", LegalDescriptoin = "", YearBuilt = "";
-                            foreach (IWebElement row1 in MultiOwnerRow)
+
+                            if (Muiti != "1 Results")
                             {
-                                MultiOwnerTD = row1.FindElements(By.TagName("td"));
-                                if (MultiOwnerTD.Count != 0 && MultiOwnerTD.Count != 2 && MultiOwnerTD.Count != 1)
+
+                                IWebElement MultiOwnerTable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
+                                IList<IWebElement> MultiOwnerRow = MultiOwnerTable.FindElements(By.TagName("tr"));
+                                IList<IWebElement> MultiOwnerTD;
+
+                                //string AlterNateID = "", PropertyAddress = "", LegalDescriptoin = "", YearBuilt = "";
+                                foreach (IWebElement row1 in MultiOwnerRow)
                                 {
-                                    account = MultiOwnerTD[0].Text;
-                                    parcelNumber = MultiOwnerTD[1].Text;
-                                    ownername = MultiOwnerTD[2].Text;
-                                    PropertyAddress = MultiOwnerTD[3].Text;
+                                    MultiOwnerTD = row1.FindElements(By.TagName("td"));
+                                    if (MultiOwnerTD.Count != 0 && MultiOwnerTD.Count != 2 && MultiOwnerTD.Count != 1)
+                                    {
+                                        account = MultiOwnerTD[0].Text;
+                                        parcelNumber = MultiOwnerTD[1].Text;
+                                        ownername = MultiOwnerTD[2].Text;
+                                        PropertyAddress = MultiOwnerTD[3].Text;
 
 
-                                    string Multi = account + "~" + ownername + "~" + PropertyAddress;
-                                    gc.insert_date(orderNumber, parcelNumber, 403, Multi, 1, DateTime.Now);
+                                        string Multi = account + "~" + ownername + "~" + PropertyAddress;
+                                        gc.insert_date(orderNumber, parcelNumber, 403, Multi, 1, DateTime.Now);
 
+                                    }
                                 }
-                            }
 
-                            HttpContext.Current.Session["multiParcel_Cleveland"] = "Yes";
-                            if (MultiOwnerRow.Count > 25)
-                            {
-                                HttpContext.Current.Session["multiParcel_Cleveland_Multicount"] = "Maximum";
-                            }
-                            driver.Quit();
-                            return "MultiParcel";
+                                HttpContext.Current.Session["multiParcel_Cleveland"] = "Yes";
+                                if (MultiOwnerRow.Count > 25)
+                                {
+                                    HttpContext.Current.Session["multiParcel_Cleveland_Multicount"] = "Maximum";
+                                }
+                                driver.Quit();
+                                return "MultiParcel";
 
+                            }
                         }
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                        }
+                        catch { }
 
                     }
 
@@ -147,10 +161,11 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Result", driver, "OK", "Cleveland");
 
-
-
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                        }
+                        catch { }
                     }
                     else if (searchType == "block")
                     {
@@ -170,7 +185,11 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
                         //  gc.CreatePdf_WOP(orderNumber, "Address search Result", driver, "FL", "Miami Dade");
                         gc.CreatePdf_WOP(orderNumber, "Unit search Result", driver, "OK", "Cleveland");
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                        }
+                        catch { }
 
                     }
                     else if (searchType == "ownername")
@@ -182,10 +201,21 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_mnuSearchn2']/table/tbody/tr/td/a")).Click();
                         Thread.Sleep(2000);
                         var split = ownername.Split(' ');
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Owner_tbOwnerLastName']")).SendKeys(split[0]);
-                        //driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Address_tbAddressNumber']")).SendKeys(houseno);
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Owner_tbOwnerFirstName']")).SendKeys(split[1]);
-                        // driver.FindElement(By.ClassName("form-control add-suite ng-pristine ng-valid")).SendKeys(account);
+                        if(split.Count() == 2)
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Owner_tbOwnerLastName']")).SendKeys(split[0]);
+                            //driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Address_tbAddressNumber']")).SendKeys(houseno);
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Owner_tbOwnerFirstName']")).SendKeys(split[1]);
+                            // driver.FindElement(By.ClassName("form-control add-suite ng-pristine ng-valid")).SendKeys(account);
+                        }
+                        if (split.Count() == 1)
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Owner_tbOwnerLastName']")).SendKeys(ownername);
+                            //driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Address_tbAddressNumber']")).SendKeys(houseno);
+                            //driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Owner_tbOwnerFirstName']")).SendKeys(split[1]);
+                            // driver.FindElement(By.ClassName("form-control add-suite ng-pristine ng-valid")).SendKeys(account);
+                        }
+
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "Owner search", driver, "OK", "Cleveland");
 
@@ -193,47 +223,66 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
                         gc.CreatePdf_WOP(orderNumber, "Owner search Result", driver, "OK", "Cleveland");
 
-
-                        string Muiti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_lblNumberOfResults']")).Text;
-
-
-                        if (Muiti != "1 Results")
+                        try
                         {
+                            string Muiti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_lblNumberOfResults']")).Text;
 
-                            IWebElement MultiOwnerTable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
-                            IList<IWebElement> MultiOwnerRow = MultiOwnerTable.FindElements(By.TagName("tr"));
-                            IList<IWebElement> MultiOwnerTD;
 
-                            //string AlterNateID = "", PropertyAddress = "", LegalDescriptoin = "", YearBuilt = "";
-                            foreach (IWebElement row1 in MultiOwnerRow)
+                            if (Muiti != "1 Results")
                             {
-                                MultiOwnerTD = row1.FindElements(By.TagName("td"));
-                                if (MultiOwnerTD.Count != 0 && MultiOwnerTD.Count != 2 && MultiOwnerTD.Count != 1)
+
+                                IWebElement MultiOwnerTable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
+                                IList<IWebElement> MultiOwnerRow = MultiOwnerTable.FindElements(By.TagName("tr"));
+                                IList<IWebElement> MultiOwnerTD;
+
+                                //string AlterNateID = "", PropertyAddress = "", LegalDescriptoin = "", YearBuilt = "";
+                                foreach (IWebElement row1 in MultiOwnerRow)
                                 {
-                                    account = MultiOwnerTD[0].Text;
-                                    parcelNumber = MultiOwnerTD[1].Text;
-                                    ownername = MultiOwnerTD[2].Text;
-                                    PropertyAddress = MultiOwnerTD[3].Text;
+                                    MultiOwnerTD = row1.FindElements(By.TagName("td"));
+                                    if (MultiOwnerTD.Count != 0 && MultiOwnerTD.Count != 2 && MultiOwnerTD.Count != 1)
+                                    {
+                                        account = MultiOwnerTD[0].Text;
+                                        parcelNumber = MultiOwnerTD[1].Text;
+                                        ownername = MultiOwnerTD[2].Text;
+                                        PropertyAddress = MultiOwnerTD[3].Text;
 
 
-                                    string Multi = account + "~" + ownername + "~" + PropertyAddress;
-                                    gc.insert_date(orderNumber, parcelNumber, 403, Multi, 1, DateTime.Now);
+                                        string Multi = account + "~" + ownername + "~" + PropertyAddress;
+                                        gc.insert_date(orderNumber, parcelNumber, 403, Multi, 1, DateTime.Now);
 
+                                    }
                                 }
-                            }
 
-                            HttpContext.Current.Session["multiParcel_Cleveland"] = "Yes";
-                            if (MultiOwnerRow.Count > 25)
-                            {
-                                HttpContext.Current.Session["multiParcel_Cleveland_Multicount"] = "Maximum";
+                                HttpContext.Current.Session["multiParcel_Cleveland"] = "Yes";
+                                if (MultiOwnerRow.Count > 25)
+                                {
+                                    HttpContext.Current.Session["multiParcel_Cleveland_Multicount"] = "Maximum";
+                                }
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            driver.Quit();
-                            return "MultiParcel";
                         }
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                        }
+                        catch { }
                     }
 
                     Thread.Sleep(2000);
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults"));
+                        if(INodata.Text.Contains("No results"))
+                        {
+                            HttpContext.Current.Session["Nodata_OKCleveland"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     string LegalDescription = "", AccountType = "", Subdivision = "", TaxDistrict = "", LegalAcreage = "", Address1 = "";
 

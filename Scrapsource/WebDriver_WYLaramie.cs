@@ -67,7 +67,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "WY", "Laramie");
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["WYLaramie_Nodata"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -88,7 +95,7 @@ namespace ScrapMaricopa.Scrapsource
                             dir.SelectByValue(directParcel);
                         }
                         catch { }
-                        driver.FindElement(By.Name("St_Name")).SendKeys(sname+" "+ sttype);
+                        driver.FindElement(By.Name("St_Name")).SendKeys(sname + " " + sttype);
                         gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "WY", "Laramie");
                         IWebElement IAddressSearch = driver.FindElement(By.XPath("//*[@id='addressSearch']/table/tbody/tr[2]/td[4]/input"));
                         IJavaScriptExecutor js = driver as IJavaScriptExecutor;
@@ -98,11 +105,25 @@ namespace ScrapMaricopa.Scrapsource
 
                         try
                         {
+                            string nodata = driver.FindElement(By.XPath("//*[@id='search_results']/p/font")).Text;
+                            if (nodata.Contains("no matching"))
+                            {
+                                HttpContext.Current.Session["WYLaramie_Nodata"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch
+                        { }
+
+                        try
+                        {
                             IWebElement IMultiCount = driver.FindElement(By.XPath("//*[@id='search_results']/p"));
                             strMultiCount = GlobalClass.Before(IMultiCount.Text, " Record(s) Found.");
                             if (Convert.ToInt32(strMultiCount) >= 25)
                             {
                                 HttpContext.Current.Session["multiparcel_WYLaramie_Count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
 
@@ -204,6 +225,18 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        string nodata = driver.FindElement(By.XPath("//*[@id='search_results']/p/font")).Text;
+                        if (nodata.Contains("no matching"))
+                        {
+                            HttpContext.Current.Session["WYLaramie_Nodata"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //Property Details 
                     IWebElement ISearch = driver.FindElement(By.Id("infotool"));

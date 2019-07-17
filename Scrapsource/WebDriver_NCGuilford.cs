@@ -125,88 +125,91 @@ namespace ScrapMaricopa.Scrapsource
                         //}
                         //catch { }
                         // CreatePdf_WOP(orderNumber, "Multiparcel Address Search");
-
-                        string mul = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/table/tbody/tr[2]/td[2]/div/div/div/div/table/tbody/tr[1]/td[2]/span")).Text;
-                        mul = WebDriverTest.Before(mul, "Records").Trim();
-
-                        int i, j = 2;
-                        if ((mul != "1") && (mul != "0"))
+                        try
                         {
+                            string mul = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/table/tbody/tr[2]/td[2]/div/div/div/div/table/tbody/tr[1]/td[2]/span")).Text;
+                            mul = WebDriverTest.Before(mul, "Records").Trim();
 
-                            int iRowsCount = driver.FindElements(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_streetDictionaryResultsGridView']/tbody/tr")).Count;
-                            for (i = 2; i <= iRowsCount; i++)
+                            int i, j = 2;
+                            if ((mul != "1") && (mul != "0"))
                             {
-                                if (j >= 2 && i != 2)
+
+                                int iRowsCount = driver.FindElements(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_streetDictionaryResultsGridView']/tbody/tr")).Count;
+                                for (i = 2; i <= iRowsCount; i++)
                                 {
-                                    IWebElement checkbox1 = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_streetDictionaryResultsGridView_ctl0" + j + "_CheckBox1']"));
-                                    // checkbox.Clear();
-                                    checkbox1.Click();
-                                    Thread.Sleep(1000);
-                                    j++;
-                                }
-                                IWebElement checkbox = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_streetDictionaryResultsGridView_ctl0" + i + "_CheckBox1']"));
-                                // checkbox.Clear();
-                                checkbox.Click();
-                                Thread.Sleep(1000);
-                                driver.FindElement(By.Id("ctl00_ContentPlaceHolder1_StreetDictionarySearchButton")).SendKeys(Keys.Enter);
-                                Thread.Sleep(1000);
-                                string mul1 = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/table/tbody/tr[2]/td[2]/div/div/div/div/table/tbody/tr[1]/td[2]/span")).Text;
-                                mul1 = GlobalClass.Before(mul1, " Records Matched Search Criteria").Trim();
-                                int count = Convert.ToInt32(mul1);
-                                if (count > 0)
-                                {   //multi parcel
-                                    gc.CreatePdf_WOP(orderNumber, "Multiparcel Result", driver, "NC", "Guilford");
-                                    IWebElement tbmulti2 = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_ParcelStreetsGridView']/tbody"));
-                                    IList<IWebElement> TRmulti2 = tbmulti2.FindElements(By.TagName("tr"));
-                                    IList<IWebElement> TDmulti2;
-                                    int rescount = TRmulti2.Count;
-
-                                    foreach (IWebElement row in TRmulti2)
+                                    if (j >= 2 && i != 2)
                                     {
-                                        TDmulti2 = row.FindElements(By.TagName("td"));
+                                        IWebElement checkbox1 = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_streetDictionaryResultsGridView_ctl0" + j + "_CheckBox1']"));
+                                        // checkbox.Clear();
+                                        checkbox1.Click();
+                                        Thread.Sleep(1000);
+                                        j++;
+                                    }
+                                    IWebElement checkbox = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_streetDictionaryResultsGridView_ctl0" + i + "_CheckBox1']"));
+                                    // checkbox.Clear();
+                                    checkbox.Click();
+                                    Thread.Sleep(1000);
+                                    driver.FindElement(By.Id("ctl00_ContentPlaceHolder1_StreetDictionarySearchButton")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(1000);
+                                    string mul1 = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/table/tbody/tr[2]/td[2]/div/div/div/div/table/tbody/tr[1]/td[2]/span")).Text;
+                                    mul1 = GlobalClass.Before(mul1, " Records Matched Search Criteria").Trim();
+                                    int count = Convert.ToInt32(mul1);
+                                    if (count > 0)
+                                    {   //multi parcel
+                                        gc.CreatePdf_WOP(orderNumber, "Multiparcel Result", driver, "NC", "Guilford");
+                                        IWebElement tbmulti2 = driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_ParcelStreetsGridView']/tbody"));
+                                        IList<IWebElement> TRmulti2 = tbmulti2.FindElements(By.TagName("tr"));
+                                        IList<IWebElement> TDmulti2;
+                                        int rescount = TRmulti2.Count;
 
-                                        if (TDmulti2.Count != 0 && TDmulti2[1].Text.Trim() != "" && !row.Text.Contains("Pfx") && TDmulti2.Count == 9)
+                                        foreach (IWebElement row in TRmulti2)
                                         {
-                                            IWebElement multiparcellink = TDmulti2[0].FindElement(By.TagName("a"));
-                                            string strmulti = multiparcellink.GetAttribute("href");
-                                            multiparcel.Add(strmulti);
-                                            string multi1 = TDmulti2[1].Text + " " + TDmulti2[4].Text + "~" + TDmulti2[8].Text;
+                                            TDmulti2 = row.FindElements(By.TagName("td"));
 
-                                            if (TDmulti2[1].Text == houseno || houseno == "0")
+                                            if (TDmulti2.Count != 0 && TDmulti2[1].Text.Trim() != "" && !row.Text.Contains("Pfx") && TDmulti2.Count == 9)
                                             {
-                                                gc.insert_date(orderNumber, TDmulti2[0].Text, 597, multi1, 1, DateTime.Now);
+                                                IWebElement multiparcellink = TDmulti2[0].FindElement(By.TagName("a"));
+                                                string strmulti = multiparcellink.GetAttribute("href");
+                                                multiparcel.Add(strmulti);
+                                                string multi1 = TDmulti2[1].Text + " " + TDmulti2[4].Text + "~" + TDmulti2[8].Text;
+
+                                                if (TDmulti2[1].Text == houseno || houseno == "0")
+                                                {
+                                                    gc.insert_date(orderNumber, TDmulti2[0].Text, 597, multi1, 1, DateTime.Now);
+                                                }
+                                                //  Owner~address
                                             }
-                                            //  Owner~address
+
                                         }
 
                                     }
-
+                                    driver.Navigate().Back();
+                                    Thread.Sleep(1000);
                                 }
-                                driver.Navigate().Back();
-                                Thread.Sleep(1000);
-                            }
 
-                            if (multiparcel.Count > 1)
-                            {
+                                if (multiparcel.Count > 1)
+                                {
 
-                                HttpContext.Current.Session["multiparcel_Guilford"] = "Yes";
-                                driver.Quit();
-                                return "MultiParcel";
+                                    HttpContext.Current.Session["multiparcel_Guilford"] = "Yes";
+                                    driver.Quit();
+                                    return "MultiParcel";
+                                }
+                                else
+                                {
+                                    foreach (string real in multiparcel)
+                                    {
+                                        driver.Navigate().GoToUrl(real);
+                                        Thread.Sleep(4000);
+                                    }
+                                }
                             }
                             else
                             {
-                                foreach (string real in multiparcel)
-                                {
-                                    driver.Navigate().GoToUrl(real);
-                                    Thread.Sleep(4000);
-                                }
+                                driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_ParcelStreetsGridView']/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
+                                Thread.Sleep(2000);
                             }
                         }
-                        else
-                        {
-                            driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_ParcelStreetsGridView']/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
-                            Thread.Sleep(2000);
-                        }
+                        catch { }
                     }
                     if (searchType == "titleflex")
                     {
@@ -214,7 +217,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "NC", "Guilford");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_NCGuilford"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -252,14 +262,14 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "ownername")
                     {
-                        driver.FindElement(By.Id("ctl00_ContentPlaceHolder1_Tabs_OwnerTabPanel_OwnerTextBox")).SendKeys(ownername);
+                        driver.FindElement(By.Id("ctl00_ContentPlaceHolder1_OwnerTextBox")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "Owner Search", driver, "NC", "Guilford");
-                        driver.FindElement(By.Id("ctl00_ContentPlaceHolder1_Tabs_OwnerTabPanel_OwnerButton")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("ctl00_ContentPlaceHolder1_OwnerButton")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
 
                         try
                         {
-                            string mul = driver.FindElement(By.Id("ctl00_SearchPageHeader_SearchResultDetailsLabel")).Text;
+                            string mul = driver.FindElement(By.Id("//*[@id='aspnetForm']/div[3]/table/tbody/tr[2]/td[2]/div/div/div/div/table/tbody/tr[1]/td[2]/span")).Text;
 
                             mul = WebDriverTest.Before(mul, " Records");
 
@@ -299,7 +309,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             else
                             {
-                                driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder2_OwnerSearchResultsGridView']/tbody/tr[2]/td[2]/a")).Click();
+                                driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_OwnerSearchResultsGridView']/tbody/tr[2]/td[3]/a")).Click();
 
 
                             }
@@ -308,6 +318,17 @@ namespace ScrapMaricopa.Scrapsource
 
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/table/tbody/tr[2]/td[2]/div/div/div/div/table"));
+                        if(INodata.Text.Contains("0 Records Matched Search Criteria"))
+                        {
+                            HttpContext.Current.Session["Nodata_NCGuilford"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property_details
 
                     //PIN #~Location Address~Property Description~Property Owner~City~Land Class~Acreage~Year Built

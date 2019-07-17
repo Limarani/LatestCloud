@@ -234,6 +234,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
 
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("middle"));
+                        if(Inodata.Text.Contains("No results found"))
+                        {
+                            HttpContext.Current.Session["Nodata_DonaAnaNM"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property Details
                     string AccountNo = "", SitusAddress = "", TaxArea = "", LegalSummary = "", strOwnerName = "", strAddress = "", ValueSummary = "", MValueSummary = "", PropertyStatus = "";
                     try

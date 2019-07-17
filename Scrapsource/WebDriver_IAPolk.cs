@@ -68,9 +68,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + sname;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "IA", "Polk");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_IAPlok"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -191,7 +198,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
-
+                    try
+                    {
+                        IWebElement ImultiTable = driver.FindElement(By.XPath("/html/body/center/table/tbody/tr[3]"));
+                        if(ImultiTable.Text.Contains("0 Records"))
+                        {
+                            HttpContext.Current.Session["Nodata_IAPlok"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property and Assessment
                     try
                     {

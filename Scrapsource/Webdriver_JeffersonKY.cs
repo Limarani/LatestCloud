@@ -41,7 +41,7 @@ namespace ScrapMaricopa.Scrapsource
             HttpContext.Current.Session["orderNo"] = orderNumber;
             GlobalClass.global_parcelNo = parcelNumber;
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
-            string Parcel_number = "", Tax_Authority = "", Year = "", Addresshrf = "", Propertyresult = "", PaidDate = "", parcelhref = "", MailingAddress = "";
+            string Parcel_number = "", Tax_Authority = "", Year = "", Addresshrf = "", Propertyresult = "", PaidDate = "", parcelhref = "", MailingAddress = "", Yearbuilt = "";
             //request.UseDefaultCredentials = true;
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
@@ -52,7 +52,6 @@ namespace ScrapMaricopa.Scrapsource
             option.AddArgument("No-Sandbox");
             using (driver = new ChromeDriver(option))
             {
-                
                 try
                 {
 
@@ -62,7 +61,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, Address, "KY", "Jefferson");
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -126,7 +132,7 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
                                 driver.Quit();
-                                return "No Data Found";
+                                return "Zero";
                             }
 
                         }
@@ -179,10 +185,9 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
                             driver.Quit();
-                            return "No Data Found";
+                            return "Zero";
                         }
                     }
-
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
                     string propertdetail = driver.FindElement(By.XPath("//*[@id='primary']/div/dl")).Text;
                     string OwnerProperty = gc.Between(propertdetail, "Owner", "Parcel ID");
@@ -203,7 +208,44 @@ namespace ScrapMaricopa.Scrapsource
                     gc.insert_date(orderNumber, Parcel_number, 1203, Propertresult, 1, DateTime.Now);
                     gc.insert_date(orderNumber, Parcel_number, 1204, Assmentresult, 1, DateTime.Now);
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
-                    driver.Quit();
+                    //driver.Quit();
+                    //AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
+                    //string propertdetail = driver.FindElement(By.Id("basic-info")).Text;
+                    //MailingAddress = gc.Between(propertdetail, "Mailing Address", "Owner");
+                    //string OwnerProperty = gc.Between(propertdetail, "Owner", "Parcel ID");
+                    //string Propertyaddress = driver.FindElement(By.XPath("//*[@id='primary']/div/h1")).Text;
+                    //Parcel_number = gc.Between(propertdetail, "Parcel ID", "Land Value").Trim();
+                    //string Lane = gc.Between(propertdetail, "Land Value", "Improvements Value");
+                    //string ImprovementsValue = gc.Between(propertdetail, "Improvements Value", "Assessed Value");
+                    //string AssessedValue = gc.Between(propertdetail, "Assessed Value", "Approximate Acreage").Trim();
+                    //string Acreage = gc.Between(propertdetail, "Approximate Acreage", "Property Class");
+                    //string Propertyclass = gc.Between(propertdetail, "Property Class", "Deed Book/Page");
+                    //string DistrictNumber = gc.Between(propertdetail, "District Number", "Old District");
+                    //string Olddistrict = gc.Between(propertdetail, "Old District", "Fire District");
+                    //string FireDistrict = gc.Between(propertdetail, "Fire District", "School District");
+                    //string SchoolDistrict = gc.Between(propertdetail, "School District", "Neighborhood");
+                    //string LegalDescription = driver.FindElement(By.XPath("//*[@id='legal-container']/table/tbody/tr/td[2]")).Text;
+                    //string Acres = gc.Between(propertdetail, "Acres", "Neighborhood").Trim();
+                    //string Neighborhood = gc.Between(propertdetail, "Neighborhood", "Satellite City").Trim();
+                    //try
+                    //{
+                    //    Yearbuilt = driver.FindElement(By.XPath("//*[@id='improvements']/div/div[1]/dl/dd[2]")).Text;
+                    //}
+                    //catch { }
+                    //string Propertresult = Propertyaddress + "~" + MailingAddress+"~"+ OwnerProperty+"~"+ Acreage+"~"+ Propertyclass+"~"+ DistrictNumber+"~"+ Olddistrict+"~"+ FireDistrict+"~"+ SchoolDistrict +"~"+ Neighborhood+"~"+ Yearbuilt+ "~"+ LegalDescription;
+                    //string Assmentresult = Lane+"~"+AssessedValue + "~" + ImprovementsValue;
+                    //try
+                    //{
+                    //    driver.FindElement(By.XPath("//*[@id='primary']/div/dl/dd[5]")).Click();
+                    //    Thread.Sleep(2000);
+                    //    gc.CreatePdf(orderNumber, Parcel_number, "PropertyDetail", driver, "KY", "Jefferson");
+                    //}
+                    //catch { }
+                    //gc.CreatePdf(orderNumber, Parcel_number, "PropertyDetail", driver, "KY", "Jefferson");
+                    //gc.insert_date(orderNumber, Parcel_number, 1203, Propertresult, 1, DateTime.Now);
+                    //gc.insert_date(orderNumber, Parcel_number, 1204, Assmentresult, 1, DateTime.Now);
+                    //TaxTime = DateTime.Now.ToString("HH:mm:ss");
+                    //driver.Quit();
                     driver = new PhantomJSDriver();
                     //driver = new ChromeDriver();
                     driver.Navigate().GoToUrl("http://www.jcsoky.org/ptax_search_pid.asp");
@@ -221,7 +263,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
                             driver.Quit();
-                            return "No Data Found";
+                            return "Zero";
                         }
                     }
                     catch

@@ -35,7 +35,8 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_orderNo = orderNumber;
             HttpContext.Current.Session["orderNo"] = orderNumber;
             GlobalClass.global_parcelNo = parcelNumber;
-
+            GlobalClass.sname = "OH";
+            GlobalClass.cname = "Medina";
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
@@ -56,7 +57,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "OH", "Medina");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MedinaOH"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -109,6 +117,12 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.Quit();
                                 return "MultiParcel";
                             }
+                            if (multiRow.Count == 1)
+                            {
+                                HttpContext.Current.Session["Nodata_MedinaOH"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
                         }
                         catch { }
                     }
@@ -119,8 +133,24 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='propsearch']/p/input[1]")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "parcel search Result", driver, "OH", "Medina");
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div/div[2]/table/tbody/tr[2]/td[4]/a")).SendKeys(Keys.Enter);
-                        Thread.Sleep(3000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("/html/body/div[2]/div/div/div[2]/table/tbody/tr[2]/td[4]/a")).SendKeys(Keys.Enter);
+                            Thread.Sleep(3000);
+                        }
+                        catch { }
+                        try
+                        {
+                            IWebElement multiaddress = driver.FindElement(By.XPath("/html/body/div[2]/div/div/div[2]/table/tbody"));
+                            IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
+                            if (multiRow.Count == 1)
+                            {
+                                HttpContext.Current.Session["Nodata_MedinaOH"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     else if (searchType == "ownername")
                     {
@@ -167,6 +197,12 @@ namespace ScrapMaricopa.Scrapsource
                                 HttpContext.Current.Session["multiparcel_MedinaOH"] = "Yes";
                                 driver.Quit();
                                 return "MultiParcel";
+                            }
+                            if (multiRow.Count == 1)
+                            {
+                                HttpContext.Current.Session["Nodata_MedinaOH"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
                         catch { }
@@ -521,7 +557,17 @@ namespace ScrapMaricopa.Scrapsource
                     driver.FindElement(By.XPath("//*[@id='searchBox']")).SendKeys(parcel_no);
                     Thread.Sleep(5000);
                     gc.CreatePdf(orderNumber, parcel_no, "Tax Information Result view", driver, "OH", "Medina");
-                    IWebElement ISpan12 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr/td[6]/button"));
+                    IWebElement ISpan12 = null;
+                    try
+                    {
+                        ISpan12 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr/td[6]/button"));
+                    }
+                    catch { }
+                    try
+                    {
+                        ISpan12 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody/tr/td[6]/button"));
+                    }
+                    catch { }
                     IJavaScriptExecutor js12 = driver as IJavaScriptExecutor;
                     js12.ExecuteScript("arguments[0].click();", ISpan12);
                     Thread.Sleep(3000);
@@ -678,21 +724,20 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
                     //download taxbill
-
-                    IWebElement Itaxbill = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[3]/div/div[1]/a"));
-                    string URL1 = Itaxbill.GetAttribute("href");
-
+                    
                     try
                     {
+                        IWebElement Itaxbill = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[4]/div/div[1]/a"));
+                        string URL1 = Itaxbill.GetAttribute("href");
 
                         string fileName = "";
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
-
+                        chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
                         var chDriver = new ChromeDriver(chromeOptions);
                         try
                         {
@@ -701,7 +746,7 @@ namespace ScrapMaricopa.Scrapsource
                             try
                             {
                                 fileName = "Bill.pdf";
-                                gc.AutoDownloadFile(orderNumber, parcel_no, "OH", "Medina", fileName);
+                                gc.AutoDownloadFileSpokane(orderNumber, parcel_no, "Medina", "OH", fileName);
 
                             }
                             catch { }
@@ -726,20 +771,21 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
                     // download receipt
 
-                    IWebElement Ireceipt = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[4]/div/div[1]/a"));
-                    string URL2 = Ireceipt.GetAttribute("href");
+                    
 
                     try
                     {
+                        IWebElement Ireceipt = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[4]/div/div[1]/a"));
+                        string URL2 = Ireceipt.GetAttribute("href");
 
                         string fileName = "";
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
-
+                        chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
                         var chDriver = new ChromeDriver(chromeOptions);
                         try
                         {
@@ -747,8 +793,8 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(3000);
                             try
                             {
-                                fileName = "Receipt.pdf";
-                                gc.AutoDownloadFile(orderNumber, parcel_no, "OH", "Medina", fileName);
+                                fileName = "Bill.pdf";
+                                gc.AutoDownloadFileSpokane(orderNumber, parcel_no,"Medina", "OH", fileName);
                             }
                             catch { }
                             chDriver.Quit();

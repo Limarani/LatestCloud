@@ -58,9 +58,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetno + " " + streetname + " " + streettype + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, "", ownernm, address.Trim(), "LA", "Calcasieu");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CalcasieuLA"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -121,9 +128,26 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Result", driver, "LA", "Calcasieu");
                         driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/div[5]/button")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/table/tbody/tr/td[4]/a")).Click();
-                        Thread.Sleep(2000);
+                        //For Nodata Found
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ng-view']/div/table/tbody/tr/td[4]/a")).Click();
+                            Thread.Sleep(2000);
+                        }
+                        catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='ng-view']/div/div"));
+                        if(INodata.Text.Contains("No results found"))
+                        {
+                            HttpContext.Current.Session["Nodata_CalcasieuLA"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //propertydetail
                     //driver.FindElement(By.XPath("//*[@id='ng-view']/div/table/tbody/tr/td[4]/a")).Click();
                     //Thread.Sleep(2000);

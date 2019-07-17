@@ -77,43 +77,58 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                         IWebElement Addresstax = driver.FindElement(By.XPath("//*[@id='ResultDiv']/div"));
                         string Firststep = ""; int Max = 0;
-                        IWebElement PropertyIteamTable = driver.FindElement(By.XPath("//*[@id='ResultDiv']/div/div"));
-                        IList<IWebElement> PropertyIeamRow = PropertyIteamTable.FindElements(By.TagName("p"));
-
-                        foreach (IWebElement Property in PropertyIeamRow)
+                        try
                         {
-                            if (PropertyIeamRow.Count != 0 & !Property.Text.Contains("View Details"))
+                            IWebElement PropertyIteamTable = driver.FindElement(By.XPath("//*[@id='ResultDiv']/div/div"));
+                            IList<IWebElement> PropertyIeamRow = PropertyIteamTable.FindElements(By.TagName("p"));
+
+                            foreach (IWebElement Property in PropertyIeamRow)
                             {
-                                string Parcelnumber = GlobalClass.After(Property.Text, "Fee Parcel :").Trim();
-                                string[] splitparcel = Parcelnumber.Split('-');
-                                string split3 = splitparcel[2].Substring(1, 2);
-                                parcelNumber = splitparcel[0] + splitparcel[1] + split3;
-                                string Addressta = gc.Between(Property.Text, "Address :", "Year :");
-                                string Yearpar = gc.Between(Property.Text, "Year :", "TRA :");
-                                string roallcast = gc.Between(Property.Text, "Roll Cat. :", "Fee Parcel :");
-                                string Multiresult = "~" + Addressta + "~" + Yearpar + "~" + roallcast;
-                                gc.insert_date(orderno, Parcelnumber, 360, Multiresult, 1, DateTime.Now);
-                                Max++;
+                                if (PropertyIeamRow.Count != 0 & !Property.Text.Contains("View Details"))
+                                {
+                                    string Parcelnumber = GlobalClass.After(Property.Text, "Fee Parcel :").Trim();
+                                    string[] splitparcel = Parcelnumber.Split('-');
+                                    string split3 = splitparcel[2].Substring(1, 2);
+                                    parcelNumber = splitparcel[0] + splitparcel[1] + split3;
+                                    string Addressta = gc.Between(Property.Text, "Address :", "Year :");
+                                    string Yearpar = gc.Between(Property.Text, "Year :", "TRA :");
+                                    string roallcast = gc.Between(Property.Text, "Roll Cat. :", "Fee Parcel :");
+                                    string Multiresult = "~" + Addressta + "~" + Yearpar + "~" + roallcast;
+                                    gc.insert_date(orderno, Parcelnumber, 360, Multiresult, 1, DateTime.Now);
+                                    Max++;
+                                }
+                            }
+                            if (Max == 1)
+                            {
+                                searchType = "parcel";
+                            }
+                            if (Max > 1 & Max < 26)
+                            {
+                                HttpContext.Current.Session["multiParcel_CAEldorado"] = "Yes";
+                                gc.CreatePdf_WOP(orderno, "MultyAddressSearch", driver, "CA", "El Dorado");
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
+                            if (Max > 25)
+                            {
+                                HttpContext.Current.Session["multiParcel_CAEldorado_Count"] = "Maximum";
+                                gc.CreatePdf_WOP(orderno, "MultyAddressSearch", driver, "CA", "El Dorado");
+                                driver.Quit();
+                                return "Maximum";
                             }
                         }
-                        if (Max == 1)
+                        catch { }
+                        try
                         {
-                            searchType = "parcel";
+                            IWebElement INodata = driver.FindElement(By.Id("ResultDiv"));
+                            if (INodata.Text.Contains("no matching records were found"))
+                            {
+                                HttpContext.Current.Session["Nodata_CAEldorado"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
                         }
-                        if (Max > 1 & Max < 26)
-                        {
-                            HttpContext.Current.Session["multiParcel_CAEldorado"] = "Yes";
-                            gc.CreatePdf_WOP(orderno, "MultyAddressSearch", driver, "CA", "El Dorado");
-                            driver.Quit();
-                            return "MultiParcel";
-                        }
-                        if (Max > 25)
-                        {
-                            HttpContext.Current.Session["multiParcel_CAEldorado_Count"] = "Maximum";
-                            gc.CreatePdf_WOP(orderno, "MultyAddressSearch", driver, "CA", "El Dorado");
-                            driver.Quit();
-                            return "Maximum";
-                        }
+                        catch { }
                     }
                     if (searchType == "parcel")
                     {
@@ -266,6 +281,18 @@ namespace ScrapMaricopa.Scrapsource
 
 
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("/html/body/p[2]"));
+                        if(INodata.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_CAEldorado"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     // assessment details
                     string YearBuilt = "", Abstractcode = "", Reference = "", SubdivisionTractNumber = "", SubdivisionTractName = "", TaxRateArea = "", City = "", BulData = "";
@@ -454,7 +481,7 @@ namespace ScrapMaricopa.Scrapsource
                     //load chrome driver...
                     //IWebDriver chDriver = new ChromeDriver();
                     var chromeOptions = new ChromeOptions();
-                    var downloadDirectory = "F:\\AutoPdf\\";
+                    var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
                     chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                     chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);

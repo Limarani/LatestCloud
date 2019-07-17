@@ -48,7 +48,7 @@ namespace ScrapMaricopa.Scrapsource
             string pathurl = "", Owner_Name = "";
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             List<string> taxurllist = new List<string>();
-            using (driver = new PhantomJSDriver())
+            using (driver = new ChromeDriver())
             {
                 try
                 {
@@ -57,9 +57,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + direction + " " + sname + " " + sttype;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "UT", "Utah");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Utah_Zero"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -167,32 +174,48 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("/html/body/div/div[6]/div[2]/table/tbody/tr/td/table/tbody/tr/td[1]/ul[1]/li[1]/a")).SendKeys(Keys.Enter);
                         gc.CreatePdf_WOP_Chrome(orderNumber, "Owner name Search", driver, "UT", "Utah");
                         driver.FindElement(By.Id("av_name")).SendKeys(ownername);
-                        IWebElement rdio = driver.FindElement(By.XPath("/html/body/div/div[6]/div[2]/table/tbody/tr/td/table/tbody/tr/td/form/div/table/tbody/tr[1]/td/p[1]/label[2]/input"));
-                        js.ExecuteScript("arguments[0].click();", rdio);
+                        IWebElement rdio = driver.FindElement(By.XPath("//*[@id='av_valid_0']"));
+                        //js.ExecuteScript("arguments[0].click();", rdio);
+                        rdio.Click();
                         driver.FindElement(By.XPath("//*[@id='form1']/div/table/tbody/tr[1]/td/p[3]/input")).SendKeys(Keys.Enter);
                         gc.CreatePdf_WOP_Chrome(orderNumber, "Owner name Search result", driver, "UT", "Utah");
 
-                        //multi parcel
-                        IWebElement multitableElement = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table[1]/tbody"));
-                        IList<IWebElement> multitableRow = multitableElement.FindElements(By.TagName("tr"));
-                        IList<IWebElement> multirowTD;
-                        foreach (IWebElement row in multitableRow)
+                        try
                         {
-                            multirowTD = row.FindElements(By.TagName("td"));
-                            if (multirowTD.Count != 0 && !row.Text.Contains("Owner"))
+                            //multi parcel
+                            IWebElement multitableElement = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table[1]/tbody"));
+                            IList<IWebElement> multitableRow = multitableElement.FindElements(By.TagName("tr"));
+                            IList<IWebElement> multirowTD;
+                            foreach (IWebElement row in multitableRow)
                             {
-                                string multi = multirowTD[0].Text.Trim() + "~" + multirowTD[4].Text.Trim();
-                                gc.insert_date(orderNumber, multirowTD[1].Text.Trim(), 119, multi, 1, DateTime.Now);
+                                multirowTD = row.FindElements(By.TagName("td"));
+                                if (multirowTD.Count != 0 && !row.Text.Contains("Owner"))
+                                {
+                                    string multi = multirowTD[0].Text.Trim() + "~" + multirowTD[4].Text.Trim();
+                                    gc.insert_date(orderNumber, multirowTD[1].Text.Trim(), 119, multi, 1, DateTime.Now);
+                                }
+                            }
+
+                            HttpContext.Current.Session["multiparcel_Utah"] = "Yes";
+                            if (multitableRow.Count > 25)
+                            {
+                                HttpContext.Current.Session["multiParcel_Utah_Multicount"] = "Maximum";
+                            }
+                            driver.Quit();
+                            return "MultiParcel";
+                        }
+                        catch { }
+                        try
+                        {
+                            IWebElement Nodata = driver.FindElement(By.XPath("/html/body/table"));
+                            if (!Nodata.Text.Contains("Property Address") && !Nodata.Text.Contains("Owner Name"))
+                            {
+                                HttpContext.Current.Session["Utah_Zero"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
-
-                        HttpContext.Current.Session["multiparcel_Utah"] = "Yes";
-                        if (multitableRow.Count > 25)
-                        {
-                            HttpContext.Current.Session["multiParcel_Utah_Multicount"] = "Maximum";
-                        }
-                        driver.Quit();
-                        return "MultiParcel";
+                        catch { }
                     }
 
 

@@ -40,7 +40,7 @@ namespace ScrapMaricopa.Scrapsource
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             //driver = new PhantomJSDriver();
-            // driver = new ChromeDriver();
+            driver = new ChromeDriver();
             var option = new ChromeOptions();
             option.AddArgument("No-Sandbox");
             using (driver = new ChromeDriver(option))
@@ -66,14 +66,24 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("esri_dijit_Search_0_input")).SendKeys(houseno + " " + sname);
                         gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "MN", "Dakota");
                         driver.FindElement(By.XPath("//*[@id='esri_dijit_Search_0']/div/div[2]")).Click();
-                        Thread.Sleep(10000);
                         //   gc.CreatePdf_WOP(orderNumber, "Address Search result", driver, "MN", "Dakota");
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='esri_dijit_Search_0']/div/div[4]/div"));
+                            if (Inodata.Text.Contains("No results") || Inodata.Text.Contains("no results found"))
+                            {
+                                HttpContext.Current.Session["Nodata_MNDakota"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
+                        Thread.Sleep(10000);
                         try
                         {
                             driver.FindElement(By.XPath("//*[@id='widgets_Search_Widget_60']/div[2]/div[2]/ul/li")).Click();
                             Thread.Sleep(2000);
                         }
-
                         catch { }
                         try
                         {
@@ -138,6 +148,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         }
                         catch { }
+
                     }
 
                     if (searchType == "titleflex")
@@ -146,10 +157,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "MN", "Dakota");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
-                        searchType = "parcel";
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MNDakota"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
+                        searchType = "parcel";
                     }
 
 
@@ -171,9 +189,20 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("esri_dijit_Search_0_input")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcel_id, "parcel search", driver, "MN", "Dakota");
                         driver.FindElement(By.XPath("//*[@id='esri_dijit_Search_0']/div/div[2]")).Click();
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='esri_dijit_Search_0']/div/div[4]/div"));
+                            if (Inodata.Text.Contains("No results") || Inodata.Text.Contains("no results found"))
+                            {
+                                HttpContext.Current.Session["Nodata_MNDakota"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         Thread.Sleep(6000);
-
                     }
+
 
                     //property_details
                     driver.SwitchTo().Window(driver.WindowHandles.Last());
@@ -210,7 +239,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -291,7 +320,10 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.Navigate().GoToUrl(real);
                         Thread.Sleep(4000);
-
+                        try {
+                            ByVisibleElement(driver.FindElement(By.Id("hplTaxStmntPDF")));
+                        }
+                        catch { }
                         if (real.Contains("TaxStatement"))
                         {
                             //Taxinfo_Details
@@ -498,6 +530,11 @@ namespace ScrapMaricopa.Scrapsource
                 File.Delete(img);
             }
 
+        }
+        public void ByVisibleElement(IWebElement Element)
+        {
+            IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+            js.ExecuteScript("arguments[0].scrollIntoView();", Element);
         }
 
     }

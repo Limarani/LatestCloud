@@ -60,13 +60,19 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetno + " " + sname + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "FL", "Saint Lucie");
-                        parcelNumber = GlobalClass.global_parcelNo;
+                  
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
                         }
-
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLStLucie"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -370,6 +376,19 @@ namespace ScrapMaricopa.Scrapsource
 
 
                     }
+
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("/html/body/app-root/app-real-estate/app-owner-name/div/app-grid-result/div[1]"));
+                        if (Inodata.Text.Contains(" No records available"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLStLucie"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     if (HttpContext.Current.Session["Popup_Removed"] != null && HttpContext.Current.Session["Popup_Removed"].ToString() == "Yes")
                     {
                         driver.FindElement(By.LinkText("Property Card")).SendKeys(Keys.Enter);
@@ -378,6 +397,7 @@ namespace ScrapMaricopa.Scrapsource
                         driver.SwitchTo().Window(driver.WindowHandles.Last());
                         Thread.Sleep(3000);
                     }
+
                     //string bulktext = driver.FindElement(By.XPath("/html/body/div/div/div[3]/div[2]/div/div[8]/div/div/div[3]/div/div[1]/div[3]")).Text.Trim();                
                     string bulktext = driver.FindElement(By.XPath("/html/body/div/div")).Text.Trim();
                     siteaddr = driver.FindElement(By.XPath("/html/body/div/div/div[3]/div[2]/div/div[1]/div/div/div[1]/div[3]/div[1]")).Text.Trim();

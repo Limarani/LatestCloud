@@ -52,10 +52,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", "", Address, "IN", "Lake");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LakeIN"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -251,7 +257,11 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(4000);
                     }
                     catch { }
-                    Yearbuilt = driver.FindElement(By.XPath("//*[@id='BodyContent_GridView10']/tbody/tr[3]/td[4]")).Text.Trim();
+                    try
+                    {////*[@id="BodyContent_GridView10"]/tbody/tr[3]/td[4]
+                        Yearbuilt = driver.FindElement(By.XPath("//*[@id='BodyContent_GridView10']/tbody/tr[3]/td[4]")).Text.Trim();
+                    }
+                    catch { }
 
                     string Propertydetails = TaxID + "~" + OwnerName + "~" + PropertyAddress + "~" + MailingAddress + "~" + Yearbuilt + "~" + LegalDescription + "~" + PropertyClass;
                     gc.insert_date(orderNumber, ParcelID, 1718, Propertydetails, 1, DateTime.Now);
@@ -271,11 +281,10 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         TDBigdata2 = row2.FindElements(By.TagName("td"));
 
-                        if (s < 3 && TDBigdata2.Count != 0 && TDBigdata2.Count == 14 && !row2.Text.Contains("Assess. Year"))
+                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 14 && !row2.Text.Contains("Assess. Year"))
                         {
                             value = TDBigdata2[0].Text + "~" + TDBigdata2[1].Text + "~" + TDBigdata2[2].Text + "~" + TDBigdata2[3].Text + "~" + TDBigdata2[4].Text + "~" + TDBigdata2[5].Text + "~" + TDBigdata2[6].Text + "~" + TDBigdata2[7].Text + "~" + TDBigdata2[8].Text + "~" + TDBigdata2[9].Text + "~" + TDBigdata2[10].Text + "~" + TDBigdata2[11].Text + "~" + TDBigdata2[12].Text + "~" + TDBigdata2[13].Text;
-                            gc.insert_date(orderNumber, ParcelID, 1719, value, 1, DateTime.Now);
-                            s++;
+                            gc.insert_date(orderNumber, ParcelID, 1719, value, 1, DateTime.Now);                            
                         }
                     }
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");

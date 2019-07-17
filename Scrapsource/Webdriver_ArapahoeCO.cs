@@ -44,7 +44,7 @@ namespace ScrapMaricopa.Scrapsource
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
 
-            using (driver = new PhantomJSDriver())
+            using (driver = new ChromeDriver()) //PhantomJSDriver
             {
                 //rdp
                 try
@@ -55,11 +55,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetno + " " + direction + " " + streetname + " " + streettype + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, "", ownernm, address.Trim(), "CO", "Arapahoe");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
-                           
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ArapahoeCO"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -121,6 +126,19 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("btnParcelSearchAIN")).Click();
                         Thread.Sleep(2000);
                     }
+
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("lblNoResults"));
+                        if (Inodata.Text.Contains("No matching records were found.") || Inodata.Text.Contains("No matching records were found for"))
+                        {
+                            HttpContext.Current.Session["Nodata_ArapahoeCO"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     IWebElement propertydetailtable = driver.FindElement(By.XPath("//*[@id='shadedTable']/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td/table[1]/tbody/tr[3]/td/table/tbody"));
                     Parcel_number = driver.FindElement(By.Id("ucParcelHeader_lblPinTxt")).Text;
                     string AIN = driver.FindElement(By.Id("ucParcelHeader_lblAinTxt")).Text;
@@ -160,6 +178,8 @@ namespace ScrapMaricopa.Scrapsource
                             break;
                         }
                     }
+                    Amrock amc = new Amrock();
+                    string RemainingAmount1 = "", RemainingAmount2 = "", AssessedTax1 = "", AssessedTax2 = "", SpecialAssess1 = "", SpecialAssess2 = "", PaidAmount1 = "", PaidAmount2 = "";
                     driver.Navigate().GoToUrl("https://taxsearch.arapahoegov.com/");
                     driver.FindElement(By.Id("ContentPlaceHolder1_txtPIN")).SendKeys(Parcel_number);
                     gc.CreatePdf(orderNumber, Parcel_number, "Tax search before", driver, "CO", "Arapahoe");
@@ -169,8 +189,11 @@ namespace ScrapMaricopa.Scrapsource
                     string tax_owner = driver.FindElement(By.Id("ContentPlaceHolder1_lblOwner")).Text;
                     string tax_city = driver.FindElement(By.Id("ContentPlaceHolder1_lblCity")).Text;
                     string tax_aie = driver.FindElement(By.Id("ContentPlaceHolder1_lblAIN")).Text;
+                    string tax_pin = driver.FindElement(By.Id("ContentPlaceHolder1_lblPIN")).Text;
+                    amc.TaxId = tax_pin;
                     IWebElement payyear1 = driver.FindElement(By.Id("ContentPlaceHolder1_lblPayable"));
                     string payyear = gc.Between(payyear1.Text, "for", "Payable").Trim();
+                    amc.TaxYear = payyear;
                     string fullpaymentdue = driver.FindElement(By.Id("ContentPlaceHolder1_lblDueFull")).Text;
                     string firsthalfpayment = driver.FindElement(By.Id("ContentPlaceHolder1_lblDue1st")).Text;
                     string sendhalfpayment = driver.FindElement(By.Id("ContentPlaceHolder1_lblDue2nd")).Text;
@@ -194,7 +217,27 @@ namespace ScrapMaricopa.Scrapsource
                             taxresult2 += tax_instalid[2].Text.Trim() + "~";
                             taxresult3 += tax_instalid[3].Text.Trim() + "~";
                         }
+                        if (tax_instalid.Count != 0 && tax_instal.Text.Contains("Assessed Tax:"))
+                        {
+                            AssessedTax1 = tax_instalid[1].Text.Replace("$", "").Trim();
+                            AssessedTax2 = tax_instalid[2].Text.Replace("$", "").Trim();
+                        }
+                        if (tax_instalid.Count != 0 && tax_instal.Text.Contains("Special Assessment:"))
+                        {
+                            SpecialAssess1 = tax_instalid[1].Text.Replace("$", "").Trim();
+                            SpecialAssess2 = tax_instalid[2].Text.Replace("$", "").Trim();
+                        }
+                        if (tax_instalid.Count != 0 && tax_instal.Text.Contains("Payments:"))
+                        {
+                            PaidAmount1 = tax_instalid[1].Text.Replace("$", "").Trim();
+                            PaidAmount2 = tax_instalid[2].Text.Replace("$", "").Trim();
+                        }
 
+                        if (tax_instalid.Count != 0 && tax_instal.Text.Contains("Total Due:"))
+                        {
+                            RemainingAmount1 = tax_instalid[1].Text.Replace("$", "").Trim();
+                            RemainingAmount2 = tax_instalid[2].Text.Replace("$", "").Trim();
+                        }
                     }
                     string taxresult1 = payyear + "~" + tax_owner + "~" + tax_city + "~" + tax_aie + "~" + Firsthalf + "~" + Taxresult1.Remove(Taxresult1.Length - 1) + "~" + firsthalfpayment + "~" + Tax_Authority;
                     string Taxresult2 = payyear + "~" + tax_owner + "~" + tax_city + "~" + tax_aie + "~" + Secondhalf + "~" + taxresult2.Remove(taxresult2.Length - 1) + "~" + sendhalfpayment + "~" + Tax_Authority;
@@ -203,8 +246,45 @@ namespace ScrapMaricopa.Scrapsource
                     gc.insert_date(orderNumber, Parcel_number, 856, Taxresult2, 1, DateTime.Now);
                     gc.insert_date(orderNumber, Parcel_number, 856, Taxresult3, 1, DateTime.Now);
                     gc.CreatePdf(orderNumber, Parcel_number, "Tax search After", driver, "CO", "Arapahoe");
+
+                    string strinstAmount1 = Convert.ToString(Convert.ToDouble(AssessedTax1) + Convert.ToDouble(SpecialAssess1));
+                    string strinstAmount2 = Convert.ToString(Convert.ToDouble(AssessedTax2) + Convert.ToDouble(SpecialAssess2));
+
+                    amc.Instamountpaid1 = "$" + strinstAmount1;
+                    amc.Instamountpaid2 = "$" + strinstAmount2;
+
+                    amc.Instamount1 = "$" + PaidAmount1;
+                    amc.Instamount2 = "$" + PaidAmount2;
+
+                    if(RemainingAmount1 == "0.00" && PaidAmount1 !="0.00")
+                    {
+                        amc.InstPaidDue1 = "Paid";
+                    }
+                    if (RemainingAmount1 != "0.00" && PaidAmount1 == "0.00")
+                    {
+                        amc.InstPaidDue1 = "Due";
+                    }
+                    if (RemainingAmount2 != "0.00" && PaidAmount2 != "0.00")
+                    {
+                        amc.InstPaidDue2 = "Paid";
+                    }
+                    if (RemainingAmount2 != "0.00" && PaidAmount2 == "0.00")
+                    {
+                        amc.InstPaidDue2 = "Due";
+                    }
+                    amc.Remainingbalance1 = "$" + RemainingAmount1;
+                    amc.Remainingbalance2 = "$" + RemainingAmount2;                    
+
                     //amg amount
                     string PriorYeardue = driver.FindElement(By.Id("ContentPlaceHolder1_lblPriorYear")).Text;
+                    if(PriorYeardue.Trim() == "Y")
+                    {
+                        amc.IsDelinquent = "Yes";
+                    }
+                    if (PriorYeardue.Trim() == "N")
+                    {
+                        amc.IsDelinquent = "No";
+                    }
                     string Bankruptcy = driver.FindElement(By.Id("ContentPlaceHolder1_lblBankruptcy")).Text;
                     string Treasurer_assessment = driver.FindElement(By.Id("ContentPlaceHolder1_lblTreasAssess")).Text;
                     string TaxLiens = driver.FindElement(By.Id("ContentPlaceHolder1_lblTaxLien")).Text;
@@ -223,28 +303,34 @@ namespace ScrapMaricopa.Scrapsource
                         prepayment = gc.Between(paymentyearweb.Text, "for", "Payable").Trim();
                     }
                     catch { }
-                    IWebElement prepaytable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Table2']/tbody"));
-                    IList<IWebElement> prepayrow = prepaytable.FindElements(By.TagName("tr"));
-                    IList<IWebElement> prepayid;
-                    foreach (IWebElement prepay in prepayrow)
+                    try
                     {
-                        prepayid = prepay.FindElements(By.TagName("td"));
-                        if (prepayid.Count != 0 && prepay.Text.Contains("Original Amount"))
+                        IWebElement prepaytable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Table2']/tbody"));
+                        IList<IWebElement> prepayrow = prepaytable.FindElements(By.TagName("tr"));
+                        IList<IWebElement> prepayid;
+                        foreach (IWebElement prepay in prepayrow)
                         {
-                            prepayresult1 = prepayid[1].Text;
-                            paiedamt = prepayid[2].Text;
-                        }
-                        if (prepayid.Count != 0 && !prepay.Text.Contains("Original Amount") && !prepayid[1].Text.Contains(" "))
-                        {
-                            prepayresult2 += prepayid[1].Text + "~";
-                            prepayresult3 += prepayid[2].Text + "~";
-                        }
+                            prepayid = prepay.FindElements(By.TagName("td"));
+                            if (prepayid.Count != 0 && prepay.Text.Contains("Original Amount"))
+                            {
+                                prepayresult1 = prepayid[1].Text;
+                                paiedamt = prepayid[2].Text;
+                            }
+                            if (prepayid.Count != 0 && !prepay.Text.Contains("Original Amount") && !prepayid[1].Text.Contains(" "))
+                            {
+                                prepayresult2 += prepayid[1].Text + "~";
+                                prepayresult3 += prepayid[2].Text + "~";
+                            }
 
+                        }
+                        string preresultorg = prepayment + "~" + prepayresult1 + "~" + prepayresult2.Remove(prepayresult2.Length - 1);
+                        string preresultpaied = prepayment + "~" + paiedamt + "~" + prepayresult3.Remove(prepayresult3.Length - 1);
+                        gc.insert_date(orderNumber, Parcel_number, 869, preresultorg, 1, DateTime.Now);
+                        gc.insert_date(orderNumber, Parcel_number, 869, preresultpaied, 1, DateTime.Now);
                     }
-                    string preresultorg = prepayment + "~" + prepayresult1 + "~" + prepayresult2.Remove(prepayresult2.Length - 1);
-                    string preresultpaied = prepayment + "~" + paiedamt + "~" + prepayresult3.Remove(prepayresult3.Length - 1);
-                    gc.insert_date(orderNumber, Parcel_number, 869, preresultorg, 1, DateTime.Now);
-                    gc.insert_date(orderNumber, Parcel_number, 869, preresultpaied, 1, DateTime.Now);
+                    catch { }
+
+                    gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
 
                     //driver.Quit();
 
@@ -252,7 +338,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

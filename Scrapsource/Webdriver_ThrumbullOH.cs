@@ -69,9 +69,9 @@ namespace ScrapMaricopa.Scrapsource
                                 Multiparcelid = multiparcel.FindElements(By.TagName("td"));
                                 if (Multiparcelid.Count != 0)
                                 {
-                                    IWebElement Address1 = Multiparcelid[2].FindElement(By.TagName("a"));
-                                    Addresshrf = Address1.GetAttribute("href");
-                                    string Addressst = Address1.Text;
+                                    //IWebElement Address1 = Multiparcelid[0].FindElement(By.TagName("a"));
+                                    //Addresshrf = Address1.GetAttribute("href");
+                                    string Addressst = Multiparcelid[2].Text;
                                     string Owner = Multiparcelid[1].Text;
                                     string Pin = Multiparcelid[0].Text;
                                     string Multiparcel = Addressst + "~" + Owner;
@@ -79,14 +79,14 @@ namespace ScrapMaricopa.Scrapsource
                                     Max++;
                                 }
                             }
-                            if (Max == 1)
-                            {
-                                driver.Navigate().GoToUrl(Addresshrf);
-                                Thread.Sleep(2000);
-                            }
+                            //if (Max == 1)
+                            //{
+                            //    driver.Navigate().GoToUrl(Addresshrf);
+                            //    Thread.Sleep(2000);
+                            //}
                             if (Max > 1 && Max < 26)
                             {
-                                HttpContext.Current.Session["multiParcel_Thumbull"] = "Maximum";
+                                HttpContext.Current.Session["multiParcel_Thumbull"] = "Yes";
                                 driver.Quit();
                                 return "MultiParcel";
                             }
@@ -100,7 +100,7 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["Zero_Thumbull"] = "Zero";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }
@@ -117,9 +117,18 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "ownername")
                     {
+                        string lastname = "", firstname = "";
                         string[] Ownarsplit = ownernm.Split(' ');
-                        string lastname = Ownarsplit[1];
-                        string firstname = Ownarsplit[0];
+                        try
+                        {
+                            lastname = Ownarsplit[1];
+                        }
+                        catch { }
+                        try
+                        {
+                            firstname = Ownarsplit[0];
+                        }
+                        catch { }
                         driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(firstname);
                         driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerFirstName")).SendKeys(lastname);
                         gc.CreatePdf_WOP(orderNumber, "Search Before", driver, "OH", "Trumbull");
@@ -169,23 +178,23 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["Zero_Thumbull"] = "Zero";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }
                         catch { }
-                        try
-                        {
-                            string Nodatfound = driver.FindElement(By.Id("ContentPlaceHolder1_lblResultsNote")).Text;
-                            if (Nodatfound.Contains("To view the details of a property, click the parcel number link."))
-                            {
-                                HttpContext.Current.Session["Zero_Thumbull"] = "Zero";
-                                driver.Quit();
-                                return "No Data Found";
-                            }
-                        }
-                        catch { }
                     }
+                    try
+                    {
+                        string Nodatfound = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text;
+                        if (Nodatfound.Contains("No results"))
+                        {
+                            HttpContext.Current.Session["Zero_Thumbull"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property detail
 
                     Parcel_number = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataProfile_ParcelLabel")).Text;

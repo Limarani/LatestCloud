@@ -85,8 +85,16 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "FL", "Indian River");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_IndianRiverFL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -109,8 +117,8 @@ namespace ScrapMaricopa.Scrapsource
 
                         gc.CreatePdf_WOP(orderNumber, "Address search result", driver, "FL", "Indian River");
                         mul = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text.Trim();
-                        mul = WebDriverTest.Before(mul, " Results");
-                        if (mul != "1")
+                        mul = WebDriverTest.Before(mul, " Results").Trim();
+                        if (mul != "1" && mul.Trim() !="")
                         {
                             //multi parcel
                             IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
@@ -133,9 +141,8 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
-                        else
+                        if(mul == "1")
                         {
-
                             driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
                             gc.CreatePdf_WOP(orderNumber, "Address search result1", driver, "FL", "Indian River");
                             Thread.Sleep(4000);
@@ -164,7 +171,7 @@ namespace ScrapMaricopa.Scrapsource
                         mul = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_lblNumberOfResults']")).Text.Trim();
 
                         mul = WebDriverTest.Before(mul, " Results");
-                        if (mul != "1")
+                        if (mul != "1" && mul.Trim() != "")
                         {
                             //multi parcel
                             IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
@@ -187,12 +194,11 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
-                        else
+                        if (mul == "1")
                         {
                             driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
                             gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "FL", "Indian River");
                             Thread.Sleep(3000);
-
                         }
                     }
                     else if (searchType == "ownername")
@@ -200,8 +206,15 @@ namespace ScrapMaricopa.Scrapsource
                         string s = ownername;
                         string[] words = s.Split(' ');
                         string lastname = "", firstname = "";
-                        lastname = words[0];
-                        firstname = words[1];
+                        if(words.Count() == 2)
+                        {
+                            lastname = words[0];
+                            firstname = words[1];
+                        }
+                        if (words.Count() == 1)
+                        {
+                            lastname = words[0];
+                        }
 
 
                         driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(lastname);
@@ -214,7 +227,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         mul = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text.Trim();
                         mul = WebDriverTest.Before(mul, " Results");
-                        if (mul != "1")
+                        if (mul != "1" && mul.Trim() != "")
                         {
                             //multi parcel
                             IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody"));
@@ -237,7 +250,7 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
-                        else
+                        if (mul == "1")
                         {
                             driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
                             gc.CreatePdf_WOP(orderNumber, "Owner search result1", driver, "FL", "Indian River");
@@ -245,7 +258,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
 
-
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults"));
+                        if (INodata.Text.Contains("No results"))
+                        {
+                            HttpContext.Current.Session["Nodata_IndianRiverFL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
 
                     string Parcel_ID = "", Owner_Name = "", Property_Address = "", MailingAddress = "", Secondaryowner = "", Legal_Description = "", TaxCode = "", Propertyuse = "", YearBuilt = "", Exemptiontype = "", Exemptiondesc = "";
@@ -1632,7 +1655,7 @@ namespace ScrapMaricopa.Scrapsource
         {
             string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -1698,7 +1721,7 @@ namespace ScrapMaricopa.Scrapsource
         }
         public string latestfilename()
         {
-            var downloadDirectory1 = "F:\\AutoPdf\\";
+            var downloadDirectory1 = ConfigurationManager.AppSettings["AutoPdf"];
             var files = new DirectoryInfo(downloadDirectory1).GetFiles("*.*");
             string latestfile = "";
             DateTime lastupdated = DateTime.MinValue;

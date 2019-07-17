@@ -88,6 +88,7 @@ namespace ScrapMaricopa.Scrapsource
                             else
                             {
                                 HttpContext.Current.Session["multipleParcel_deKalb_count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
 
                             }
@@ -101,10 +102,18 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", "", address, "GA", "Dekalb");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_GADekalb"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "parcel")
@@ -154,6 +163,7 @@ namespace ScrapMaricopa.Scrapsource
                             else
                             {
                                 HttpContext.Current.Session["multipleParcel_deKalb_count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                         }
@@ -168,9 +178,24 @@ namespace ScrapMaricopa.Scrapsource
                     //Property details....
                     if (searchType != "parcel")
                     {
-                        driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td[1]/a")).SendKeys(Keys.Enter);
+                        try
+                        {
+                            driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td[1]/a")).SendKeys(Keys.Enter);
+                        }
+                        catch { }
                     }
                     Thread.Sleep(2000);
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("/html/body/table"));
+                        if(INodata.Text.Contains("entered was not found"))
+                        {
+                            HttpContext.Current.Session["Nodata_GADekalb"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        } 
+                    }
+                    catch { }
                     gc.CreatePdf(orderNumber, parcelNumber, "Parcel search Result", driver, "GA", "DeKalb");
                     string parcel_number = "-", owner_Name = "-", property_address = "-", year_built = "-", taxing_district = "-", deed_acreage = "-", property_class = "-";
 

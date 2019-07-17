@@ -61,9 +61,16 @@ namespace ScrapMaricopa.Scrapsource
                             straddress = streetno + " " + streetname + " " + streettype + " " + unitnumber;
                         }
                         gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, straddress, "TX", "El Paso");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["ElPaso_Zero"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -117,7 +124,7 @@ namespace ScrapMaricopa.Scrapsource
                             string href = detailclick.GetAttribute("href");
                             driver.Navigate().GoToUrl(href);
                         }
-                        if (pagecount != "1" && pagecount != "0")
+                        if (pagecount != "1"&& pagecount != "0")
                         {
                             try
                             {
@@ -150,7 +157,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
 
                             }
-                            catch { }
+                            catch { } 
                         }
                         if (pagecount == "0")
                         {
@@ -239,6 +246,19 @@ namespace ScrapMaricopa.Scrapsource
                             catch { }
                         }
                     }
+
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div[3]"));
+                        if(Inodata.Text.Contains("No more results"))
+                        {
+                            HttpContext.Current.Session["ElPaso_Zero"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string propertytable = driver.FindElement(By.XPath("//*[@id='property']/div/div[2]/div")).Text.Replace("\r\n", "");
                     string type = gc.Between(propertytable, "AccountType:", "Property ID:");
                     Parcel_number = gc.Between(propertytable, "Property ID:", "Geographic ID:");
@@ -409,13 +429,14 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
+                    //tax Site
                     driver.Navigate().GoToUrl("https://actweb.acttax.com/act_webdev/elpaso/index.jsp");
                     Thread.Sleep(3000);
                     IWebElement PropertyInformation = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td/div[2]/table/tbody/tr/td/center/form/table/tbody/tr[3]/td[2]/div[3]/select"));
                     SelectElement PropertyInformationSelect = new SelectElement(driver.FindElement(By.Name("searchby")));
-                    PropertyInformationSelect.SelectByValue("5");
+                    PropertyInformationSelect.SelectByValue("4");
                     Thread.Sleep(2000);
-                    driver.FindElement(By.Id("criteria")).SendKeys(Parcel_number);
+                    driver.FindElement(By.Id("criteria")).SendKeys(GeographicID.Trim());
                     gc.CreatePdf(orderNumber, Parcel_number, "tax search", driver, "TX", "El Paso");
                     driver.FindElement(By.Name("submit")).Click();
                     Thread.Sleep(2000);

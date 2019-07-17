@@ -88,9 +88,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         //string address = houseno + " " + direction + " " + streetname + " " + streettype;
                         gc.TitleFlexSearch(orderNumber, "", "", streetno.Trim(), "SC", "Anderson");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_AndersonSC"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
                         searchType = "parcel";
@@ -198,6 +205,28 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[3]/td[2]/table"));
+                        if(INodata.Text.Contains("Provided was not found"))
+                        {
+                            HttpContext.Current.Session["Nodata_AndersonSC"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        IWebElement INodata1 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[3]/td[1]/table[2]"));
+                        IList<IWebElement> INodataRow = INodata1.FindElements(By.TagName("tr"));
+                        if(INodataRow.Count <= 1)
+                        {
+                            HttpContext.Current.Session["Nodata_AndersonSC"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
+
                     string Parcel_number1 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[3]/td[1]/table[2]/tbody/tr/td/table[1]/tbody/tr[5]/td[1]")).Text;
                     Parcel_number = Parcel_number1.Replace("-", "");
                     IWebElement propertdetailtable = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[3]/td[1]/table[2]/tbody/tr/td/table[2]/tbody"));

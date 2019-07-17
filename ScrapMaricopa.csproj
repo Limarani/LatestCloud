@@ -197,6 +197,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Amrock.cs" />
     <Compile Include="BulkUpload.aspx.cs">
       <DependentUpon>BulkUpload.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -229,6 +230,9 @@
       <DependentUpon>PlacerTitle.aspx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scrapsource\CT_Link.cs" />
+    <Compile Include="Scrapsource\NJ_Link.cs" />
+    <Compile Include="Scrapsource\NJ_TaxAuthority.cs" />
     <Compile Include="Scrapsource\Webdiver_CASantaClara.cs" />
     <Compile Include="Scrapsource\Webdiver_FLMarion.cs" />
     <Compile Include="Scrapsource\Webdiver_GACoweta.cs" />
@@ -257,12 +261,17 @@
     <Compile Include="Scrapsource\WebDriver_CASanBernardino.cs" />
     <Compile Include="Scrapsource\Webdriver_CharlesMD.cs" />
     <Compile Include="Scrapsource\WebDriver_CharlotteFL.cs" />
+    <Compile Include="Scrapsource\Webdriver_ChesterfieldVA.cs" />
     <Compile Include="Scrapsource\Webdriver_CitrusFL.cs" />
     <Compile Include="Scrapsource\WebDriver_CobbGA.cs" />
     <Compile Include="Scrapsource\WebDriver_ComalTX.cs" />
     <Compile Include="Scrapsource\Webdriver_COOKIL.cs" />
     <Compile Include="Scrapsource\WebDriver_CowlitzWA.cs" />
+    <Compile Include="Scrapsource\Webdriver_CTFairfield.cs" />
+    <Compile Include="Scrapsource\Webdriver_CTHartford.cs" />
+    <Compile Include="Scrapsource\Webdriver_CTNewHaven.cs" />
     <Compile Include="Scrapsource\Webdriver_cuyahogaOH.cs" />
+    <Compile Include="Scrapsource\WebDriver_DallasTX.cs" />
     <Compile Include="Scrapsource\WebDriver_DavidsonTN.cs" />
     <Compile Include="Scrapsource\Webdriver_DelawareOH.cs" />
     <Compile Include="Scrapsource\WebDriver_DesotoMS.cs" />
@@ -274,6 +283,7 @@
     <Compile Include="Scrapsource\WebDriver_ElpasoCO.cs" />
     <Compile Include="Scrapsource\WebDriver_ElPaso_TX.cs" />
     <Compile Include="Scrapsource\Webdriver_EscambiaFL.cs" />
+    <Compile Include="Scrapsource\WebDriver_FairFaxVA.cs" />
     <Compile Include="Scrapsource\WebDriver_FayetteKy.cs" />
     <Compile Include="Scrapsource\WebDriver_FLClay.cs" />
     <Compile Include="Scrapsource\WebDriver_FLFlagler.cs" />
@@ -283,6 +293,7 @@
     <Compile Include="Scrapsource\WebDriver_FrederickMD.cs" />
     <Compile Include="Scrapsource\WebDriver_GAFayette.cs" />
     <Compile Include="Scrapsource\WebDriver_GalvestonTX.cs" />
+    <Compile Include="Scrapsource\Webdriver_GreenvilleSC.cs" />
     <Compile Include="Scrapsource\WebDriver_HawaiiHI.cs" />
     <Compile Include="Scrapsource\WebDriver_HenryGA.cs" />
     <Compile Include="Scrapsource\WebDriver_HidalgoTX.cs" />
@@ -332,6 +343,7 @@
     <Compile Include="Scrapsource\WebDriver_NapaCA.cs" />
     <Compile Include="Scrapsource\WebDriver_NCGuilford.cs" />
     <Compile Include="Scrapsource\WebDriver_NevadaCA.cs" />
+    <Compile Include="Scrapsource\Webdriver_NJMiddlesex.cs" />
     <Compile Include="Scrapsource\WebDriver_NuecesTX.cs" />
     <Compile Include="Scrapsource\Webdriver_NYKings.cs" />
     <Compile Include="Scrapsource\WebDriver_OklahomaOK.cs" />
@@ -344,6 +356,7 @@
     <Compile Include="Scrapsource\Webdriver_RiversideCA.cs" />
     <Compile Include="Scrapsource\Webdriver_SalineAR.cs" />
     <Compile Include="Scrapsource\WebDriver_SandovalNM.cs" />
+    <Compile Include="Scrapsource\WebDriver_SanMateoCA.cs" />
     <Compile Include="Scrapsource\WebDriver_SantaCruzCA.cs" />
     <Compile Include="Scrapsource\Webdriver_SarpyNE.cs" />
     <Compile Include="Scrapsource\Webdriver_SedgwickKS.cs" />

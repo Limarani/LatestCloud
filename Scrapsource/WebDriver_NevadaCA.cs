@@ -191,7 +191,6 @@ namespace ScrapMaricopa.Scrapsource
                         TaxAuthority = TaxAuth1 + " " + TaxAuth2 + " " + TaxAuth3;
                     }
                     catch { }
-
                     try
                     {
                         for (int i = 0; i < parceid.Length; i++)
@@ -235,7 +234,6 @@ namespace ScrapMaricopa.Scrapsource
                                 gc.CreatePdf(orderNumber, parcelNumber, "tax1", driver, "CA", "Nevada");
                             }
                             catch { }
-
                         }
 
                         else if (k == 2)

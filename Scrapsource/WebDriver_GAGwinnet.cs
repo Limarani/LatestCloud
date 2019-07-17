@@ -54,11 +54,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
 
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "GA", "Gwinnett");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_GAGwinnet"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -99,9 +106,13 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "GA", "Gwinnett");
                         driver.FindElement(By.Name("btnSearch")).SendKeys(Keys.Enter);
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearchResult", driver, "GA", "Gwinnett");
-                        driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
-                        Thread.Sleep(2000);
-                        aftersearch(orderNumber, strParcelno);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
+                            Thread.Sleep(2000);
+                            aftersearch(orderNumber, strParcelno);
+                        }
+                        catch { }
                     }
                     else if (searchType == "ownername")
                     {
@@ -145,7 +156,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
-
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("QuickSearch"));
+                        if(INodata.Text.Contains("no records were found"))
+                        {
+                            HttpContext.Current.Session["Nodata_GAGwinnet"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");
                     gc.insert_TakenTime(orderNumber, "GA", "Gwinnett", StartTime, AssessmentTime, TaxTime, CitytaxTime, LastEndTime);
 

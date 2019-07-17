@@ -63,12 +63,19 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         //string Address = houseno + " " + direction + " " + streetname + " " + streettype;
-                        gc.TitleFlexSearch(orderNumber, "", ownername, "", "CA", "Stanislaus");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        gc.TitleFlexSearch(orderNumber, "", ownername, "", "CA", "Saolano");
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
-                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SolanoCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -119,18 +126,18 @@ namespace ScrapMaricopa.Scrapsource
                             }                           
                         }
                         catch { }
-                        try
-                        {
-                            //No Data Found
-                            string nodata = driver.FindElement(By.Id("AddressErrorMsg")).Text;
-                            if (nodata.Contains("No Records were found that matched your input"))
-                            {
-                                HttpContext.Current.Session["Nodata_SolanoCA"] = "Yes";
-                                driver.Quit();
-                                return "No Data Found";
-                            }
-                        }
-                        catch { }
+                        //try
+                        //{
+                        //    //No Data Found
+                        //    string nodata = driver.FindElement(By.Id("AddressErrorMsg")).Text;
+                        //    if (nodata.Contains("No Records were found that matched your input"))
+                        //    {
+                        //        HttpContext.Current.Session["Nodata_SolanoCA"] = "Yes";
+                        //        driver.Quit();
+                        //        return "No Data Found";
+                        //    }
+                        //}
+                        //catch { }
                     }
 
                     if (searchType == "parcel")
@@ -139,18 +146,7 @@ namespace ScrapMaricopa.Scrapsource
                         driver.SwitchTo().Frame(Multyaddresstable1);
                         driver.FindElement(By.XPath("//*[@id='Table9']/tbody/tr/td[2]/table/tbody/tr[1]/td/table/tbody/tr[5]/td/table/tbody/tr/td[4]/table/tbody/tr[1]/td/table/tbody/tr[1]/td/table/tbody/tr[2]/td[3]/input")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "CA", "Solano");
-                        try
-                        {
-                            //No Data Found
-                            string nodata = driver.FindElement(By.XPath("//*[@id='Table9']/tbody/tr/td[2]/table/tbody/tr[1]/td/table/tbody/tr[2]/td[2]/strong/font")).Text;
-                            if (nodata.Contains("No Situs record on file"))
-                            {
-                                HttpContext.Current.Session["Nodata_SolanoCA"] = "Yes";
-                                driver.Quit();
-                                return "No Data Found";
-                            }
-                        }
-                        catch { }
+
                     }
                     //Property Details  
                     try
@@ -161,6 +157,18 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.XPath("//*[@id='Table9']/tbody/tr/td[2]/table/tbody/tr[1]/td/table/tbody")).Text;
+                        if (nodata.Contains("No Situs record on file") || nodata.Contains("No Records were found"))
+                        {
+                            HttpContext.Current.Session["Nodata_SolanoCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     try
                     {
                         IWebElement IAddressSearch1 = driver.FindElement(By.LinkText("Property Values, Details and Information"));

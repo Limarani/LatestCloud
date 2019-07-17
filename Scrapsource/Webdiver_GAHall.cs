@@ -69,10 +69,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "GA", "Hall");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_GAHall"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -416,7 +422,20 @@ namespace ScrapMaricopa.Scrapsource
                     //TaxPayment Receipt Details
                     try
                     {
-                        IWebElement TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        IWebElement TaxPaymentTB = null;
+                        try
+                        {
+                            TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        }
+                        catch { }
+                        try
+                        {
+                            if (TaxPaymentTB == null)
+                            {
+                                TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                            }
+                        }
+                        catch { }
                         IList<IWebElement> TaxPaymentTR = TaxPaymentTB.FindElements(By.TagName("tr"));
                         IList<IWebElement> TaxPaymentTD;
 
@@ -443,7 +462,20 @@ namespace ScrapMaricopa.Scrapsource
                     { }
 
                     //Tax Info Details
-                    IWebElement Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    IWebElement Receipttable = null;
+                    try
+                    {
+                        Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    }
+                    catch { }
+                    try
+                    {
+                        if (Receipttable == null)
+                        {
+                            Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                        }
+                    }
+                    catch { }
                     IList<IWebElement> ReceipttableRow = Receipttable.FindElements(By.TagName("tr"));
                     int rowcount = ReceipttableRow.Count;
 
@@ -451,7 +483,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         if (p < 4)
                         {
-                            driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p + "]/td[9]/button")).Click();
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p + "]/td[9]/button")).Click();
+                            }
+                            catch { }
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody/tr[" + p + "]/td[9]/button")).Click();
+                            }
+                            catch { }
                             Thread.Sleep(6000);
 
                             try

@@ -76,6 +76,24 @@ namespace ScrapMaricopa {
         protected global::System.Web.UI.WebControls.DropDownList dropCounty;
         
         /// <summary>
+        /// labelTown control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label labelTown;
+        
+        /// <summary>
+        /// dropTownship control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList dropTownship;
+        
+        /// <summary>
         /// hdnField1 control.
         /// </summary>
         /// <remarks>
@@ -254,6 +272,24 @@ namespace ScrapMaricopa {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.HyperLink hyperlink2;
+        
+        /// <summary>
+        /// LabelAmrock control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label LabelAmrock;
+        
+        /// <summary>
+        /// GridViewAmrock control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView GridViewAmrock;
         
         /// <summary>
         /// Label3 control.

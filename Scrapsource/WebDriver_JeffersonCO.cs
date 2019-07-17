@@ -41,9 +41,10 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-           using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver())
+           // using (driver = new ChromeDriver())
             {
-               //driver = new ChromeDriver();
+
 
                 try
                 {
@@ -66,7 +67,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "CO", "Jefferson");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_JeffersonCO"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -134,7 +142,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 if (Max == 0)
                                 {
-                                    HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
+                                    HttpContext.Current.Session["Nodata_JeffersonCO"] = "Yes";
                                     driver.Quit();
                                     return "No Data Found";
                                 }
@@ -201,7 +209,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 if (Max == 0)
                                 {
-                                    HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
+                                    HttpContext.Current.Session["Nodata_JeffersonCO"] = "Yes";
                                     driver.Quit();
                                     return "No Data Found";
                                 }
@@ -270,7 +278,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 if (Max == 0)
                                 {
-                                    HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
+                                    HttpContext.Current.Session["Nodata_JeffersonCO"] = "Yes";
                                     driver.Quit();
                                     return "No Data Found";
                                 }
@@ -351,7 +359,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 if (Max == 0)
                                 {
-                                    HttpContext.Current.Session["Zero_Jefferson"] = "Zero";
+                                    HttpContext.Current.Session["Nodata_JeffersonCO"] = "Yes";
                                     driver.Quit();
                                     return "No Data Found";
                                 }
@@ -422,8 +430,11 @@ namespace ScrapMaricopa.Scrapsource
                     Qsection = driver.FindElement(By.XPath("//*[@id='propertyRecordsSearchMiniSpaModule']/div/div[2]/div/div[4]/div/div/div[2]/div[2]/div/table/tbody/tr/td[7]")).Text;
                     Acres = driver.FindElement(By.XPath("//*[@id='propertyRecordsSearchMiniSpaModule']/div/div[2]/div/div[4]/div/div/div[2]/div[2]/div/table/tbody/tr/td[9]/span")).Text;
                     Neighbourhood = driver.FindElement(By.XPath("//*[@id='propertyRecordsSearchMiniSpaModule']/div/div[2]/div/div[8]/div/div/div[2]/div/div/div/div[1]/dl/dd")).Text;
-                    YearBuilt = driver.FindElement(By.XPath("//*[@id='propertyRecordsSearchMiniSpaModule']/div/div[2]/div/div[10]/div/div/div[2]/div[1]/div/table/tbody/tr/td[7]/span")).Text;
-
+                    try
+                    {
+                        YearBuilt = driver.FindElement(By.XPath("//*[@id='propertyRecordsSearchMiniSpaModule']/div/div[2]/div/div[10]/div/div/div[2]/div[1]/div/table/tbody/tr/td[7]/span")).Text;
+                    }
+                    catch { }
                     string propertydetails = Pin + "~" + PropertyClass + "~" + OwnerName + "~" + PropertyAddress + "~" + MailingAddress + "~" + Subdivision + "~" + Block + "~" + Lot + "~" + Track + "~" + Section + "~" + Township + "~" + Range + "~" + Qsection + "~" + Acres + "~" + Neighbourhood + "~" + YearBuilt;
                     gc.insert_date(orderNumber, parcelNumber, 1604, propertydetails, 1, DateTime.Now);
 
@@ -635,7 +646,7 @@ namespace ScrapMaricopa.Scrapsource
                                         MillLevy.Add(MillLevy1);
                                         r = MillLevy1.Length;
                                     }
-                                    if (k == 0 || k == 1)
+                                    if (k == 1)
                                     {
                                         for (int j = 0; j < s; j++)
                                         {
@@ -718,7 +729,7 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(5000);
                     try
                     {
-                        taxauth1 = driver.FindElement(By.XPath("//*[@id='sidebar-wrapper']/ul[2]")).Text;
+                        taxauth1 = driver.FindElement(By.XPath("//*[@id='sidebar-wrapper']/ul[2]")).Text.Replace("\r\n"," ");
                         taxAuth = gc.Between(taxauth1, "Contact Us", "Release").Trim();
 
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax Authority", driver, "CO", "Jefferson");
@@ -862,7 +873,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
 
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "D:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -884,7 +895,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             driver1.FindElement(By.XPath("//*[@id='MainContent_gvAINList']/tbody/tr[2]/td[1]/a")).Click();
-                            Thread.Sleep(4000);
+                            Thread.Sleep(7000);
                         }
                         catch { }
 
@@ -898,7 +909,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         IWebElement Iclick = driver1.FindElement(By.Id("MainContent_btnDsplyTaxStmt"));
                         Iclick.Click();
-                        Thread.Sleep(4000);
+                        Thread.Sleep(7000);
                         fileName = "DsplyTaxStatement" + ".pdf";
                         gc.AutoDownloadFile(orderNumber, parcelNumber, "Jefferson", "CO", fileName);
                         Thread.Sleep(2000);

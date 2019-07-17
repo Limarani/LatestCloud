@@ -54,9 +54,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "LA", "Jefferson");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LAJefferson"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -150,10 +157,14 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             else
                             {
-                                driver.FindElement(By.XPath("//*[@id='panel-results']/div[1]/table/tbody/tr/td[1]/a")).Click();
-                                Thread.Sleep(3000);
-                                driver.SwitchTo().Window(driver.WindowHandles.Last());
-                                Thread.Sleep(2000);
+                                try
+                                {
+                                    driver.FindElement(By.XPath("//*[@id='panel-results']/div[1]/table/tbody/tr/td[1]/a")).Click();
+                                    Thread.Sleep(3000);
+                                    driver.SwitchTo().Window(driver.WindowHandles.Last());
+                                    Thread.Sleep(2000);
+                                }
+                                catch { }
                             }
 
                         }
@@ -213,10 +224,14 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         else
                         {
-                            driver.FindElement(By.XPath("//*[@id='panel-results']/div[1]/table/tbody/tr/td[1]/a")).Click();
-                            Thread.Sleep(3000);
-                            driver.SwitchTo().Window(driver.WindowHandles.Last());
-                            Thread.Sleep(2000);
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='panel-results']/div[1]/table/tbody/tr/td[1]/a")).Click();
+                                Thread.Sleep(3000);
+                                driver.SwitchTo().Window(driver.WindowHandles.Last());
+                                Thread.Sleep(2000);
+                            }
+                            catch { }
                         }
                     }
                     else if (searchType == "ownername")
@@ -267,12 +282,28 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         else
                         {
-                            driver.FindElement(By.XPath("//*[@id='panel-results']/div[1]/table/tbody/tr/td[1]/a")).Click();
-                            Thread.Sleep(3000);
-                            driver.SwitchTo().Window(driver.WindowHandles.Last());
-                            Thread.Sleep(2000);
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='panel-results']/div[1]/table/tbody/tr/td[1]/a")).Click();
+                                Thread.Sleep(3000);
+                                driver.SwitchTo().Window(driver.WindowHandles.Last());
+                                Thread.Sleep(2000);
+                            }
+                            catch { }
                         }
                     }
+
+                    try
+                    {
+                        string nodata = driver.FindElement(By.XPath("//*[@id='panel-results']")).Text;
+                        if (nodata.Contains("0 - 0 of 0 items"))
+                        {
+                            HttpContext.Current.Session["Nodata_LAJefferson"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property details
                     string Parcel_no = "", Ward_no = "", Owner_Name = "", Improvement_Address = "", Homestead_Exemption_Status = "", Subdivision = "", Legal_Description = "", Land_Assessment = "", Improvement_Assessment = "", Total_Assessment = "";

@@ -57,9 +57,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
 
                         gc.TitleFlexSearch(orderNumber, "", "", Address, "FL", "Lee");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LeeFL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
                         searchType = "parcel";
@@ -118,7 +125,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             //No Data Found
                             string nodata = driver.FindElement(By.Id("ctl00_BodyContentPlaceHolder_ErrorLabel")).Text;
-                            if (nodata.Contains("Returned 0 records."))
+                            if (nodata.Contains("Returned 0 records.") || nodata.Contains("No matches found"))
                             {
                                 HttpContext.Current.Session["Nodata_LeeFL"] = "Yes";
                                 driver.Quit();
@@ -139,9 +146,9 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             //No Data Found
                             string nodata = driver.FindElement(By.Id("ctl00_BodyContentPlaceHolder_ErrorLabel")).Text;
-                            if (nodata.Contains("Returned 0 records."))
+                            if (nodata.Contains("Returned 0 records.") || nodata.Contains("No matches found"))
                             {
-                                HttpContext.Current.Session["Nodata_FLLee"] = "Yes";
+                                HttpContext.Current.Session["Nodata_LeeFL"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -205,7 +212,7 @@ namespace ScrapMaricopa.Scrapsource
                             string nodata = driver.FindElement(By.Id("ctl00_BodyContentPlaceHolder_ErrorLabel")).Text;
                             if (nodata.Contains("Returned 0 records."))
                             {
-                                HttpContext.Current.Session["Nodata_FLLee"] = "Yes";
+                                HttpContext.Current.Session["Nodata_LeeFL"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -254,19 +261,20 @@ namespace ScrapMaricopa.Scrapsource
                     ParcelID = gc.Between(ParcelID1.Text, "STRAP:", "Folio ID:").Trim();
                     FolioNo = GlobalClass.After(ParcelID1.Text, "Folio ID:").Trim();
                     PropertyAddress = driver.FindElement(By.XPath("//*[@id='divDisplayParcelOwner']/div[2]/div[2]")).Text.Trim();
-                    IWebElement OwnerName1 = driver.FindElement(By.XPath("//*[@id='divDisplayParcelOwner']/div[1]/div/div[2]/div[2]"));
-                    string[] OwnerName1split = OwnerName1.Text.Split('\r');
-                    OwnerName = OwnerName1split[0].Replace("\n", "").Trim();
-                    try
-                    {
-                        MailingAdd1 = OwnerName1split[1].Replace("\n", "").Trim();
-                        MailingAdd2 = OwnerName1split[2].Replace("\n", "").Trim();
-                        MailingAdd3 = OwnerName1split[3].Replace("\n", "").Trim();
-                        MailingAdd4 = OwnerName1split[4].Replace("\n", "").Trim();
+                    IWebElement OwnerName1 = driver.FindElement(By.XPath("//*[@id='divDisplayParcelOwner']/div[1]/div/div[2]/div"));
+                    //string[] OwnerName1split = OwnerName1.Text.Split('\r');
+                    //OwnerName = OwnerName1split[0].Replace("\n", "").Trim();
+                    //try
+                    //{
+                    //    MailingAdd1 = OwnerName1split[1].Replace("\n", "").Trim();
+                    //    MailingAdd2 = OwnerName1split[2].Replace("\n", "").Trim();
+                    //    MailingAdd3 = OwnerName1split[3].Replace("\n", "").Trim();
+                    //    MailingAdd4 = OwnerName1split[4].Replace("\n", "").Trim();
 
-                    }
-                    catch { }
-                    MailingAdd = MailingAdd1.Trim() + " " + MailingAdd2.Trim() + " " + MailingAdd3.Trim() + " " + MailingAdd4.Trim();
+                    //}
+                    //catch { }
+                    //MailingAdd = MailingAdd1.Trim() + " " + MailingAdd2.Trim() + " " + MailingAdd3.Trim() + " " + MailingAdd4.Trim();
+                    ownername = OwnerName1.Text.Replace("\r\n", " ");
                     Legaldes = driver.FindElement(By.XPath("//*[@id='divDisplayParcelOwner']/div[3]/div[2]")).Text.Trim();
                     //Yearbuilt = driver.FindElement(By.XPath("//*[@id='divDisplayParcelAttributes']/div[2]/table[2]/tbody/tr[6]/td")).Text.Trim();
                     driver.FindElement(By.Id("AppraisalHyperLink2")).Click();
@@ -405,7 +413,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
                     //Property Details Insert
-                    string PropertyDetails = FolioNo.Trim() + "~" + OwnerName.Trim() + "~" + PropertyAddress.Trim() + "~" + MailingAdd.Trim() + "~" + Legaldes.Trim() + "~" + Yearbuilt.Trim() + "~" + Usecode.Trim() + "~" + Usecodedescri.Trim() + "~" + TaxAuthority.Trim();
+                    string PropertyDetails = FolioNo.Trim() + "~" + PropertyAddress.Trim() + "~" + ownername + "~" + Legaldes.Trim() + "~" + Yearbuilt.Trim() + "~" + Usecode.Trim() + "~" + Usecodedescri.Trim() + "~" + TaxAuthority.Trim();
                     gc.insert_date(orderNumber, ParcelID, 1506, PropertyDetails, 1, DateTime.Now);
                     //Tax Information Details
                     driver.Navigate().GoToUrl("https://www.leetc.com/ncp/search_criteria.asp?searchtype=RP");
@@ -484,11 +492,19 @@ namespace ScrapMaricopa.Scrapsource
                         Owner = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div/table/tbody/tr[7]/td/span")).Text.Trim();
                         TaxYear = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div/table/tbody/tr[3]/td[2]")).Text.Trim();
                         Status = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div/table/tbody/tr[3]/td[3]/span/a")).Text.Trim();
-                        Totaldue1 = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div/table/tbody/tr[12]/td[2]")).Text.Trim();
-                        if (!Totaldue1.Contains("Status"))
+                        try
                         {
-                            Totaldue = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div/table/tbody/tr[12]/td[2]")).Text.Trim();
+                            Totaldue1 = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div/table/tbody/tr[12]/td[2]")).Text.Trim();
                         }
+                        catch { }
+                        try
+                        {
+                            if (!Totaldue1.Contains("Status"))
+                            {
+                                Totaldue = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div/div/div/table/tbody/tr[12]/td[2]")).Text.Trim();
+                            }
+                        }
+                        catch { }
                         string Taxinformationdetails = Propertyadd.Trim() + "~" + Owner.Trim() + "~" + TaxYear.Trim() + "~" + Status.Trim() + "~" + Totaldue.Trim();
                         gc.insert_date(orderNumber, Parcelnum, 1519, Taxinformationdetails, 1, DateTime.Now);
                         //Tax Distribution Details

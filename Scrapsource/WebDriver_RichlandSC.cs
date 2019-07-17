@@ -54,10 +54,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", ownername, "", "SC", "Richland");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Richland"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -140,7 +146,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Richland"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Richland"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -202,6 +208,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("lblResponse"));
+                        if(INodata.Text.Contains("no matches found"))
+                        {
+                            HttpContext.Current.Session["Nodata_Richland"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
 
                     string OwnerName1 = "", OwnerName2 = "", OwnerName = "", Propertylocation = "", legaldesc = "", landtype = "";

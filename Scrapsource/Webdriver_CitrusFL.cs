@@ -286,6 +286,74 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    if (searchType == "ownername")
+                    {
+                        driver.FindElement(By.Id("inpOwner1")).SendKeys(ownername);
+                        driver.FindElement(By.Id("btSearch")).Click();
+                        Thread.Sleep(2000);
+                        try
+                        {
+                            int Max = 0;
+
+                            IWebElement Multiparceladdress = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
+                            IList<IWebElement> Multiparcelrow = Multiparceladdress.FindElements(By.TagName("tr"));
+                            IList<IWebElement> Multiparcelid;
+                            gc.CreatePdf_WOP(orderNumber, "SearchAfter", driver, "FL", "Citrus");
+                            foreach (IWebElement multiparcel in Multiparcelrow)
+                            {
+                                Multiparcelid = multiparcel.FindElements(By.TagName("td"));
+                                if (Multiparcelid.Count > 1 && Addressst.Trim() != Multiparcelid[1].Text.Trim() && !multiparcel.Text.Contains("Altkey"))
+                                {
+                                    //IWebElement Address1 = Multiparcelid[1].FindElement(By.TagName("a"));
+                                    Addresshrf = Multiparcelid[1];
+                                    Addressst = Multiparcelid[1].Text;
+                                    string parcelnumber = Multiparcelid[2].Text;
+                                    string Address = Multiparcelid[3].Text;
+                                    string Multiparcel = Addressst + "~" + Address;
+                                    gc.insert_date(orderNumber, parcelnumber, 1352, Multiparcel, 1, DateTime.Now);
+                                    Max++;
+                                }
+                            }
+                            if (Max == 1)
+                            {
+                                Addresshrf.Click();
+                                Thread.Sleep(2000);
+                            }
+                            if (Max > 1 && Max < 26)
+                            {
+                                HttpContext.Current.Session["multiParcel_Citrus"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
+                            if (Max > 25)
+                            {
+                                HttpContext.Current.Session["multiParcel_Citrus_Multicount"] = "Maximum";
+                                driver.Quit();
+                                return "Maximum";
+                            }
+                            if (Max == 0)
+                            {
+                                HttpContext.Current.Session["Zero_Citrus"] = "Zero";
+                                driver.Quit();
+                                return "Zero";
+                            }
+
+                        }
+                        catch { }
+                    }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]"));
+                        if(INodata.Text.Contains("Your search did not find any records"))
+                        {
+                            HttpContext.Current.Session["Zero_Citrus"] = "Zero";
+                            driver.Quit();
+                            return "Zero";
+                        }
+                    }
+                    catch { }
                     gc.CreatePdf(orderNumber, Parcel_number, "Property detail", driver, "FL", "Citrus");
                     string Parcel_number1 = driver.FindElement(By.XPath("//*[@id='datalet_header_row']/td/table/tbody/tr[1]/td[1]")).Text;
                     string Altkey = GlobalClass.After(Parcel_number1, "Altkey:").Trim();
@@ -353,6 +421,7 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(2000);
                     gc.CreatePdf(orderNumber, Parcel_number, "Values", driver, "FL", "Citrus");
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
+
                     driver.Navigate().GoToUrl("https://citrus.county-taxes.com/public");
                     driver.FindElement(By.Name("search_query")).SendKeys(Parcel_number);
                     gc.CreatePdf(orderNumber, Parcel_number, "Tax Search parcel", driver, "FL", "Citrus");
@@ -1556,7 +1625,7 @@ namespace ScrapMaricopa.Scrapsource
         {
             string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -1627,7 +1696,7 @@ namespace ScrapMaricopa.Scrapsource
         }
         public string latestfilename()
         {
-            var downloadDirectory1 = "F:\\AutoPdf\\";
+            var downloadDirectory1 = ConfigurationManager.AppSettings["AutoPdf"];
             var files = new DirectoryInfo(downloadDirectory1).GetFiles("*.*");
             string latestfile = "";
             DateTime lastupdated = DateTime.MinValue;

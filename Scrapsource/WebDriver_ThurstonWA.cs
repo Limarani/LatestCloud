@@ -69,6 +69,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ThurstonWA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -125,7 +131,7 @@ namespace ScrapMaricopa.Scrapsource
                             string nodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults")).Text;
                             if (nodata.Contains("No results match your search criteria."))
                             {
-                                HttpContext.Current.Session["Nodata_YorkSC"] = "Yes";
+                                HttpContext.Current.Session["Nodata_ThurstonWA"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -204,7 +210,7 @@ namespace ScrapMaricopa.Scrapsource
                             string nodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults")).Text;
                             if (nodata.Contains("No results match your search criteria."))
                             {
-                                HttpContext.Current.Session["Nodata_YorkSC"] = "Yes";
+                                HttpContext.Current.Session["Nodata_ThurstonWA"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }

@@ -55,10 +55,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", address, "", "OK", "Oklahoma");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Oklahoma"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -93,7 +99,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 if (multiTD.Count != 0 && multiRow.Count <= 3 && !multi.Text.Contains("Tax Map Number") && multi.Text.Contains("No physical address records returned."))
                                 {
-                                    HttpContext.Current.Session["Zero_Oklahoma"] = "Zero";
+                                    HttpContext.Current.Session["Nodata_Oklahoma"] = "Yes";
                                     driver.Quit();
                                     return "No Data Found";
 
@@ -138,7 +144,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Oklahoma"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Oklahoma"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -203,7 +209,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Oklahoma"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Oklahoma"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -244,6 +250,18 @@ namespace ScrapMaricopa.Scrapsource
                                     Thread.Sleep(3000);
 
                                 }
+                            }
+                        }
+                        catch { }
+
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.XPath("/html/body/table[4]/tbody"));
+                            if(INodata.Text.Contains("No records returned"))
+                            {
+                                HttpContext.Current.Session["Nodata_Oklahoma"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
                         catch { }

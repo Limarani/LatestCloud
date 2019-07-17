@@ -98,10 +98,16 @@ namespace ScrapMaricopa.Scrapsource
                             string result = HttpContext.Current.Session["TitleFlex_Search"].ToString();
                         }
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_WAKing"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -159,6 +165,19 @@ namespace ScrapMaricopa.Scrapsource
                             return "MultiParcel";
                         }
                         catch { }
+
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.Id("cphContent_lblAddressMsg")).Text;
+                            if (nodata.Contains("Can not find"))
+                            {
+                                HttpContext.Current.Session["Nodata_WAKing"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     if (searchType == "parcel")
                     {
@@ -188,6 +207,19 @@ namespace ScrapMaricopa.Scrapsource
                                         break;
                                     }
                                 }
+                            }
+                        }
+                        catch { }
+
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.Id("cphContent_LblMsg")).Text;
+                            if (nodata.Contains("Can not find"))
+                            {
+                                HttpContext.Current.Session["Nodata_WAKing"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
                         catch { }
@@ -235,6 +267,19 @@ namespace ScrapMaricopa.Scrapsource
                             return "MultiParcel";
                         }
 
+                        catch { }
+
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.Id("cphContent_lblPropNameMsg")).Text;
+                            if (nodata.Contains("Can not find"))
+                            {
+                                HttpContext.Current.Session["Nodata_WAKing"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
                         catch { }
                     }
 

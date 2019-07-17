@@ -56,9 +56,16 @@ namespace ScrapMaricopa.Scrapsource
 
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "NV", "Washoe");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_NVWashoe"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -152,6 +159,18 @@ namespace ScrapMaricopa.Scrapsource
 
 
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("search_div"));
+                        if(INodata.Text.Contains("No results were found"))
+                        {
+                            HttpContext.Current.Session["Nodata_NVWashoe"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //APN: 078-221-13
 
                     outparcelno = driver.FindElement(By.XPath("//*[@id='search_div']/div[1]/div[5]/span[1]")).Text.Trim();

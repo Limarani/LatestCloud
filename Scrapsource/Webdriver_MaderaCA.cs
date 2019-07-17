@@ -64,8 +64,15 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, parcelNumber, ownernm, Address, "CA", "Madera");
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
-                            return "MultiParcel";
                             driver.Quit();
+                            return "MultiParcel";
+
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Madera"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
                         searchType = "parcel";
@@ -120,6 +127,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     int i = 1; string Balancetax = "";
                     int lat1 = 0;
+                    string pyear = "";
                     foreach (string firstview in hreftax)
                     {
 
@@ -147,6 +155,11 @@ namespace ScrapMaricopa.Scrapsource
                         else
                         {
                             taxyear = GlobalClass.After(taxinfotable.Text, "YEAR").Trim();
+                        }
+
+                        if (rollcasttype.Contains("CS"))
+                        {
+                            pyear = taxyear;
                         }
                         IList<IWebElement> viwetaxbill = taxinfotable.FindElements(By.TagName("a"));
                         foreach (IWebElement taxyearelement in viwetaxbill)
@@ -188,6 +201,11 @@ namespace ScrapMaricopa.Scrapsource
                                 pltitle.Improvements = tableArray[3].Split(' ').Last();
                                 pltitle.ExemptionHomeowners = tableArray[6].Split(' ').Last().Replace("-", "");
                                 taxratearea = gc.Between(pdftext, "TAX RATE AREA:", "ACRES:").Trim();
+                                if (taxratearea.Contains("\n"))
+                                {
+                                    string strtaxratearea = gc.Between(pdftext, "TAX RATE AREA:", "ACRES:").Trim();
+                                    taxratearea = GlobalClass.Before(strtaxratearea, "\n").Replace("\r", "").Trim();
+                                }
                                 if (taxratearea.Contains("Cortac Number"))
                                 {
                                     taxratearea = GlobalClass.Before(taxratearea, "Cortac Number").Trim();
@@ -198,7 +216,7 @@ namespace ScrapMaricopa.Scrapsource
                                     taxratearea = GlobalClass.Before(taxratearea, "Ownership change").Trim();
                                     pltitle.TaxIDNumberFurtherDescribed = taxratearea;
                                 }
-                                if(taxratearea.Contains("New owner bill"))
+                                if (taxratearea.Contains("New owner bill"))
                                 {
                                     taxratearea = GlobalClass.Before(taxratearea, "New owner bill").Trim();
                                     pltitle.TaxIDNumberFurtherDescribed = taxratearea;
@@ -212,12 +230,22 @@ namespace ScrapMaricopa.Scrapsource
                         //pdf reading end
                         for (int j = 1; j < 3; j++)
                         {
+                            string PaidStatus1 = "", Due_PaidDate = "";
                             IWebElement firstinstalment = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[" + j + "]"));
                             string instalfirst = GlobalClass.Before(firstinstalment.Text, "Paid Status");
-                            //FirstInstallment                        
-                            string PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Delinq. Date").Trim();
+                            //FirstInstallment     
+                            if(firstinstalment.Text.Contains("Delinq. Date"))
+                            {
+                                PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Delinq. Date").Trim();
 
-                            string Due_PaidDate = gc.Between(firstinstalment.Text, "Delinq. Date", "Total Due").Trim();
+                                Due_PaidDate = gc.Between(firstinstalment.Text, "Delinq. Date", "Total Due").Trim();
+                            }
+                            else
+                            {
+                                PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Paid Date").Trim();
+
+                                Due_PaidDate = gc.Between(firstinstalment.Text, "Paid Date", "Total Due").Trim();
+                            }
                             string totaldue = gc.Between(firstinstalment.Text, "Total Due", "Total Paid").Trim();
                             string TotalPaid = gc.Between(firstinstalment.Text, "Total Paid", "Balance").Trim();
                             if (firstinstalment.Text.Contains("\r\nADD"))
@@ -357,6 +385,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (lat1 < lat)
                         {
+
                             pltitle.TaxIDNumber = parcelNumber;
                             if (rollcasttype.Contains("CS"))
                             {
@@ -364,7 +393,10 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (rollcasttype.Contains("SS"))
                             {
-                                gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, "0", pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 100, pltitle.Year, "Madera County Treasurer-Tax Collector", parcelNumber, "Supplemental", pltitle.TaxIDNumberFurtherDescribed);
+                                if (pyear == taxyear)
+                                {
+                                    gc.InsertSearchTax(orderNumber, pltitle.Land, pltitle.Improvements, pltitle.ExemptionHomeowners, "0", pltitle.FirstInstallment, pltitle.FirstDueDate, pltitle.FirstTaxesOutDate, pltitle.FirstPaid, pltitle.FirstDue, pltitle.SecondInstallment, pltitle.SecondDueDate, pltitle.SecondTaxesOutDate, pltitle.SecondPaid, pltitle.SecondDue, pltitle.assyear, 100, pltitle.Year, "Madera County Treasurer-Tax Collector", parcelNumber, "Supplemental", pltitle.TaxIDNumberFurtherDescribed);
+                                }
                             }
                             lat1++;
                         }

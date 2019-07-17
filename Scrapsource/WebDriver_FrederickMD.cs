@@ -59,16 +59,20 @@ namespace ScrapMaricopa.Scrapsource
                         string titleaddress = houseno + " " + direction + " " + sname + " " + account;
                         gc.TitleFlexSearch(orderNumber, "", ownername, titleaddress, "MD", "Frederick");
 
-                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null)
+                       
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
-                            if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
-                            {
-                                driver.Quit();
-                                return "MultiParcel";
-                            }
+                            driver.Quit();
+                            return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FrederickMD"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
+                        searchType = "parcel";
                     }
 
                     if (searchType == "address")
@@ -135,7 +139,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             //No Data Found
                             string nodata = driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_lblErr")).Text;
-                            if (nodata.Contains("There are no records that match your criteria for county: FREDERICK COUNTY, account identifier: , , ."))
+                            if (nodata.Contains("There are no records that match your criteria"))
                             {
                                 HttpContext.Current.Session["Nodata_FrederickMD"] = "Yes";
                                 driver.Quit();

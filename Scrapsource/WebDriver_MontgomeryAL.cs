@@ -40,7 +40,7 @@ namespace ScrapMaricopa.Scrapsource
             string Taxing_Authority = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver()) 
             {
 
                 try
@@ -62,7 +62,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "AL", "Montgomery");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MontogomeryAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -185,6 +192,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='TABLE2']"));
+                        if (INodata.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_MontogomeryAL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     IWebElement taxyear = driver.FindElement(By.XPath("//*[@id='TaxYear']"));
                     string Tax_Year = "", Land_Value = "", Improvement_Value = "", Tax_Year1 = "", Total_Value = "", Acres = "";

@@ -41,7 +41,7 @@ namespace ScrapMaricopa.Scrapsource
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             string As_of = "", Total_Due = "", MillLevy = "", Class = "", Built = "";
             List<string> pdflink = new List<string>();
-            string Parcel_number = "", Tax_Authority = "", yearbuild = "", AddressCombain = "", Addresshrf = "", TaxesDue = "", Multiaddressadd = "", MailingAddress = "";
+            string Parcel_number = "", Tax_Authority = "", type = "", AddressCombain = "", Addresshrf = "", Pin = "", Multiaddressadd = "", MailingAddress = "", Constructed="";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             //driver = new PhantomJSDriver();
@@ -54,17 +54,34 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
 
-                        gc.TitleFlexSearch(orderNumber, "", ownername, address, "CO", "Adams");
-                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
+                        gc.TitleFlexSearch(orderNumber, "", ownername, address, "AZ", "Yavapai");
+                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Yavapai"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
-                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace(".", "");
                     }
                     driver.Navigate().GoToUrl("http://gis.yavapai.us/v4/");
-                    driver.FindElement(By.XPath("//*[@id='Disclaimer_tab']/input")).Click();
-                    Thread.Sleep(2000);
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='Disclaimer_tab']/input")).Click();
+                        Thread.Sleep(2000);
+                    }
+                    catch { }
+                    try
+                    {
+                        driver.FindElement(By.Id("tabCondiv_tablist_search_tab")).Click();
+                        Thread.Sleep(2000);
+                    }
+                    catch { }
                     if (searchType == "address")
                     {
                         driver.FindElement(By.Id("p_search")).SendKeys(address);
@@ -72,6 +89,61 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("search")).Click();
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "Address After", driver, "AZ", "Yavapai");
+                        try
+                        {
+                            string Nodata = driver.FindElement(By.Id("alertmsg")).Text;
+                            if (Nodata.Contains("Sorry, no records for"))
+                            {
+                                HttpContext.Current.Session["Nodata_Yavapai"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
+                        try
+                        {
+                            int J = 0; int z = 0;
+                            IWebElement IMulti = driver.FindElement(By.XPath("//*[@id='results_Status']/table/tbody"));
+                            IList<IWebElement> IMultirow = IMulti.FindElements(By.XPath("tr"));
+                            gc.CreatePdf_WOP(orderNumber, "Multi Parcel", driver, "AZ", "Yavapai");
+                            IList<IWebElement> IMultitd;
+                            foreach (IWebElement row in IMultirow)
+                            {
+                                IMultitd = row.FindElements(By.TagName("td"));
+                                if (IMultitd.Count != 0 && row.Text.Trim() != "")
+                                {
+                                    if (J == 1)
+                                    {
+                                        Pin = IMultitd[0].Text;
+                                        z++;
+                                    }
+                                    if (J == 0)
+                                    {
+                                        AddressCombain = IMultitd[0].Text;
+                                        J++;
+                                    }
+                                }
+                                if (z == 1)
+                                {
+                                    gc.insert_date(orderNumber, Pin, 1863, AddressCombain, 1, DateTime.Now);
+                                    J = 0;
+                                    z = 0;
+                                }
+                            }
+                            if (IMultirow.Count < 26)
+                            {
+                                HttpContext.Current.Session["multiParcel_Yavapai"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
+                            if (IMultirow.Count > 25)
+                            {
+                                HttpContext.Current.Session["multiParcel_Yavapai_Maximum"] = "Maximum";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
+                        }
+                        catch { }
                     }
                     if (searchType == "parcel")
                     {
@@ -83,23 +155,10 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("par_par")).SendKeys(arryparcel[1]);
                         driver.FindElement(By.Id("par_submit")).Click();
                         Thread.Sleep(2000);
-                    }
-                    if (searchType == "ownername")
-                    {
-                        driver.FindElement(By.XPath("//*[@id='ownerSearch_titleBarNode']/div/span[3]")).Click();
-                        Thread.Sleep(2000);
-                        gc.CreatePdf_WOP(orderNumber, "OwnerName1", driver, "AZ", "Yavapai");
-                        string[] Ownersplit = ownername.Split(' ');
-                        driver.FindElement(By.Id("lastName")).SendKeys(Ownersplit[1]);
-                        driver.FindElement(By.Id("firstName")).SendKeys(Ownersplit[0]);
-                        gc.CreatePdf_WOP(orderNumber, "Owner After", driver, "AZ", "Yavapai");
-                        driver.FindElement(By.XPath("//*[@id='ownerSearch_pane']/table/tbody/tr[3]/td/input")).Click();
-                        Thread.Sleep(2000);
                         try
                         {
                             string Nodata = driver.FindElement(By.Id("alertmsg")).Text;
-                            gc.CreatePdf_WOP(orderNumber, "No data", driver, "AZ", "Yavapai");
-                            if (Nodata.Contains("Sorry, no records"))
+                            if (Nodata.Contains("Sorry, no records for"))
                             {
                                 HttpContext.Current.Session["Nodata_Yavapai"] = "Zero";
                                 driver.Quit();
@@ -107,6 +166,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
                         catch { }
+
                     }
                     string parcelno = driver.FindElement(By.XPath("//*[@id='results_Status']/h3/i")).Text;
                     Parcel_number = GlobalClass.After(parcelno, "Information for Parcel").Replace(":", "");
@@ -117,20 +177,41 @@ namespace ScrapMaricopa.Scrapsource
                     string AssessorAcres = driver.FindElement(By.Id("dorAcres")).Text;
                     string subdivision = driver.FindElement(By.Id("subdiv")).Text;
                     string Maptype = driver.FindElement(By.Id("subdivType")).Text;
-                    string countyzoning = driver.FindElement(By.Id("ctyZoneViol")).Text;
+                    string countyzoning = "";
+                    try
+                    {
+                        countyzoning = driver.FindElement(By.Id("ctyZoneViol")).Text;
+                    }
+                    catch { }
+                    try
+                    {
+                        if (countyzoning =="")
+                        {
+                            countyzoning = driver.FindElement(By.Id("ctyZoneType")).Text;
+                        }
+                    }
+                    catch { }
                     string sectionTownship = driver.FindElement(By.Id("str")).Text;
                     string Homestead = driver.FindElement(By.Id("HES")).Text;
                     string IncorporatedArea = driver.FindElement(By.Id("inc_area")).Text;
                     string Tracts = driver.FindElement(By.Id("tract")).Text;
+                    gc.CreatePdf(orderNumber, Parcel_number, "Property Detail", driver, "AZ", "Yavapai");
                     driver.FindElement(By.XPath("//*[@id='resImps_titleBarNode']/div")).Click();
                     Thread.Sleep(2000);
-                    string type1 = driver.FindElement(By.Id("imps")).Text;
-                    string type = gc.Between(type1, "Type:", "Floor area:");
-                    string Constructed = GlobalClass.After(type1, "Constructed:");
+                    gc.CreatePdf(orderNumber, Parcel_number, "Constructed Pdf", driver, "AZ", "Yavapai");
+                    try
+                    {
+                        string type1 = driver.FindElement(By.Id("imps")).Text;
+                        type = gc.Between(type1, "Type:", "Floor area:");
+                        Constructed = GlobalClass.After(type1, "Constructed:");
+                    }
+                    catch { }
                     string Proresult = owner + "~" + proaddress + "~" + AssessorAcres + "~" + subdivision + "~" + Maptype + "~" + countyzoning + "~" + sectionTownship + "~" + Homestead + "~" + IncorporatedArea + "~" + Tracts + "~" + type + "~" + Constructed;
                     gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1803, Proresult, 1, DateTime.Now);
                     driver.FindElement(By.XPath("//*[@id='resAssess_titleBarNode']")).Click();
                     Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcel_number, "Assessment Detail", driver, "AZ", "Yavapai");
+                    string AssessmentHead = "", Assessmenthead1 = "", Assessmenthead2 = "", Assessmentresult = "", Assessmentresult1 = "", Assessmentresult2 = "";
                     IWebElement Assessmenttable = driver.FindElement(By.XPath("//*[@id='resAssess_pane']/table/tbody"));
                     IList<IWebElement> Assessmentrow = Assessmenttable.FindElements(By.TagName("tr"));
                     IList<IWebElement> assessmentid;
@@ -139,17 +220,25 @@ namespace ScrapMaricopa.Scrapsource
                         assessmentid = assessment.FindElements(By.TagName("td"));
                         if (assessmentid.Count != 0 && !assessment.Text.Contains("Tax Year") && assessment.Text.Trim() != "")
                         {
-                            string Assessmentresult = assessmentid[0].Text + "~" + assessmentid[1].Text + "~" + assessmentid[2].Text;
-                            gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1804, Assessmentresult, 1, DateTime.Now);
+                            Assessmentresult += assessmentid[0].Text + "~";
+                            Assessmentresult1 += assessmentid[1].Text + "~";
+                            Assessmentresult2 += assessmentid[2].Text + "~";
+                            // gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1804, Assessmentresult, 1, DateTime.Now);
                         }
                         if (assessment.Text.Contains("Tax Year"))
                         {
-                            string AssessmentHead = assessmentid[0].Text + "~" + assessmentid[1].Text + "~" + assessmentid[2].Text;
-                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + AssessmentHead + "' where Id = '" + 1804 + "'");
+                            AssessmentHead += assessmentid[0].Text + "~";
+                            Assessmenthead1 += assessmentid[1].Text + "~";
+                            Assessmenthead2 += assessmentid[2].Text + "~";
                         }
                     }
+                    db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + AssessmentHead + Assessmentresult.Remove(Assessmentresult.Length - 1) + "' where Id = '" + 1804 + "'");
+                    // gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1804, Assessmentresult.Remove(Assessmentresult.Length-1), 1, DateTime.Now);
+                    gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1804, Assessmenthead1 + Assessmentresult1.Remove(Assessmentresult1.Length - 1), 1, DateTime.Now);
+                    gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1804, Assessmenthead2 + Assessmentresult2.Remove(Assessmentresult2.Length - 1), 1, DateTime.Now);
                     driver.FindElement(By.XPath("//*[@id='resTaxes_titleBarNode']")).Click();
                     Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcel_number, "Tax Table", driver, "AZ", "Yavapai");
                     string TaxHead = "", Taxresult = "";
                     IWebElement Taxtable = driver.FindElement(By.XPath("//*[@id='taxTable']/table/tbody"));
                     IList<IWebElement> Taxtrow = Taxtable.FindElements(By.TagName("tr"));
@@ -165,17 +254,17 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + TaxHead.Remove(TaxHead.Length - 1) + "' where Id = '" + 1805 + "'");
                     gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1805, Taxresult.Remove(Taxresult.Length - 1), 1, DateTime.Now);
-                    try
-                    {
-                        driver.FindElement(By.LinkText("Tax Authorities:")).Click();
-                        Thread.Sleep(2000);
-                    }
-                    catch { }
-                        IWebElement Iviewtax = driver.FindElement(By.Id("taxAuth"));
-                        IJavaScriptExecutor js = driver as IJavaScriptExecutor;
-                        js.ExecuteScript("arguments[0].click();", Iviewtax);
-                 
-                    gc.CreatePdf(orderNumber, parcelNumber, "Authorit", driver, "AZ", "Yavapai");
+                    //try
+                    //{
+                    //    driver.FindElement(By.LinkText("Tax Authorities:")).Click();
+                    //    Thread.Sleep(2000);
+                    //}
+                    //catch { }
+                    IWebElement Iviewtax = driver.FindElement(By.Id("taxAuth")).FindElement(By.TagName("a"));
+                    IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+                    js.ExecuteScript("arguments[0].click();", Iviewtax);
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcel_number, "Authorit", driver, "AZ", "Yavapai");
                     IWebElement Authoritytable = driver.FindElement(By.XPath("//*[@id='taxAuth']/table/tbody"));
                     IList<IWebElement> Authorityrow = Authoritytable.FindElements(By.TagName("tr"));
                     IList<IWebElement> Authorityid;
@@ -191,7 +280,9 @@ namespace ScrapMaricopa.Scrapsource
                     //Tax Site
                     driver.Navigate().GoToUrl("http://taxinquiry.yavapai.us/");
                     driver.FindElement(By.XPath("//*[@id='main']/table/tbody/tr/td[2]/div/div[1]/form/div/div/span/span/input")).SendKeys(Parcel_number);
+                    gc.CreatePdf(orderNumber, Parcel_number, "Tax Parcel", driver, "AZ", "Yavapai");
                     driver.FindElement(By.XPath("//*[@id='main']/table/tbody/tr/td[2]/div/div[1]/form/div/input[1]")).Click();
+                    gc.CreatePdf(orderNumber, Parcel_number, "Tax parcel Click", driver, "AZ", "Yavapai");
                     IWebElement TaxInfotable = driver.FindElement(By.XPath("//*[@id='Grid']/table/tbody"));
                     IList<IWebElement> TaxInforow = TaxInfotable.FindElements(By.TagName("tr"));
                     IList<IWebElement> TaxInfoid;
@@ -223,6 +314,7 @@ namespace ScrapMaricopa.Scrapsource
                             js1.ExecuteScript("arguments[0].click();", javaclick);
                             Thread.Sleep(9000);
                         }
+                        gc.CreatePdf(orderNumber, Parcel_number, "Taxyeardue" + i, driver, "AZ", "Yavapai");
                         IWebElement TaxYeartable = driver.FindElement(By.XPath("//*[@id='Grid']/table/tbody"));
                         IList<IWebElement> TaxYearorow = TaxYeartable.FindElements(By.TagName("tr"));
                         IList<IWebElement> TaxYearid;
@@ -256,7 +348,7 @@ namespace ScrapMaricopa.Scrapsource
                     foreach (string pdf in pdflink)
                     {
                         driver.Navigate().GoToUrl(pdf);
-                        gc.CreatePdf(orderNumber, parcelNumber, "Tax Bill" + m, driver, "AZ", "Yavapai");
+                        gc.CreatePdf(orderNumber, Parcel_number, "Tax Bill" + m, driver, "AZ", "Yavapai");
                         m++;
                     }
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");

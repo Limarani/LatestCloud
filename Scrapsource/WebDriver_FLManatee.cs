@@ -67,9 +67,16 @@ namespace ScrapMaricopa.Scrapsource
                         string address = houseno + " " + sname;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "FL", "Manatee");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_manatee"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -107,6 +114,17 @@ namespace ScrapMaricopa.Scrapsource
 
                         //MultiParcel
                         int Max = 0;
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]/tbody/tr[1]/td/center/div"));
+                            if (INodata.Text.Contains("search did not find any records"))
+                            {
+                                HttpContext.Current.Session["Zero_manatee"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         string Nodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td[1]/table/tbody/tr[3]/td/center/table[1]/tbody/tr/td[2]/font/b")).Text;
                         check = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/table/tbody/tr/td/div/div/table[2]/tbody/tr/td[1]/table/tbody/tr[3]/td/center/table[1]/tbody/tr/td[3]")).Text;
                         if (check == "Displaying 1 - 1 of 1")
@@ -194,6 +212,17 @@ namespace ScrapMaricopa.Scrapsource
 
                         //MultiParcel  
                         int Max = 0;
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]/tbody/tr[1]/td/center/div"));
+                            if (INodata.Text.Contains("search did not find any records"))
+                            {
+                                HttpContext.Current.Session["Zero_manatee"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         check = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/table/tbody/tr/td/div/div/table[2]/tbody/tr/td[1]/table/tbody/tr[3]/td/center/table[1]/tbody/tr/td[3]")).Text;
                         if (check == "Displaying 1 - 1 of 1")
                         {
@@ -282,6 +311,17 @@ namespace ScrapMaricopa.Scrapsource
 
                         //MultiParcel
                         int Max = 0;
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]/tbody/tr[1]/td/center/div"));
+                            if (INodata.Text.Contains("search did not find any records"))
+                            {
+                                HttpContext.Current.Session["Zero_manatee"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         check = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/table/tbody/tr/td/div/div/table[2]/tbody/tr/td[1]/table/tbody/tr[3]/td/center/table[1]/tbody/tr/td[3]")).Text;
                         if (check == "Displaying 1 - 1 of 1")
                         {
@@ -334,7 +374,6 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                     }
-
 
                     //Property Details
                     Outparcel = driver.FindElement(By.XPath("//*[@id='ID Block']/tbody/tr[1]/td[2]")).Text;

@@ -199,7 +199,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
-
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("ctl00_ctl00_ctl00_ctl00_ContentMain_ContentMain_ContentMain_ContentMain_TabContainer1_ResultsTab_ResultsGrid"));
+                        if(INodata.Text.Contains("search did not return any results"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLOrange"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //Property Details
                     string strParcelNo = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_ctl00_ctl00_ContentMain_ContentMain_ContentMain_ContentMain_TabContainer1_DetailsTab']/div/table/tbody/tr/td[1]/div[1]/div[1]/span[2]")).Text;

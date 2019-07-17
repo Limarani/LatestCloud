@@ -19,6 +19,8 @@ using System.Text.RegularExpressions;
 using OpenQA.Selenium.PhantomJS;
 using OpenQA.Selenium.Support.Extensions;
 using System.Net;
+using System.Globalization;
+
 namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_ElpasoCO
@@ -27,15 +29,16 @@ namespace ScrapMaricopa.Scrapsource
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
-
+        string basetax = "";
         MySqlConnection con = new MySqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ToString());
-
+        Amrock amck = new Amrock();
         public string FTP_ElpasoCO(string address, string parcelNumber, string searchType, string ownername, string orderNumber, string directParcel)
         {
             GlobalClass.global_orderNo = orderNumber;
             HttpContext.Current.Session["orderNo"] = orderNumber;
             GlobalClass.global_parcelNo = parcelNumber;
-
+            List<string> installPaid = new List<string>();
+            List<string> paymentOption1 = new List<string>();
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
@@ -55,9 +58,16 @@ namespace ScrapMaricopa.Scrapsource
                         string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", address, "", "CO", "El Paso");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Elpaso"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -264,6 +274,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='main-app']/div/div[1]/div[2]/div/div/div/div[2]/div/h3"));
+                        if(Inodata.Text.Contains("No results found"))
+                        {
+                            HttpContext.Current.Session["Zero_Elpaso"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
 
                     // gc.CreatePdf(orderNumber, parcelNumber, "Property Details1", driver, "CO", "El Paso");
@@ -379,7 +400,8 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(5000);
                     gc.CreatePdf(orderNumber, parcelNumber, "Tax Search Result", driver, "CO", "El Paso");
 
-                    string Owner_Name = "", Pro_Address = "", Pro_Type = "", Legal_Desc = "", Alerts = "";
+                   
+                        string Owner_Name = "", Pro_Address = "", Pro_Type = "", Legal_Desc = "", Alerts = "";
                     Owner_Name = driver.FindElement(By.Id("ContentPlaceHolder1_txtName")).Text.Replace("\r\n", " ");
                     Pro_Address = driver.FindElement(By.Id("ContentPlaceHolder1_txtPropertyAddress")).Text.Trim();
                     Pro_Type = driver.FindElement(By.Id("ContentPlaceHolder1_lblPropertyType")).Text;
@@ -433,13 +455,13 @@ namespace ScrapMaricopa.Scrapsource
                             TDPayDue = row1.FindElements(By.TagName("td"));
                             if (!row1.Text.Contains("Payment Type") && row1.Text.Contains("First Half") && TDPayDue.Count != 0 && row1.Text.Trim() != "" && TDPayDue.Count >= 5)
                             {
-
+                                paymentOption1.Add(TDPayDue[1].Text);
                                 string PayDueDetails = TDPayDue[0].Text + "~" + TDPayDue[1].Text + "~" + TDPayDue[2].Text + "~" + TDPayDue[3].Text + "~" + TDPayDue[4].Text + "~" + "";
                                 gc.insert_date(orderNumber, parcelNumber, 1598, PayDueDetails, 1, DateTime.Now);
                             }
                             if (!row1.Text.Contains("Payment Type") && row1.Text.Contains("Second Half") && TDPayDue.Count != 0 && row1.Text.Trim() != "" && TDPayDue.Count >= 5)
                             {
-
+                                paymentOption1.Add(TDPayDue[1].Text);
                                 string PayDueDetails = TDPayDue[0].Text + "~" + TDPayDue[1].Text + "~" + TDPayDue[2].Text + "~" + TDPayDue[3].Text + "~" + TDPayDue[4].Text + "~" + currenttaxliability1;
                                 gc.insert_date(orderNumber, parcelNumber, 1598, PayDueDetails, 1, DateTime.Now);
                             }
@@ -485,6 +507,9 @@ namespace ScrapMaricopa.Scrapsource
                             {
 
                                 string PayReceivedDetails = TRPayReceived[0].Text + "~" + TRPayReceived[1].Text;
+
+                                installPaid.Add(TRPayReceived[1].Text);
+
                                 gc.insert_date(orderNumber, parcelNumber, 1599, PayReceivedDetails, 1, DateTime.Now);
                             }
 
@@ -512,12 +537,119 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
+                    //Amrock Mapping----starting
+                   
+                    string yeartext="",taxyear = "", dueyear = "";
+                    string date1 = "";
+                    string date2 = "";
 
+                    string[] datearray1 = paymentOption1[0].Split(' ');
+                    date1 = datearray1[1] + " " + datearray1[0] + " " + dueyear;
+
+                    string[] datearray2 = paymentOption1[1].Split(' ');
+                    date2 = datearray2[1] + " " + datearray2[0] + " " + dueyear;
+
+                    DateTime datedeli1, datedeli2;
+                    string duedate1 = "", duedate2 = "";
+                    datedeli1 = DateTime.Parse(date1);
+                    duedate1 = datedeli1.ToString("MM/dd/yyyy");
+                    datedeli2 = DateTime.Parse(date2);
+                    duedate2 = datedeli2.ToString("MM/dd/yyyy");
+                    string dateChecking = DateTime.Now.ToString("MM") + "/15/" + DateTime.Now.ToString("yyyy");
+                    yeartext = driver.FindElement(By.Id("ContentPlaceHolder1_lblPropertyTaxesYear")).Text;
+                    taxyear = gc.Between(yeartext, "Property Taxes for", "Due");
+                    dueyear = GlobalClass.After(yeartext, "Due");
+                    amck.TaxId = driver.FindElement(By.Id("ContentPlaceHolder1_lblPropertyAccountNumber")).Text;
+
+                    decimal installamount1, installamount2, Newinstallamount1, Newinstallamount2;
+                    basetax = driver.FindElement(By.Id("ContentPlaceHolder1_lblBaseTaxAmount")).Text.Replace("$", "");
+                    IWebElement PayReceived1 = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvCurrentYearPaymentsReceived']/tbody"));
+                    int count = (PayReceived1.FindElements(By.TagName("tr")).Count) - 1;
+                    if (count == 2)
+                    {
+
+                        installamount1 = (Convert.ToDecimal(basetax)) / 2;
+                        installamount1 = Math.Round(installamount1, 2);
+                        installamount2 = (Convert.ToDecimal(basetax)) - installamount1;
+                        Newinstallamount1 = Math.Max(installamount1, installamount2);
+                        Newinstallamount2 = Math.Min(installamount1, installamount2);
+
+                        amck.Instamountpaid1= installPaid[0];
+                        amck.Instamountpaid2 = installPaid[1];
+                        amck.Instamount1 = "$"+Newinstallamount1.ToString();
+                        amck.Instamount2 = "$" + Newinstallamount2.ToString();
+                        amck.InstPaidDue1 = "Paid";
+                        amck.InstPaidDue2 = "Paid";
+                                                              
+                    }
+                    if (count == 1)
+                    {
+                        if (Convert.ToDecimal(basetax) == Convert.ToDecimal(installPaid[0].Replace("$", "")))
+                        {
+                            Newinstallamount1 = (Convert.ToDecimal(basetax));
+                            amck.Instamountpaid1 = installPaid[0];
+                            amck.Instamount1 = "$" + Newinstallamount1.ToString();
+                            amck.InstPaidDue1 = "Paid";
+                        }
+                        else
+                        {
+                            installamount1 = (Convert.ToDecimal(basetax)) / 2;
+                            installamount1 = Math.Round(installamount1, 2);
+                            installamount2 = (Convert.ToDecimal(basetax)) - installamount1;
+                            Newinstallamount1 = Math.Max(installamount1, installamount2);
+                            Newinstallamount2 = Math.Min(installamount1, installamount2);
+
+                            amck.Instamount1 = "$" + Newinstallamount1.ToString();
+                            amck.Instamount2 = "$" + Newinstallamount2.ToString();
+                        
+                            amck.Instamountpaid1 = installPaid[0];
+                          
+                            amck.InstPaidDue1 = "Paid";
+                            amck.InstPaidDue2 = "Due";
+                            if (Convert.ToDateTime(duedate1) < Convert.ToDateTime(dateChecking) || Convert.ToDateTime(duedate2) >= Convert.ToDateTime(dateChecking))
+                            {
+                                amck.IsDelinquent = "Yes";
+                            }
+                        }
+
+                    }
+                    if (count == 0)
+                    {
+                        installamount1 = (Convert.ToDecimal(basetax)) / 2;
+                        installamount1 = Math.Round(installamount1, 2);
+                        installamount2 = (Convert.ToDecimal(basetax)) - installamount1;
+                        Newinstallamount1 = Math.Max(installamount1, installamount2);
+                        Newinstallamount2 = Math.Min(installamount1, installamount2);
+
+                        amck.Instamount1 = "$" + Newinstallamount1.ToString();
+                        amck.Instamount2 = "$" + Newinstallamount2.ToString();
+
+                        amck.InstPaidDue1 = "Due";
+                        amck.InstPaidDue2 = "Due";
+
+
+                        if (Convert.ToDateTime(duedate1)< Convert.ToDateTime(dateChecking) || Convert.ToDateTime(duedate2) < Convert.ToDateTime(dateChecking))
+                        {
+                            amck.IsDelinquent = "Yes";
+                        }
+
+
+                    }
+                    if (amck.IsDelinquent != "Yes")
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                    }
+                    else
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                    }
+                    //....ending
                     try
                     {
 
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

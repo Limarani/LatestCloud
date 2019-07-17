@@ -54,9 +54,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string straddress = Address + " " + account;
                         gc.TitleFlexSearch(orderNumber, "", "", straddress, "OH", "Summit");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_OHSummit"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -131,21 +138,24 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='wrapper']/table/tbody/tr[3]/td/table/tbody/tr[6]/td/input[1]")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, parcelNumber, "M_Parcel Number Search", driver, "OH", "Summit");
-                        IWebElement iframeElement3 = driver.FindElement(By.XPath("/html/frameset/frame[2]"));
-                        driver.SwitchTo().Frame(iframeElement3);
-                        owner = driver.FindElement(By.XPath("/html/body/table/tbody/tr[9]/td[2]/font")).Text;
-                        PropertyAddress = driver.FindElement(By.XPath("/html/body/table/tbody/tr[11]/td[2]/font")).Text;
-                        parcelNumber = driver.FindElement(By.XPath("/html/body/table/tbody/tr[7]/td[2]/font")).Text;
-                        AlterNateID = driver.FindElement(By.XPath("/html/body/table/tbody/tr[8]/td[2]/font")).Text;
-                        LegalDescriptoin = driver.FindElement(By.XPath("/html/body/table/tbody/tr[12]/td[2]/font")).Text;
-                        YearBuilt = driver.FindElement(By.XPath("/html/body/table/tbody/tr[25]/td[2]/font")).Text;
-                        if (YearBuilt.Contains("\r\n"))
-                        { YearBuilt = ""; }
-                        string PropertyDetail = AlterNateID + "~" + PropertyAddress + "~" + owner + "~" + LegalDescriptoin + "~" + YearBuilt.Replace("\r\n", "");
+                        try
+                        {
+                            IWebElement iframeElement3 = driver.FindElement(By.XPath("/html/frameset/frame[2]"));
+                            driver.SwitchTo().Frame(iframeElement3);
+                            owner = driver.FindElement(By.XPath("/html/body/table/tbody/tr[9]/td[2]/font")).Text;
+                            PropertyAddress = driver.FindElement(By.XPath("/html/body/table/tbody/tr[11]/td[2]/font")).Text;
+                            parcelNumber = driver.FindElement(By.XPath("/html/body/table/tbody/tr[7]/td[2]/font")).Text;
+                            AlterNateID = driver.FindElement(By.XPath("/html/body/table/tbody/tr[8]/td[2]/font")).Text;
+                            LegalDescriptoin = driver.FindElement(By.XPath("/html/body/table/tbody/tr[12]/td[2]/font")).Text;
+                            YearBuilt = driver.FindElement(By.XPath("/html/body/table/tbody/tr[25]/td[2]/font")).Text;
+                            if (YearBuilt.Contains("\r\n"))
+                            { YearBuilt = ""; }
+                            string PropertyDetail = AlterNateID + "~" + PropertyAddress + "~" + owner + "~" + LegalDescriptoin + "~" + YearBuilt.Replace("\r\n", "");
 
 
-                        gc.insert_date(orderNumber, parcelNumber, 120, PropertyDetail, 1, DateTime.Now);
-
+                            gc.insert_date(orderNumber, parcelNumber, 120, PropertyDetail, 1, DateTime.Now);
+                        }
+                        catch { }
                     }
                     else if (searchType == "ownername")
                     {
@@ -248,6 +258,19 @@ namespace ScrapMaricopa.Scrapsource
 
 
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("/html/body/center/font"));
+                        if(INodata.Text.Contains("No records"))
+                        {
+                            HttpContext.Current.Session["Nodata_OHSummit"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
 
                     if (searchType == "address")
                     {

@@ -76,9 +76,17 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, address, state, county);
                         }
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+
+                            HttpContext.Current.Session["Nodata_CAMonterey"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         else
                         {
@@ -108,6 +116,17 @@ namespace ScrapMaricopa.Scrapsource
                             // gc.CreatePdf(orderNumber, parcelNumber, IRollyear.Text + "Parcel Search", driver, "CA", "Monterey");
                             driver.FindElement(By.Id("SearchSubmit")).SendKeys(Keys.Enter);
                             Thread.Sleep(3000);
+                            try
+                            {
+                                IWebElement Inodata = driver.FindElement(By.Id("ResultDiv"));
+                                if(Inodata.Text.Contains("no matching records were found"))
+                                {
+                                    HttpContext.Current.Session["Nodata_CAMonterey"] = "Zero";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                            catch { }
                             gc.CreatePdf(orderNumber, parcelNumber, IRollyear.Text + "Parcel Search Result", driver, "CA", "Monterey");
 
                             try

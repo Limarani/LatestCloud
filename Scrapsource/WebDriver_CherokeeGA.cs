@@ -97,10 +97,13 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         else
                         {
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
 
-                            driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-
-                            Thread.Sleep(3000);
+                                Thread.Sleep(3000);
+                            }
+                            catch { }
 
                         }
                     }
@@ -164,9 +167,12 @@ namespace ScrapMaricopa.Scrapsource
 
                         driver.FindElement(By.Id("ctl00_contentplaceholderRealEstateSearch_usercontrolRealEstateSearch_buttonSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(4000);
-
-                        driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                        Thread.Sleep(3000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                            Thread.Sleep(3000);
+                        }
+                        catch { }
                     }
                     if (searchType == "block")
                     {
@@ -174,9 +180,12 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "account search", driver, "GA", "Cherokee");
                         driver.FindElement(By.Id("ctl00_contentplaceholderRealEstateSearch_usercontrolRealEstateSearch_buttonSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(4000);
-                        driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                        Thread.Sleep(3000);
-
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                            Thread.Sleep(3000);
+                        }
+                        catch { }
                     }
                     if (searchType == "pin")
                     {
@@ -184,9 +193,12 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "pin search", driver, "GA", "Cherokee");
                         driver.FindElement(By.Id("ctl00_contentplaceholderRealEstateSearch_usercontrolRealEstateSearch_buttonSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(4000);
-                        driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                        Thread.Sleep(3000);
-
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                            Thread.Sleep(3000);
+                        }
+                        catch { }
                     }
 
                     else if (searchType == "ownername")
@@ -252,12 +264,27 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         else
                         {
+                            try
+                            {
 
-                            driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                            Thread.Sleep(3000);
-
+                                driver.FindElement(By.XPath("//*[@id='ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_gridviewSearchResults']/tbody/tr[2]/td[1]/a")).Click();
+                                Thread.Sleep(3000);
+                            }
+                            catch { }
                         }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("ctl00_contentplaceholderRealEstateSearchResults_usercontrolRealEstateSearchResult_label1"));
+                        if(INodata.Text.Contains("No records found"))
+                        {
+                            HttpContext.Current.Session["Nodata_CherokeeGA"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
                     string ParcelID = "", PIN_Number = "", AccountNumber = "", OwnerName = "", Exemptions = "", PropertyAddress = "", MailingAddress = "", PropertyType = "", YearBuilt = "", LegalDescription = "", BuildingValue = "", OutbuildingValue = "", LandValue = "", TotalParcelValue = "", DeferredValue = "", TaxableValue = "";
 

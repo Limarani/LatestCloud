@@ -66,9 +66,16 @@ namespace ScrapMaricopa.Scrapsource
                         if (searchType == "titleflex")
                         {
                             gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "MS", "Harrison");
-                            if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                            if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                             {
+                                driver.Quit();
                                 return "MultiParcel";
+                            }
+                            else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                            {
+                                HttpContext.Current.Session["Nodata_HarrisonMS"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                             parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                             searchType = "parcel";
@@ -233,7 +240,7 @@ namespace ScrapMaricopa.Scrapsource
                             return "MultiParcel";
                         }
                         Thread.Sleep(3000);
-
+                    
                         gc.CreatePdf_WOP(orderNumber, "Property and Tax details result", driver, "MS", "Harrison");
                         //Property Details
                         Parcel_No = driver.FindElement(By.XPath("/html/body/table/tbody/tr[4]/td[2]/table[3]/tbody/tr[2]/td/table/tbody/tr[6]/td[2]/font")).Text.Trim();

@@ -40,7 +40,7 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_parcelNo = parcelNumber;
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver()) //PhantomJSDriver
             {
                 //rdp
                 string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
@@ -70,9 +70,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string addressTex = streetno + " " + streettype + " " + streetname + "" + unitnumber;
                         gc.TitleFlexSearch(orderNumber, "", ownername, addressTex, "KS", "Sedgwick");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SedgwickKS"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -132,24 +139,13 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Sedgwick"] = "Zero";
+                                HttpContext.Current.Session["Nodata_SedgwickKS"] = "Yes";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }
-                        catch { }
-                        try
-                        {
-                            string Zero = driver.FindElement(By.Id("ctl00_mainContentPlaceHolder_noResultsPanel")).Text;
-                            if (Zero == "No properties were found for the specified search criteria.")
-                            {
-                                HttpContext.Current.Session["Zero_Sedgwick"] = "Zero";
-                                driver.Quit();
-                                return "Zero";
-                            }
-                        }
-                        catch { }
+                        catch { }                      
                     }
                     if (searchType == "parcel")
                     {
@@ -158,14 +154,18 @@ namespace ScrapMaricopa.Scrapsource
                             driver.FindElement(By.Id("ctl00_mainContentPlaceHolder_keywordsTextBox")).SendKeys(parcelNumber);
                             driver.FindElement(By.Id("ctl00_mainContentPlaceHolder_searchButton")).Click();
                             Thread.Sleep(2000);
-                            driver.FindElement(By.Id("ctl00_mainContentPlaceHolder_resultsRepeater_ctl01_situsAddressHyperLink")).Click();
-                            Thread.Sleep(2000);
+                            try
+                            {
+                                driver.FindElement(By.Id("ctl00_mainContentPlaceHolder_resultsRepeater_ctl01_situsAddressHyperLink")).Click();
+                                Thread.Sleep(2000);
+                            }
+                            catch { }
                         }
                         if (parcelNumber.Trim() == "")
                         {
-                            HttpContext.Current.Session["Zero_Sedgwick"] = "Zero";
+                            HttpContext.Current.Session["Nodata_SedgwickKS"] = "Yes";
                             driver.Quit();
-                            return "Zero";
+                            return "No Data Found";
                         }
                     }
                     if (searchType == "unitnumber")
@@ -176,6 +176,19 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("ctl00_mainContentPlaceHolder_resultsRepeater_ctl01_situsAddressHyperLink")).Click();
                         Thread.Sleep(2000);
                     }
+
+                    try
+                    {
+                        string Nodata = driver.FindElement(By.Id("ctl00_mainContentPlaceHolder_noResultsPanel")).Text;
+                        if (Nodata == "No properties were found for the specified search criteria.")
+                        {
+                            HttpContext.Current.Session["Nodata_SedgwickKS"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string current = DateTime.Now.Year.ToString();
                     string Propertaddress = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[4]/div")).Text;
                     // Parcel_number = gc.Between(Propertaddress, "Pin", "\r\n");
@@ -371,7 +384,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

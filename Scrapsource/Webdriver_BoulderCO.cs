@@ -70,9 +70,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetno + " " + direction + " " + streetname + " " + streettype;
                         gc.TitleFlexSearch(orderNumber, "", ownernm, address.Trim(), "CO", "Boulder");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_BoulderCO"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -91,8 +98,12 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("searchField")).SendKeys(address);
                         gc.CreatePdf_WOP(orderNumber, "Address Start", driver, "CO", "Boulder");
                         Thread.Sleep(4000);
-                        driver.FindElement(By.XPath("//*[@id='choices']/div/b/span")).Click();
-                        Thread.Sleep(7000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='choices']/div/b/span")).Click();
+                            Thread.Sleep(7000);
+                        }
+                        catch { }
                         try
                         {
                             driver.FindElement(By.XPath("/html/body/div[5]/div[1]/div/a")).Click();
@@ -140,8 +151,12 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("searchField")).SendKeys(parcelNumber);
                         Thread.Sleep(8000);
                         gc.CreatePdf_WOP(orderNumber, "parcel", driver, "CO", "Boulder");
-                        driver.FindElement(By.XPath("//*[@id='choices']/div/b/span")).Click();
-                        Thread.Sleep(7000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='choices']/div/b/span")).Click();
+                            Thread.Sleep(7000);
+                        }
+                        catch { }
                         try
                         {
                             driver.FindElement(By.XPath("/html/body/div[5]/div[1]/div/a")).Click();
@@ -168,7 +183,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("autocomplete"));
+                        if(Inodata.Text.Contains("Invalid entry"))
+                        {
+                            HttpContext.Current.Session["Nodata_BoulderCO"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     driver.FindElement(By.XPath("//*[@id='propertyInfo']/span")).Click();
                     Thread.Sleep(7000);
                     gc.CreatePdf_WOP(orderNumber, "Property Search", driver, "CO", "Boulder");
@@ -443,7 +468,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

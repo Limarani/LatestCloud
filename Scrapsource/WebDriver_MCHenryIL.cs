@@ -43,7 +43,7 @@ namespace ScrapMaricopa.Scrapsource
             List<string> MainURL = new List<string>();
             List<string> multi = new List<string>();
             List<string> option = new List<string>();
-            
+
             string outputparcel = "", strURL = "", Taxsold = "", TA = "", address = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
@@ -67,9 +67,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "IL", "McHenry");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_McHenryIL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         searchType = "parcel";
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-","");
                     }
                     try
                     {
@@ -87,7 +95,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.Id("house-number-min")).SendKeys(houseno);
                         driver.FindElement(By.Id("house-number-max")).SendKeys(houseno);
-                        driver.FindElement(By.Id("street-name")).SendKeys(sname);                        
+                        driver.FindElement(By.Id("street-name")).SendKeys(sname);
                         gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "IL", "McHenry");
                     }
                     if (searchType == "parcel")
@@ -103,7 +111,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     driver.FindElement(By.XPath("/html/body/div[2]/form/div[2]/button[1]")).Click();
                     Thread.Sleep(3000);
-                    string SiteAddress = "", OwnerNamemail = "", legdesc = "", ptaxyear = "", propeclass = "", taxcode = "", taxstatus = "", nettaxvalue = "", taxrate = "", totaltax = "";
+                    string SiteAddress = "", OwnerNamemail = "", legdesc = "", ptaxyear = "", propeclass = "", taxcode = "", taxstatus = "", nettaxvalue = "", taxrate = "", totaltax = "", acres = "";
                     gc.CreatePdf_WOP(orderNumber, "Search Results", driver, "IL", "McHenry");
 
                     //No Data
@@ -154,12 +162,9 @@ namespace ScrapMaricopa.Scrapsource
                                         }
                                         j++;
                                     }
-
                                 }
                             }
-
                         }
-
                         else
                         {
                             HttpContext.Current.Session["multiParcel_McHenryIL_Multicount"] = "Maximum";
@@ -174,18 +179,18 @@ namespace ScrapMaricopa.Scrapsource
                     int s = 0;
 
                     IWebElement SelectOption = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[3]/table/tbody/tr[2]/td/div[2]/div[2]/ul"));
-                    IList <IWebElement> Select = SelectOption.FindElements(By.TagName("a"));
+                    IList<IWebElement> Select = SelectOption.FindElements(By.TagName("a"));
                     int Check = 0;
                     string murl = "";
                     foreach (IWebElement a in Select)
                     {
 
                         if (Check <= 3)
-                        {   
+                        {
                             murl = a.GetAttribute("href").ToString();
                             option.Add(murl);
                             //MainURL.Add(murl);
-                            
+
                         }
                         Check++;
                     }
@@ -194,17 +199,14 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         //check billing table 
                         string profulltext = "";
-                       // profulltext = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[3]/table/tbody")).Text;
-                       // string uparcel = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[3]/table/tbody/tr[1]/td[1]/div[2]")).Text.Replace("-", "").Trim();
-                        //string taxurl = "http://kaneil.devnetwedge.com/parcel/view/" + uparcel + "/" + year;
                         driver.Navigate().GoToUrl(item);
-                        string nobill = driver.FindElement(By.XPath("/html/body")).Text;                        
+                        string nobill = driver.FindElement(By.XPath("/html/body")).Text;
                         if (!nobill.Contains("No Billing Information"))
                         {
                             if (s < 3)
                             {
                                 profulltext = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[3]/table/tbody")).Text.Replace("\r\n", " ");
-                                outputparcel = gc.Between(profulltext, "Parcel Number", "Site Address");
+                                outputparcel = gc.Between(profulltext, "Parcel Number", "Site Address").Trim();
                                 gc.CreatePdf(orderNumber, outputparcel, "Tax History Details" + " " + s, driver, "IL", "McHenry");
                             }
 
@@ -221,8 +223,9 @@ namespace ScrapMaricopa.Scrapsource
                                 taxrate = gc.Between(profulltext, "Tax Rate", "Tax Bill").Trim();
                                 totaltax = gc.Between(profulltext, "Total Tax", "Township").Trim();
                                 legdesc = GlobalClass.After(profulltext, "Legal Description").Trim();
+                                acres = gc.Between(profulltext, "Acres", "Mailing Address").Trim();
                                 //Parcel Number~Site Address~Owner Name & Address~Legal Description~Tax Year~Property Class~Tax Code~Tax Status~Net Taxable Value~Tax Rate~Total Tax
-                                string prodet = outputparcel + "~" + SiteAddress + "~" + OwnerNamemail + "~" + legdesc + "~" + ptaxyear + "~" + propeclass + "~" + taxcode + "~" + taxstatus + "~" + nettaxvalue + "~" + taxrate + "~" + totaltax;
+                                string prodet = outputparcel + "~" + SiteAddress + "~" + OwnerNamemail + "~" + legdesc + "~" + ptaxyear + "~" + propeclass + "~" + taxcode + "~" + taxstatus + "~" + nettaxvalue + "~" + taxrate + "~" + totaltax + "~" + acres;
                                 gc.insert_date(orderNumber, outputparcel, 1784, prodet, 1, DateTime.Now);
 
                                 //assessment details
@@ -244,23 +247,33 @@ namespace ScrapMaricopa.Scrapsource
                                 //exemption details
                                 try
                                 {
-                                    IWebElement exemTable = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[7]/table/tbody"));
-                                    IList<IWebElement> exemTableRow = exemTable.FindElements(By.TagName("tr"));
-                                    IList<IWebElement> exemTableRowTD;
-                                    foreach (IWebElement Role in exemTableRow)
+                                    IList<IWebElement> tablee = driver.FindElements(By.XPath("//*[@id='parcel-views']/div/table"));
+                                    int counte = tablee.Count;
+                                    foreach (IWebElement tab in tablee)
                                     {
-                                        exemTableRowTD = Role.FindElements(By.TagName("td"));
-                                        if (exemTableRowTD.Count != 0)
+                                        if (tab.Text.Contains("Exemption Type"))
                                         {
-                                            //Exemption Type~Requested Date~Granted Date~Renewal Date~Prorate Date~Requested Amount~Granted Amount
-                                            string exemdet = exemTableRowTD[0].Text + "~" + exemTableRowTD[1].Text + "~" + exemTableRowTD[2].Text + "~" + exemTableRowTD[3].Text + "~" + exemTableRowTD[4].Text + "~" + exemTableRowTD[5].Text + "~" + exemTableRowTD[6].Text;
-                                            gc.insert_date(orderNumber, outputparcel, 1786, exemdet, 1, DateTime.Now);
+                                            IList<IWebElement> exemTableRow = tab.FindElements(By.TagName("tr"));
+                                            IList<IWebElement> exemTableRowTD;
+                                            foreach (IWebElement Role in exemTableRow)
+                                            {
+                                                exemTableRowTD = Role.FindElements(By.TagName("td"));
+                                                if (exemTableRowTD.Count != 0)
+                                                {
+                                                    //Exemption Type~Requested Date~Granted Date~Renewal Date~Prorate Date~Requested Amount~Granted Amount
+                                                    string exemdet = exemTableRowTD[0].Text + "~" + exemTableRowTD[1].Text + "~" + exemTableRowTD[2].Text + "~" + exemTableRowTD[3].Text + "~" + exemTableRowTD[4].Text + "~" + exemTableRowTD[5].Text + "~" + exemTableRowTD[6].Text;
+                                                    gc.insert_date(orderNumber, outputparcel, 1786, exemdet, 1, DateTime.Now);
+                                                }
+                                            }
                                         }
                                     }
+
+
                                 }
                                 catch { }
                                 AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
                                 //Taxing Bodies
+
                                 IWebElement tbodTable = driver.FindElement(By.XPath("//*[@id='taxing-bodies-table']/tbody"));
                                 IList<IWebElement> tbodTableRow = tbodTable.FindElements(By.TagName("tr"));
                                 IList<IWebElement> tbodTableRowTD;
@@ -275,80 +288,66 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                 }
 
-                                //Tax History
-                                string hxpath = "";
-                                try
+                                //Tax History                                
+                                IList<IWebElement> tables = driver.FindElements(By.XPath("//*[@id='parcel-views']/div/div/table"));
+                                int count = tables.Count;
+                                int j = 0; string tax = "";
+                                foreach (IWebElement tab in tables)
                                 {
-                                    string TTaxsold = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[14]/div[2]")).Text;
-                                    if (TTaxsold.Contains("CONTACT"))
+                                    if (tab.Text.Contains("Amount Unpaid"))
                                     {
-                                        Taxsold = TTaxsold;
-                                    }
-                                }
-                                catch { }
-                                try
-                                {
-                                    //*[@id="parcel-views"]/div[14]/div[2]/table/tbody[1]
-                                    driver.FindElement(By.XPath("//*[@id='parcel-views']/div[14]/div[2]/table/tbody[3]/tr[2]/td/button")).Click();
-                                    hxpath = "//*[@id='parcel-views']/div[14]/div[2]/table";
-                                }
-                                catch { }
-                                try
-                                {
-                                    driver.FindElement(By.XPath("//*[@id='parcel-views']/div[14]/div[3]/table/tbody[3]/tr[2]/td/button")).Click();
-                                    hxpath = "//*[@id='parcel-views']/div[14]/div[3]/table";
-                                }
-                                catch { }
-
-                                IWebElement hisTable = driver.FindElement(By.XPath(hxpath));
-                                IList<IWebElement> hisTableRow = hisTable.FindElements(By.TagName("tr"));
-                                IList<IWebElement> hisTableRowTD;
-                                string tax = "";
-                                foreach (IWebElement Role in hisTableRow)
-                                {
-                                    hisTableRowTD = Role.FindElements(By.TagName("td"));
-                                    if (hisTableRowTD.Count != 0)
-                                    {
-                                        if (hisTableRowTD.Count == 3)
+                                        IList<IWebElement> hisTableRow = tab.FindElements(By.XPath("tbody/tr"));
+                                        IList<IWebElement> hisTableRowTD;
+                                        foreach (IWebElement Role in hisTableRow)
                                         {
-                                            tax = hisTableRowTD[0].Text + "~" + hisTableRowTD[1].Text + "~" + hisTableRowTD[2].Text + "~" + "" + "~" + Taxsold;
-                                            gc.insert_date(orderNumber, outputparcel, 1789, tax, 1, DateTime.Now);
-                                        }
-                                        if (hisTableRowTD.Count == 4)
+                                            hisTableRowTD = Role.FindElements(By.TagName("td"));
+                                            if (hisTableRowTD.Count != 0)
+                                            {
+                                                if (hisTableRowTD.Count == 3)
+                                                {
+                                                    tax = hisTableRowTD[0].GetAttribute("innerText") + "~" + hisTableRowTD[1].GetAttribute("innerText") + "~" + hisTableRowTD[2].GetAttribute("innerText") + "~" + "" + "~" + Taxsold;
+                                                    gc.insert_date(orderNumber, outputparcel, 1789, tax, 1, DateTime.Now);
+                                                }
+                                                if (hisTableRowTD.Count == 4)
 
-                                        {
-                                            //Tax Year~Total Due~Total Paid~Amount Unpaid
-                                            tax = hisTableRowTD[0].Text + "~" + hisTableRowTD[1].Text + "~" + hisTableRowTD[2].Text + "~" + hisTableRowTD[3].Text + "~" + "";
-                                            gc.insert_date(orderNumber, outputparcel, 1789, tax, 1, DateTime.Now);
+                                                {
+                                                    //Tax Year~Total Due~Total Paid~Amount Unpaid
+                                                    tax = hisTableRowTD[0].GetAttribute("innerText") + "~" + hisTableRowTD[1].GetAttribute("innerText") + "~" + hisTableRowTD[2].GetAttribute("innerText") + "~" + hisTableRowTD[3].GetAttribute("innerText") + "~" + "";
+                                                    gc.insert_date(orderNumber, outputparcel, 1789, tax, 1, DateTime.Now);
+                                                }
+
+                                            }
                                         }
                                     }
                                 }
+
+
 
                                 //Redemptions 
                                 try
-                                {
-                                    try
-                                    {                                        
-                                        driver.FindElement(By.XPath("//*[@id='parcel-views']/div[12]/table/tbody[3]/tr[2]/td/button")).Click();
-                                    }
-                                    catch
+                                {                                   
+                                    IList<IWebElement> tablesr = driver.FindElements(By.XPath("//*[@id='parcel-views']/div/table"));
+                                    int countr = tablesr.Count;
+                                    foreach (IWebElement tab in tablesr)
                                     {
+                                        if (tab.Text.Contains("Certificate"))
+                                        {                                            
+                                            IList<IWebElement> redeTableRow = tab.FindElements(By.TagName("tbody/tr"));
+                                            IList<IWebElement> redeTableRowTD;
+                                            foreach (IWebElement Role in redeTableRow)
+                                            {
+                                                redeTableRowTD = Role.FindElements(By.TagName("td"));
+                                                if (redeTableRowTD.Count != 0)
+                                                {
+                                                    //Year~Certificate~Type~Date Sold~Sale Status~Status Date~Penalty Date
+                                                    string rededet = redeTableRowTD[0].GetAttribute("innerText") + "~" + redeTableRowTD[1].GetAttribute("innerText") + "~" + redeTableRowTD[2].GetAttribute("innerText") + "~" + redeTableRowTD[3].GetAttribute("innerText") + "~" + redeTableRowTD[4].GetAttribute("innerText") + "~" + redeTableRowTD[5].GetAttribute("innerText") + "~" + redeTableRowTD[6].GetAttribute("innerText");
+                                                    gc.insert_date(orderNumber, outputparcel, 1790, rededet, 1, DateTime.Now);
+                                                }
 
-                                    }
-                                    IWebElement redeTable = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[12]/table"));
-                                    IList<IWebElement> redeTableRow = redeTable.FindElements(By.TagName("tr"));
-                                    IList<IWebElement> redeTableRowTD;
-                                    foreach (IWebElement Role in redeTableRow)
-                                    {
-                                        redeTableRowTD = Role.FindElements(By.TagName("td"));
-                                        if (redeTableRowTD.Count != 0)
-                                        {
-                                            //Year~Certificate~Type~Date Sold~Sale Status~Status Date~Penalty Date
-                                            string rededet = redeTableRowTD[0].Text + "~" + redeTableRowTD[1].Text + "~" + redeTableRowTD[2].Text + "~" + redeTableRowTD[3].Text + "~" + redeTableRowTD[4].Text + "~" + redeTableRowTD[5].Text + "~" + redeTableRowTD[6].Text;
-                                            gc.insert_date(orderNumber, outputparcel, 1790, rededet, 1, DateTime.Now);
+                                            }
                                         }
-
-                                    }
+                                    }                                
+                                          
                                 }
                                 catch
                                 {
@@ -356,21 +355,29 @@ namespace ScrapMaricopa.Scrapsource
                                 }
 
                                 try
-                                {                                    
-                                    IWebElement saleTable = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[13]/table/tbody"));
-                                    IList<IWebElement> saleTableRow = saleTable.FindElements(By.TagName("tr"));
-                                    IList<IWebElement> saleTableRowTD;
-                                    foreach (IWebElement Role in saleTableRow)
+                                {
+                                    IList<IWebElement> tabless = driver.FindElements(By.XPath("//*[@id='parcel-views']/div/table"));
+                                    int counts = tabless.Count;
+                                    foreach (IWebElement tab in tabless)
                                     {
-                                        saleTableRowTD = Role.FindElements(By.TagName("td"));
-                                        if (saleTableRowTD.Count != 0)
+                                        if (tab.Text.Contains("Document #"))
                                         {
-                                            //Year~Document #~Sale Type~Sale Date~Sold By~Sold To~Gross Price~Personal Property~Net Price
-                                            string rededet = saleTableRowTD[0].Text + "~" + saleTableRowTD[1].Text + "~" + saleTableRowTD[2].Text + "~" + saleTableRowTD[3].Text + "~" + saleTableRowTD[4].Text + "~" + saleTableRowTD[5].Text + "~" + saleTableRowTD[6].Text + "~" + saleTableRowTD[7].Text + "~" + saleTableRowTD[8].Text;
-                                            gc.insert_date(orderNumber, outputparcel, 1792, rededet, 1, DateTime.Now);
-                                        }
+                                            IList<IWebElement> saleTableRow = tab.FindElements(By.TagName("tr"));
+                                            IList<IWebElement> saleTableRowTD;
+                                            foreach (IWebElement Role in saleTableRow)
+                                            {
+                                                saleTableRowTD = Role.FindElements(By.TagName("td"));
+                                                if (saleTableRowTD.Count != 0)
+                                                {
+                                                    //Year~Document #~Sale Type~Sale Date~Sold By~Sold To~Gross Price~Personal Property~Net Price
+                                                    string rededet = saleTableRowTD[0].Text + "~" + saleTableRowTD[1].Text + "~" + saleTableRowTD[2].Text + "~" + saleTableRowTD[3].Text + "~" + saleTableRowTD[4].Text + "~" + saleTableRowTD[5].Text + "~" + saleTableRowTD[6].Text + "~" + saleTableRowTD[7].Text + "~" + saleTableRowTD[8].Text;
+                                                    gc.insert_date(orderNumber, outputparcel, 1792, rededet, 1, DateTime.Now);
+                                                }
 
+                                            }
+                                        }
                                     }
+                                   
                                 }
                                 catch { }
                                 //Get bill URL
@@ -382,7 +389,7 @@ namespace ScrapMaricopa.Scrapsource
                                 //bill download
                                 filename = "TaxBill";
                                 var chromeOptions = new ChromeOptions();
-                                var downloadDirectory = "F:\\AutoPdf\\";
+                                var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                                 chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                                 chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                                 chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -409,19 +416,27 @@ namespace ScrapMaricopa.Scrapsource
                             if (s < 4)
                             {
                                 //billing table
-                                IWebElement billTable = driver.FindElement(By.XPath("//*[@id='parcel-views']/div[6]/table/tbody"));
-                                IList <IWebElement> billTableRow = billTable.FindElements(By.TagName("tr"));
-                                IList<IWebElement> billTableRowTD;
-                                foreach (IWebElement Role in billTableRow)
+                                IList<IWebElement> tableb = driver.FindElements(By.XPath("//*[@id='parcel-views']/div/table"));
+                                int countb = tableb.Count;
+                                foreach (IWebElement tab in tableb)
                                 {
-                                    billTableRowTD = Role.FindElements(By.TagName("td"));
-                                    if (billTableRowTD.Count != 0)
+                                    if (tab.Text.Contains("Installment"))
                                     {
-                                        string billdet = billTableRowTD[0].Text + "~" + billTableRowTD[1].Text + "~" + billTableRowTD[2].Text + "~" + billTableRowTD[3].Text + "~" + billTableRowTD[4].Text + "~" + billTableRowTD[5].Text + "~" + billTableRowTD[6].Text + "~" + billTableRowTD[7].Text + "~" + billTableRowTD[8].Text + "~" + billTableRowTD[9].Text + "~" + TA;
-                                        gc.insert_date(orderNumber, outputparcel, 1787, billdet, 1, DateTime.Now);
-                                    }
+                                        IList<IWebElement> billTableRow = tab.FindElements(By.TagName("tr"));
+                                        IList<IWebElement> billTableRowTD;
+                                        foreach (IWebElement Role in billTableRow)
+                                        {
+                                            billTableRowTD = Role.FindElements(By.TagName("td"));
+                                            if (billTableRowTD.Count != 0)
+                                            {
+                                                string billdet = billTableRowTD[0].Text + "~" + billTableRowTD[1].Text + "~" + billTableRowTD[2].Text + "~" + billTableRowTD[3].Text + "~" + billTableRowTD[4].Text + "~" + billTableRowTD[5].Text + "~" + billTableRowTD[6].Text + "~" + billTableRowTD[7].Text + "~" + billTableRowTD[8].Text + "~" + billTableRowTD[9].Text + "~" + TA;
+                                                gc.insert_date(orderNumber, outputparcel, 1787, billdet, 1, DateTime.Now);
+                                            }
 
+                                        }
+                                    }
                                 }
+
 
                             }
                         }

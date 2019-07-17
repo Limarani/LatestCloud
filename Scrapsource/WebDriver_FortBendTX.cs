@@ -48,10 +48,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", "", address, "TX", "Fort Bend");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FortBend"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -63,7 +69,7 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("SearchText")).SendKeys(address);
                         gc.CreatePdf_WOP(orderNumber, "address search", driver, "TX", "Fort Bend");
                         driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(5000);
                         gc.CreatePdf_WOP(orderNumber, "address search result", driver, "TX", "Fort Bend");
                     }
 
@@ -72,7 +78,7 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("SearchText")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "TX", "Fort Bend");
                         driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(5000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "TX", "Fort Bend");
                     }
 
@@ -81,7 +87,7 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("SearchText")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "owner search", driver, "TX", "Fort Bend");
                         driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(5000);
                         gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Fort Bend");
                     }
 
@@ -129,7 +135,7 @@ namespace ScrapMaricopa.Scrapsource
                         string Nodata = driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr/td")).Text;
                         if (Nodata.Contains("No properties found."))
                         {
-                            HttpContext.Current.Session["Zero_FortBend"] = "Zero";
+                            HttpContext.Current.Session["Nodata_FortBend"] = "Yes";
                             driver.Quit();
                             return "No Data Found";
                         }
@@ -716,7 +722,7 @@ namespace ScrapMaricopa.Scrapsource
                                             string Downloadhref = downloadMud.GetAttribute("href");
                                             string fileName = "Statement.pdf";
                                             var chromeOptions = new ChromeOptions();
-                                            var downloadDirectory = "F:\\AutoPdf\\";
+                                            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                                             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                                             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                                             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -1162,7 +1168,7 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     string fileName = "";
                                     var chromeOptions = new ChromeOptions();
-                                    var downloadDirectory = "F:\\AutoPdf\\";
+                                    var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                                     chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                                     chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                                     chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

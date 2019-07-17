@@ -64,19 +64,27 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownernm, Address, "CA", "Orange");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Orange"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
-                    {
-                        driver.FindElement(By.XPath("//*[@id='col2']/div[2]/table/tbody/tr[2]/td/div/table/tbody/tr[5]/td/table/tbody/tr[10]/td[2]/input")).SendKeys(Address);
+                    {//*[@id="col2"]/div[2]/table/tbody/tr[2]/td/div/table/tbody/tr[6]/td/table/tbody/tr[10]/td[2]/input
+                        driver.FindElement(By.Name("streetname")).SendKeys(Address);
                         gc.CreatePdf_WOP(orderNumber, "AddressSearch", driver, "CA", "Orange");
-                        driver.FindElement(By.XPath("//*[@id='col2']/div[2]/table/tbody/tr[2]/td/div/table/tbody/tr[5]/td/table/tbody/tr[13]/td[4]/input")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Name("s_address")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         try
                         {
-                            string Nodata = driver.FindElement(By.XPath("//*[@id='col2']/div[2]/table/tbody/tr[2]/td/div/table/tbody/tr[1]/td/strong/font")).Text;
+                            string Nodata = driver.FindElement(By.XPath("//*[@id='col2']/div[2]/table/tbody/tr[2]/td/div/table/tbody/tr[1]/td/strong/font/text()[1]")).Text;
                             if (Nodata.Contains("No address was found"))
                             {
                                 HttpContext.Current.Session["Zero_Orange"] = "Zero";
@@ -87,7 +95,7 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                         gc.CreatePdf_WOP(orderNumber, "AddressSearchResult", driver, "CA", "Orange");
                         try
-                        {
+                        {//*[@id="col2"]/div[2]/table/tbody/tr[3]/td/table/tbody/tr[6]/td/table/tbody/tr[3]/td[1]
                             string Pay_review_result = driver.FindElement(By.XPath("//*[@id='col2']/div[2]/table/tbody/tr[3]/td/table/tbody/tr[6]/td/table/tbody/tr[3]/td[1]")).Text;
                             if (Pay_review_result.Contains("Search Results: 1-1 of 1 records"))
                             {
@@ -99,6 +107,7 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                         try
                         {
+                            
                             if (Pay_review_result.Trim() != "Search Results: 1-1 of 1 records" && Convert.ToInt32(multicount) <= 20)
                             {
                                 IWebElement MProperty_addrs = driver.FindElement(By.XPath("//*[@id='col2']/div[2]/table/tbody/tr[3]/td/table/tbody/tr[7]/td/table/tbody"));

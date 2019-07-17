@@ -54,9 +54,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         address = streetno + " " + direction + " " + streetname;
                         gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "ID", "Kootenai");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Kootenai"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -126,7 +133,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (Nodata.Contains("No Records Found"))
                             {
                                 gc.CreatePdf_WOP(orderNumber, "NO Record", driver, "ID", "Kootenai");
-                                HttpContext.Current.Session["Zero_Kootenai"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Kootenai"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -151,7 +158,7 @@ namespace ScrapMaricopa.Scrapsource
                                 string Nodata = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr/td/table/tbody/tr[2]/td")).Text;
                                 if (Nodata.Contains("No Records Found"))
                                 {
-                                    HttpContext.Current.Session["Zero_Kootenai"] = "Zero";
+                                    HttpContext.Current.Session["Nodata_Kootenai"] = "Yes";
                                     driver.Quit();
                                     return "No Records Found";
                                 }
@@ -228,7 +235,7 @@ namespace ScrapMaricopa.Scrapsource
                             string Nodata = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr/td/table/tbody/tr[2]/td")).Text;
                             if (Nodata.Contains("No Records Found"))
                             {
-                                HttpContext.Current.Session["Zero_Kootenai"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Kootenai"] = "Yes";
                                 driver.Quit();
                                 return "No Records Found";
                             }
@@ -349,17 +356,17 @@ namespace ScrapMaricopa.Scrapsource
                     driver.Navigate().GoToUrl("http://id-kootenai-treasurer.governmax.com/collectmax/agency/id-kootenai-treasurer/homepage2017.asp?sid=49B81F6AF42C4778B7357D97F7DE9C95");
                     gc.CreatePdf(orderNumber, Parcel_number, "Current TAx1", driver, "ID", "Kootenai");
                     driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[1]/td/p[2]/a")).Click();
-                    Thread.Sleep(2000);
+                    Thread.Sleep(4000);
                     gc.CreatePdf(orderNumber, Parcel_number, "Current TAx2", driver, "ID", "Kootenai");
                     driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr[1]/td/table/tbody/tr/td/table/tbody/tr[2]/td/font/input")).SendKeys(Parcel_number);
                     gc.CreatePdf(orderNumber, Parcel_number, "Current TAx3", driver, "ID", "Kootenai");
                     driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr[3]/td/input")).SendKeys(Keys.Enter);
-                    Thread.Sleep(2000);
+                    Thread.Sleep(4000);
                     gc.CreatePdf(orderNumber, Parcel_number, "Current TAx4", driver, "ID", "Kootenai");
                     try
                     {
                         driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr[2]/td/table/tbody/tr[2]/td/font/b/a")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(7000);
                     }
                     catch { }
                     string TaxRoll = driver.FindElement(By.XPath("//*[@id='form1']/table/tbody/tr[1]/td/table[2]/tbody/tr[2]/td[3]/font")).Text;

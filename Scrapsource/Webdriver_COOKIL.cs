@@ -53,9 +53,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         //string address = houseno + " " + direction + " " + streetname + " " + streettype;
                         gc.TitleFlexSearch(orderNumber, "", ownername, Address.Trim(), "IL", "Cook");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CookIL"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
                         searchType = "parcel";
@@ -71,6 +78,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax After click", driver, "IL", "Cook");
                         driver.FindElement(By.Id("ContentPlaceHolder1_ASPxPanel1_SearchByPIN1_cmdContinue")).Click();
                         Thread.Sleep(2000);
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.Id("ContentPlaceHolder1_ASPxPanel1_SearchByPIN1_panNoPropertyFoundMessage"));
+                            if(Inodata.Text.Contains("No property was found under this Property Index Number (PIN)."))
+                            {
+                                HttpContext.Current.Session["Nodata_CookIL"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_DataViewNavigationDesktop1_ASPxMenu1_DXI0_T']")).Click();
                     Thread.Sleep(2000);

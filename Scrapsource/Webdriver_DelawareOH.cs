@@ -42,7 +42,7 @@ namespace ScrapMaricopa.Scrapsource
             string Parcel_number, Tax_Authority = "", Year = "", Total_Due = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver()) 
             {
                 try
                 {
@@ -60,9 +60,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetno + " " + streetname + " " + streettype + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, "", ownernm, address.Trim(), "OH", "Delaware");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_DelawareOH"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -165,6 +172,18 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='tabs-1']/div"));
+                        if(Inodata.Text.Contains("No Results Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_DelawareOH"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     gc.CreatePdf_WOP(orderNumber, "Searchafter", driver, "OH", "Delaware");
                     IWebElement propertydetailtable = driver.FindElement(By.XPath("//*[@id='lxT581']/div/table/tbody"));
                     Parcel_number = gc.Between(propertydetailtable.Text, "Parcel Number", "Owner Name");

@@ -73,19 +73,21 @@ namespace ScrapMaricopa.Scrapsource
                         // driver.Navigate().GoToUrl(urlSumbmit);
                         Thread.Sleep(1000);
                         gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "FL", "Pasco");
-                        string MultiChk = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[2]/td/table/tbody/tr/td[1]/div")).Text;
+                        string MultiChk = "";
                         try
                         {
+                            MultiChk = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[2]/td/table/tbody/tr/td[1]/div")).Text;
                             string MultiCount = gc.Between(MultiChk, "Displaying ", " record");
                             if (Convert.ToInt32(MultiCount) > 25)
                             {
                                 HttpContext.Current.Session["multiparcel_Pasco_Count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                         }
                         catch { }
 
-                        if (MultiChk != "Displaying 1 record")
+                        if ((MultiChk != "Displaying 1 record") && (MultiChk != ""))
                         {
                             try
                             {
@@ -116,12 +118,12 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             catch { }
                             return "MultiParcel";
-
-
                         }
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[3]/td/table/tbody/tr/td[2]/div/a")).SendKeys(Keys.Enter);
-
-
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[3]/td/table/tbody/tr/td[2]/div/a")).SendKeys(Keys.Enter);
+                        }
+                        catch { }
                     }
 
                     if (searchType == "titleflex")
@@ -130,10 +132,16 @@ namespace ScrapMaricopa.Scrapsource
 
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         parcelNumber = parcelNumber.Replace(".", "");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLPasco"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         if (HttpContext.Current.Session["titleparcel"] != null)
                         {
@@ -210,20 +218,22 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='nam']/table/tbody/tr[2]/td[3]/input[1]")).SendKeys(Keys.Enter);
                         Thread.Sleep(1000);
                         gc.CreatePdf_WOP(orderNumber, "Ownername  Search Result", driver, "FL", "Pasco");
-                        string MultiChk = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[2]/td/table/tbody/tr/td[1]/div")).Text;
+                        string MultiChk = "";
 
                         try
                         {
+                            MultiChk = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[2]/td/table/tbody/tr/td[1]/div")).Text;
                             string MultiCount = gc.Between(MultiChk, "Displaying ", " record");
                             if (Convert.ToInt32(MultiCount) > 25)
                             {
                                 HttpContext.Current.Session["multiparcel_Pasco_Count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                         }
                         catch { }
 
-                        if (MultiChk != "Displaying 1 record")
+                        if ((MultiChk != "Displaying 1 record") && (MultiChk != ""))
                         {
                             try
                             {
@@ -257,20 +267,43 @@ namespace ScrapMaricopa.Scrapsource
                             return "MultiParcel";
 
                         }
-                        driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[3]/td/table/tbody/tr/td[2]/div/a")).SendKeys(Keys.Enter);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_PanelResults']/table/tbody/tr[3]/td/table/tbody/tr/td[2]/div/a")).SendKeys(Keys.Enter);
+                        }
+                        catch { }
                     }
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='wrapper']/div"));
+                        if (INodata.Text.Contains("NOT FOUND") || INodata.Text.Contains("No Parcels match your query"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLPasco"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     // string MailingAddress = "", PropertyType = "", YearBuilt = "", LegalDescription = "";
                     Thread.Sleep(2000);
                     try
                     {
-                        //gc.CreatePdf_WOP(orderNumber, "Parcel  Search 11", driver, "FL", "Pasco");                    
-                        parcelNumber = driver.FindElement(By.XPath("//*[@id='wrapper']/div/div[2]/div[2]/div[2]/div[2]")).Text;
-                        var ParSplit = parcelNumber.Split(' ');
-                        parcelNumber = ParSplit[0];
-                        PropertyType = driver.FindElement(By.XPath("//*[@id='wrapper']/div/div[2]/div[2]/div[3]/div[2]/span")).Text;
+                        //gc.CreatePdf_WOP(orderNumber, "Parcel  Search 11", driver, "FL", "Pasco");       
+                        parcelNumber = driver.FindElement(By.XPath("//*[@id='wrapper']/div/div[2]/div[1]/div[1]")).Text.Replace("(Card: 1 of 1)", "").Replace("\r\n", "").Replace("Parcel ID", "").Trim();
+                        //var ParSplit = parcelNumber.Split(' ');
+                        //parcelNumber = ParSplit[0];
+                        PropertyType = driver.FindElement(By.XPath("//*[@id='wrapper']/div/div[2]/div[1]/div[2]/div[2]")).Text;
                         MailingAddress = driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[2]")).Text;
                         PropertyAddress = driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[4]")).Text.Replace("\r\n", " ");
-                        LegalDescription = driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[6]")).Text + driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[7]")).Text + driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[8]")).Text + driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[9]")).Text + driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[10]")).Text;
+                        LegalDescription = driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[6]")).Text;
+                        //try
+                        //{
+                        //    LegalDescription += driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[7]")).Text;
+                        //    LegalDescription += driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[8]")).Text;
+                        //    LegalDescription += driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[9]")).Text;
+                        //    LegalDescription += driver.FindElement(By.XPath("//*[@id='parcelLocation']/div[10]")).Text;
+                        //}
+                        //catch { }
                         YearBuilt = driver.FindElement(By.XPath("//*[@id='buildingDetailTable']/tbody/tr[1]/td[2]")).Text;
                     }
                     catch { }
@@ -286,8 +319,11 @@ namespace ScrapMaricopa.Scrapsource
                     gc.insert_date(orderNumber, parcelNumber, 275, PropertyDetail, 1, DateTime.Now);
 
                     string AssessedYear = "", AgriculturalLand = "", Taxable = "", LandValue = "", BuildingValue = "", ExtraFeaturesValue = "", JustValue = "", AssessedValue = "", Homestead = "", NonSchoolAdditionalHomestead = "", NonSchoolTaxableValue = "", SchoolDistrictTaxableValue = "";
-
-                    AssessedYear = driver.FindElement(By.XPath("//*[@id='wrapper']/div/div[1]/div[2]/a")).Text;
+                    try
+                    {
+                        AssessedYear = driver.FindElement(By.XPath("//*[@id='wrapper']/div/div[1]/div[2]/a")).Text;
+                    }
+                    catch { }
                     AgriculturalLand = driver.FindElement(By.XPath("//*[@id='parcelValueTable']/tbody/tr[1]/td[2]")).Text;
                     LandValue = driver.FindElement(By.XPath("//*[@id='parcelValueTable']/tbody/tr[2]/td[2]")).Text;
                     BuildingValue = driver.FindElement(By.XPath("//*[@id='parcelValueTable']/tbody/tr[3]/td[2]")).Text;
@@ -1516,7 +1552,7 @@ namespace ScrapMaricopa.Scrapsource
         {
             string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);

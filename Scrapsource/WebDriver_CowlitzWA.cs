@@ -46,15 +46,16 @@ namespace ScrapMaricopa.Scrapsource
 
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
 
-            //driver = new ChromeDriver();
+            //driver = new c();
             //driver = new PhantomJSDriver();
 
-            var option = new ChromeOptions();
-            option.AddArgument("No-Sandbox");
+            //var option = new ChromeOptions();
+            //option.AddArgument("No-Sandbox");
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+          //  using (driver = new ChromeDriver())
+              using (driver = new PhantomJSDriver())
             {
                 try
                 {
@@ -62,6 +63,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     driver.Navigate().GoToUrl("http://www.cowlitzinfo.net/applications/cowlitzassessorparcelsearch/Default.aspx");
                     Thread.Sleep(3000);
+
 
                     if (searchType == "titleflex")
                     {
@@ -77,7 +79,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber,parcelNumber, ownername, address.Trim(), "WA", "Cowlitz");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Cowlitz_Zero"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
                         searchType = "parcel";
@@ -108,7 +117,7 @@ namespace ScrapMaricopa.Scrapsource
                         
                         if (ChkMultiParcel == "Search Results:1Sort By ")
                         {
-                            driver.FindElement(By.XPath("//*[@id='properties_section']/div/div/div/div[1]/a")).SendKeys(Keys.Enter);
+                            driver.FindElement(By.XPath("//*[@id='properties_section']/div/a/div/div/div[2]/div/div[2]")).Click();
                             Thread.Sleep(10000);
                         }
                         else
@@ -330,12 +339,15 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 string Parent_Window1 = driver.CurrentWindowHandle;
 
-                                driver.FindElement(By.XPath("//*[@id='tax_value_table']/table/tbody/tr[" + p + "]/td[8]/a")).Click();
+                                driver.FindElement(By.XPath("//*[@id='tax_value_table']/table/tbody/tr[" + p + "]/td[10]/a")).Click();
                                 Thread.Sleep(10000);
+                               
 
                                 System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                                 driver.SwitchTo().Window(driver.WindowHandles.Last());
                                 Thread.Sleep(4000);
+
+                            
 
                                 try
                                 {
@@ -379,14 +391,14 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                         //Tax Authority
-                        driver.FindElement(By.XPath("//*[@id='conveyances']/header/h2/a")).Click();
+                        driver.FindElement(By.XPath("//*[@id='top']/nav/ul/li[2]/a")).Click();
                         Thread.Sleep(2000);
 
-                        driver.SwitchTo().Window(driver.WindowHandles.Last());
-                        Thread.Sleep(2000);
+                        //driver.SwitchTo().Window(driver.WindowHandles.Last());
+                        //Thread.Sleep(2000);
 
-                        Tax_Authority = driver.FindElement(By.XPath("//*[@id='quickLinks180']/div[2]/div/div[1]/p")).Text;
-                        Tax_Authority = WebDriverTest.Between(Tax_Authority, "8:30 a.m. - 4:30 p.m.", "TTY / VCO").Replace("\r\n","");
+                        Tax_Authority = driver.FindElement(By.XPath("//*[@id='address']")).Text;
+                        Tax_Authority = WebDriverTest.Between(Tax_Authority, "Address", "Option 1").Replace("\r\n","");
 
                         Taxauthority_Details = Tax_Authority;
                         gc.insert_date(orderNumber, Parcel_Id, 780, Taxauthority_Details, 1, DateTime.Now);

@@ -62,7 +62,14 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_WVBerkeley"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -398,17 +405,19 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 maxCheck++;
                             }
+
                             if (AccountTR.Count > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Berkeley_Multicount"] = "Maximum";
+                                driver.Quit();
+                                return "Maximum";
                             }
-                            else
+                            else if(AccountTR.Count <= 25 && AccountTR.Count > 1)
                             {
                                 HttpContext.Current.Session["multiparcel_Berkeley"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            driver.Quit();
-
-                            return "MultiParcel";
                         }
                         catch { }
                     }
@@ -416,6 +425,28 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(2000);
                     driver.SwitchTo().Window(driver.WindowHandles.Last());
                     Thread.Sleep(3000);
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='inside']/div/div[1]/table[1]"));
+                        IList<IWebElement> INodataRow = INodata.FindElements(By.TagName("td"));
+                        foreach (IWebElement data in INodataRow)
+                        {
+                            if (data.Text.Contains("No matches found."))
+                            {
+                                HttpContext.Current.Session["Nodata_WVBerkeley"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        if (INodataRow.Count <= 1)
+                        {
+                            HttpContext.Current.Session["Nodata_WVBerkeley"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //Property Details
                     try

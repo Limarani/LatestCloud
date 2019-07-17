@@ -208,6 +208,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
 
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("middle"));
+                        if(Inodata.Text.Contains("No results found"))
+                        {
+                            HttpContext.Current.Session["Nodata_SandovalNM"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property Details
                     string AccountNo = "", SitusAddress = "", TaxArea = "", LegalSummary = "", strOwnerName = "", strAddress = "", ValueSummary = "", MValueSummary = "", PropertyStatus = "";
                     driver.FindElement(By.XPath("//*[@id='searchResultsTable']/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
@@ -628,7 +639,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string fileName = "";
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

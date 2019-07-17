@@ -68,7 +68,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, address, "MO", "St Louis City");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_StLouisCityMO"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -135,6 +142,17 @@ namespace ScrapMaricopa.Scrapsource
 
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("content"));
+                        if (INodata.Text.Contains("No record was found"))
+                        {
+                            HttpContext.Current.Session["Nodata_StLouisCityMO"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     string bulkdata = driver.FindElement(By.XPath("//*[@id='CS_CCF_31321_31340']/div[2]/div[1]/div/div/table/tbody")).Text;
                     string primary_address = "", owner_name = "", parcel_no = "", neighborhood = "", ward = "", land_use = "", property_desc = "";

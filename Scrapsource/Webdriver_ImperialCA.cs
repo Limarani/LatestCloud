@@ -52,11 +52,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         //string address = houseno + " " + direction + " " + streetname + " " + streettype;
                         gc.TitleFlexSearch(orderNumber, "", ownername, "", "CA", "Imperial");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
-                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Imperial"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -112,7 +119,7 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["Zero_Imperial"] = "Zero";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }
@@ -127,8 +134,26 @@ namespace ScrapMaricopa.Scrapsource
                         IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                         js1.ExecuteScript("arguments[0].click();", searchclick);
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/form/center/table/tbody/tr[2]/td[1]/a")).Click();
+                        try
+                        {
+                            driver.FindElement(By.XPath("/html/body/form/center/table/tbody/tr[2]/td[1]/a")).Click();
+                        }
+                        catch { }
                     }
+
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.XPath("/html/body/form/center/table/tbody")).Text;
+                        if (nodata.Contains("Assessor Inquiry: Please enter"))
+                        {
+                            HttpContext.Current.Session["Zero_Imperial"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     //Property Details
                     string Parcel_number = "", TaxRateArea = "", Propertytype = "", Acres = "", Lotsize = "", AsmtDescription = "", AsmtStatus = "", Land = "", Structure = "", Fixtures = "", Growing = "", TotalLandandImprovements = "", ManufacturedHome = "", PersonalProperty = "", HomeownersExemption = "", OtherExemption = "", NetAssessment = "", NetAssessment1 = "";
                     string Propertydetail = driver.FindElement(By.XPath("/html/body/form/center/table/tbody")).Text;
@@ -255,8 +280,17 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             IWebElement firstinstalment = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[" + j + "]"));
                             string instalfirst = GlobalClass.Before(firstinstalment.Text, "Paid Status");
-                            string PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Due/Paid Date").Trim();
-                            string Due_PaidDate = gc.Between(firstinstalment.Text, "Due/Paid Date", "Total Due").Trim();
+                            string PaidStatus1 = "", Due_PaidDate = "";
+                            if (firstinstalment.Text.Contains("Due/Paid Date"))
+                            {
+                                PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Due/Paid Date").Trim();
+                                Due_PaidDate = gc.Between(firstinstalment.Text, "Due/Paid Date", "Total Due").Trim();
+                            }
+                            else
+                            {
+                                PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Paid Date").Trim();
+                                Due_PaidDate = gc.Between(firstinstalment.Text, "Paid Date", "Total Due").Trim();
+                            }
                             string totaldue = gc.Between(firstinstalment.Text, "Total Due", "Total Paid").Trim();
                             string TotalPaid = gc.Between(firstinstalment.Text, "Total Paid", "Balance").Trim();
                             if (firstinstalment.Text.Contains("ADD"))

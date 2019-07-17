@@ -41,7 +41,7 @@ namespace ScrapMaricopa.Scrapsource
             driverService.HideCommandPromptWindow = true;
             //driver = new PhantomJSDriver();
             //driver = new ChromeDriver();
-            using (driver = new PhantomJSDriver()) //ChromeDriver
+            using (driver = new PhantomJSDriver())
             {
                 try
                 {
@@ -53,9 +53,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         // string address = streetNo + " " + direction + " " + streetName + " " + streetType + " " + accountNo;
                         gc.TitleFlexSearch(orderNumber, "", "", Address.Trim(), "SC", "Horry");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_HorrySC"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -65,14 +72,19 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div/div[1]/input")).SendKeys(Address);
                         gc.CreatePdf_WOP(orderNumber, "Address Search Before", driver, "SC", "Horry");
                         driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div/div[2]")).Click();
-                        Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div[2]/ul/li[2]/h3")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(5000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div[2]/ul/li[2]/h3")).Click();
+                            Thread.Sleep(7000);                           
 
-                        IWebElement IAddressSearch11 = driver.FindElement(By.Id("graphicsLayer3_layer"));
-                        IJavaScriptExecutor js11 = driver as IJavaScriptExecutor;
-                        js11.ExecuteScript("arguments[0].click();", IAddressSearch11);
-                        Thread.Sleep(2000);
+                            IWebElement temp = driver.FindElement(By.XPath("//*[@id='graphicsLayer3_layer']"));
+                            temp.Click();                         
+                            //IJavaScriptExecutor js23 = driver as IJavaScriptExecutor;
+                            //js23.ExecuteScript("arguments[0].click();", temp);
+                            //Thread.Sleep(3000);
+                        }
+                        catch { }
                         //driver.FindElement(By.Id("graphicsLayer3_layer")).Click();
                         gc.CreatePdf_WOP(orderNumber, "Address Search After", driver, "SC", "Horry");
                         //Multiparcel
@@ -82,6 +94,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (Convert.ToInt32(strmulti) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Paulding_Maximum"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                             if (Convert.ToInt32(strmulti) == 1)
@@ -111,8 +124,8 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults")).Text;
-                            if (nodata.Contains("No results match your search criteria."))
+                            string nodata = driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div[2]/div")).Text;
+                            if (nodata.Contains("No Results Found"))
                             {
                                 HttpContext.Current.Session["Nodata_HorrySC"] = "Yes";
                                 driver.Quit();
@@ -127,13 +140,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Before Search", driver, "SC", "Horry");
                         driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div/div[2]")).Click();
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div[2]/ul/li[2]")).Click();
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div[2]/ul/li[2]")).Click();
+                        }
+                        catch { }
                         gc.CreatePdf_WOP(orderNumber, "Parcel Search After", driver, "SC", "Horry");
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults")).Text;
-                            if (nodata.Contains("No results match your search criteria."))
+                            string nodata = driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div[2]/div")).Text;
+                            if (nodata.Contains("No Results Found"))
                             {
                                 HttpContext.Current.Session["Nodata_HorrySC"] = "Yes";
                                 driver.Quit();
@@ -156,6 +173,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (Convert.ToInt32(strmulti) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Paulding_Maximum"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                             if (Convert.ToInt32(strmulti) == 1)
@@ -185,8 +203,8 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults")).Text;
-                            if (nodata.Contains("No results match your search criteria."))
+                            string nodata = driver.FindElement(By.XPath("//*[@id='appContainer']/div/div/div[2]/div")).Text;
+                            if (nodata.Contains("No Results Found"))
                             {
                                 HttpContext.Current.Session["Nodata_HorrySC"] = "Yes";
                                 driver.Quit();

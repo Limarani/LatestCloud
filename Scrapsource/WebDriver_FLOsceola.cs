@@ -58,13 +58,19 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "FL", "Osceola");
-                        parcelNumber = GlobalClass.global_parcelNo;
+
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
                         }
-
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLOsceola"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -76,16 +82,21 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("btnSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(10000);
                         gc.CreatePdf_WOP(orderNumber, "Address Search Results", driver, "FL", "Osceola");
-                        string resulttext = driver.FindElement(By.XPath("//*[@id='search-results']/div[1]/ul/li")).Text.Trim().Replace("Total Records: ", "");
-                        int resultcount = Int32.Parse(resulttext);
-
-                        if (resultcount > 1)
+                        try
                         {
-                            multiparcel(orderNumber);
-                            driver.Quit();
-                            HttpContext.Current.Session["multiparcel_FLOsceola"] = "Yes";
-                            return "MultiParcel";
+                            string resulttext = driver.FindElement(By.XPath("//*[@id='search-results']/div[1]/ul/li")).Text.Trim().Replace("Total Records: ", "");
+                            int resultcount = Int32.Parse(resulttext);
+
+                            if (resultcount > 1)
+                            {
+                                multiparcel(orderNumber);
+                                driver.Quit();
+                                HttpContext.Current.Session["multiparcel_FLOsceola"] = "Yes";
+                                return "MultiParcel";
+                            }
+
                         }
+                        catch { }
 
                     }
                     if (searchType == "parcel")
@@ -101,16 +112,20 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("btnSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Results", driver, "FL", "Osceola");
-                        string resulttext = driver.FindElement(By.XPath("//*[@id='search-results']/div[1]/ul/li")).Text.Trim().Replace("Total Records: ", "");
-                        int resultcount = Int32.Parse(resulttext);
-
-                        if (resultcount > 1)
+                        try
                         {
-                            multiparcel(orderNumber);
-                            driver.Quit();
-                            HttpContext.Current.Session["multiparcel_FLOsceola"] = "Yes";
-                            return "MultiParcel";
+                            string resulttext = driver.FindElement(By.XPath("//*[@id='search-results']/div[1]/ul/li")).Text.Trim().Replace("Total Records: ", "");
+                            int resultcount = Int32.Parse(resulttext);
+
+                            if (resultcount > 1)
+                            {
+                                multiparcel(orderNumber);
+                                driver.Quit();
+                                HttpContext.Current.Session["multiparcel_FLOsceola"] = "Yes";
+                                return "MultiParcel";
+                            }
                         }
+                        catch { }
 
                     }
 
@@ -122,17 +137,34 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("btnSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf_WOP(orderNumber, "InputPassed Ownername Search", driver, "FL", "Osceola");
-                        string resulttext = driver.FindElement(By.XPath("//*[@id='search-results']/div[1]/ul/li")).Text.Trim().Replace("Total Records: ", "");
-                        int resultcount = Int32.Parse(resulttext);
-
-                        if (resultcount > 1)
+                        try
                         {
-                            multiparcel(orderNumber);
+
+                            string resulttext = driver.FindElement(By.XPath("//*[@id='search-results']/div[1]/ul/li")).Text.Trim().Replace("Total Records: ", "");
+                            int resultcount = Int32.Parse(resulttext);
+
+                            if (resultcount > 1)
+                            {
+                                multiparcel(orderNumber);
+                                driver.Quit();
+                                HttpContext.Current.Session["multiparcel_FLOsceola"] = "Yes";
+                                return "MultiParcel";
+                            }
+                        }
+                        catch { }
+                    }
+
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("search-results"));
+                        if (Inodata.Text.Contains("search did not return any results"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLOsceola"] = "Yes";
                             driver.Quit();
-                            HttpContext.Current.Session["multiparcel_FLOsceola"] = "Yes";
-                            return "MultiParcel";
+                            return "No Data Found";
                         }
                     }
+                    catch { }
                     //*[@id="search-result-table"]/tbody/tr/td[1]
                     driver.FindElement(By.XPath("//*[@id='search-result-table']/tbody/tr/td[1]")).Click();
                     Thread.Sleep(8000);
@@ -1467,11 +1499,11 @@ namespace ScrapMaricopa.Scrapsource
             }
         }
 
-        public void BillDownload(string orderNumber, string parcelNumber,string BillTax, string taxparcel, string strbillyear)
+        public void BillDownload(string orderNumber, string parcelNumber, string BillTax, string taxparcel, string strbillyear)
         {
-            string fileName="";
+            string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);

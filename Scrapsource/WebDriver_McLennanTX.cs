@@ -41,8 +41,7 @@ namespace ScrapMaricopa.Scrapsource
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             using (driver = new PhantomJSDriver())
-            {
-                //    driver = new ChromeDriver();
+            { 
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
@@ -57,10 +56,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + sname + " " + stype + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TX", "McLennan");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_McLennanTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -84,7 +89,7 @@ namespace ScrapMaricopa.Scrapsource
                         //var Select1 = driver.FindElement(By.Id("propertySearchOptions_searchType"));
                         //var selectElement11 = new SelectElement(Select1);
                         //selectElement11.SelectByText("Account Number");
-                        driver.FindElement(By.Id("propertySearchOptions_propertyid")).SendKeys(parcelNumber);
+                        driver.FindElement(By.Id("propertySearchOptions_propertyid")).SendKeys(parcelNumber.Replace("-", ""));
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "TX", "McLennan");
                         driver.FindElement(By.Id("propertySearchOptions_searchAdv")).Click();
                         Thread.Sleep(2000);
@@ -149,22 +154,37 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     else
                     {
-                        string type = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[4]")).Text.Replace("\r\n", " ");
-                        if (type == "Real")
+                        try
                         {
-                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
-                            Thread.Sleep(2000);
-                        }
-                        else
-                        {
-                            HttpContext.Current.Session["alert_msg"] = "Yes";
+                            string type = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[4]")).Text.Replace("\r\n", " ");
+                            if (type == "Real")
+                            {
+                                driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                                Thread.Sleep(2000);
+                            }
+                            else
+                            {
+                                HttpContext.Current.Session["alert_msg"] = "Yes";
 
-                            driver.Quit();
-                            return "MultiParcel";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
                         }
+                        catch { }
 
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
+                        if (INodata.Text.Contains("None found"))
+                        {
+                            HttpContext.Current.Session["Nodata_McLennanTX"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
                     string PropertyID = "", GeographicID = "", Name = "", MailingAddress = "", OwnerID = "", LegalDescription = "", Neighborhood = "", Type = "", Address = "", NeighborhoodCD = "", Exemptions = "", MapID = "", YearBuilt = "", Acres = "";
 
@@ -184,7 +204,15 @@ namespace ScrapMaricopa.Scrapsource
                     Exemptions = GlobalClass.After(fulltext, "Exemptions:").Trim();
                     MapID = gc.Between(fulltext, "Map ID:", "Neighborhood CD:").Trim();
                     property_use_code = gc.Between(fulltext, "Property Use Code:", "Property Use Description:").Trim();
-                    property_use_dis = gc.Between(fulltext, "Property Use Description:", "Protest").Trim();
+                    if (fulltext.Contains("Protest"))
+                    {
+                        property_use_dis = gc.Between(fulltext, "Property Use Description:", "Protest").Trim();
+                    }
+                    else
+                    {
+                        property_use_dis = gc.Between(fulltext, "Property Use Description:", "Location").Trim();
+                    }
+
                     ownership = gc.Between(fulltext, "% Ownership:", "Exemptions:").Trim();
                     driver.FindElement(By.XPath("//*[@id='improvementBuilding']")).Click();
                     Thread.Sleep(2000);

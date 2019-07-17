@@ -59,10 +59,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = Address;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "GA", "Forsyth");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ForsythGA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -195,7 +201,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch
                         { }
                     }
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults"));
+                        if(Inodata.Text.Contains("No results match your search criteria"))
+                        {
+                            HttpContext.Current.Session["Nodata_ForsythGA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property Details
                     IWebElement PropertyTB = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl00_mSection']/div/table[1]/tbody"));
                     IList<IWebElement> PropertyTR = PropertyTB.FindElements(By.TagName("tr"));

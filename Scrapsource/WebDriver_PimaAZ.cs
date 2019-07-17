@@ -23,6 +23,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_PimaAZ
     {
+        Amrock amck = new Amrock();
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
@@ -51,10 +52,16 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["AZPima_NoRecord"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
-                    if(direction!="")
+                    if (direction != "")
                     {
                         if (direction.ToUpper() == "S")
                         {
@@ -92,13 +99,13 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                         driver.FindElement(By.Id("address1")).SendKeys(streetNo);
                         driver.FindElement(By.Id("address2")).SendKeys(streetNo);
-                        if(direction!="")
+                        if (direction != "")
                         {
                             IWebElement PropertyInformation = driver.FindElement(By.Id("selectedDirection"));
                             SelectElement PropertyInformationSelect = new SelectElement(PropertyInformation);
                             PropertyInformationSelect.SelectByIndex(Convert.ToInt16(direction.Trim()));
                         }
-                        if(streetType.ToUpper()=="AVE")
+                        if (streetType.ToUpper() == "AVE")
                         {
                             streetType = "AV";
                         }
@@ -118,10 +125,10 @@ namespace ScrapMaricopa.Scrapsource
                         IWebElement addressliclick = driver.FindElement(By.XPath("//*[@id='searchPills']/div/div[3]/form/div/div/div[3]"));
                         IList<IWebElement> addressclickli = addressliclick.FindElements(By.TagName("li"));
                         IList<IWebElement> addressclicktd;
-                        foreach(IWebElement addressclick in addressclickli)
+                        foreach (IWebElement addressclick in addressclickli)
                         {
                             addressclicktd = addressclick.FindElements(By.TagName("a"));
-                            if(addressclicktd.Count!=0)
+                            if (addressclicktd.Count != 0)
                             {
                                 addressclicktd[0].Click();
                                 Thread.Sleep(2000);
@@ -132,7 +139,7 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(8000);
                         try
                         {
-                         IWebElement clickfirst=driver.FindElement(By.XPath("//*[@id='searchPills']/div/div[3]/form/div/div/div[3]/button"));
+                            IWebElement clickfirst = driver.FindElement(By.XPath("//*[@id='searchPills']/div/div[3]/form/div/div/div[3]/button"));
                             IJavaScriptExecutor js12 = driver as IJavaScriptExecutor;
                             js12.ExecuteScript("arguments[0].click();", clickfirst);
                             //Thread.Sleep(9000);
@@ -189,6 +196,17 @@ namespace ScrapMaricopa.Scrapsource
                         //    }
                         //}
                         //catch { }
+                        try
+                        {
+                            IWebElement INorecord = driver.FindElement(By.XPath("//*[@id='searchPills']/div/div[3]/form/div/div/div[3]/label[2]"));
+                            if (INorecord.Text.Contains("No information found"))
+                            {
+                                HttpContext.Current.Session["AZPima_NoRecord"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
 
                     }
                     if (searchType == "parcel")
@@ -267,11 +285,19 @@ namespace ScrapMaricopa.Scrapsource
                         if (INorecord.Text.Contains("No records found") || INorecord.Text.Contains("No information found"))
                         {
                             HttpContext.Current.Session["AZPima_NoRecord"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
+                    }
+                    catch { }
+                    try
+                    {
                         IWebElement INoinform = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div[1]/div/div[1]/div/div[2]/label[2]"));
                         if (INoinform.Text.Contains("No records found") || INoinform.Text.Contains("No information found"))
                         {
                             HttpContext.Current.Session["AZPima_NoRecord"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                     }
                     catch { }
@@ -283,7 +309,7 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderNumber, parcelNumber, "Parcel search Result", driver, "AZ", "Pima");
                     if (IParcelNo.Text.Contains("Expand All"))
                     {
-                                                   // /html/body/div[2]/div[1]/p/span[1]
+                        // /html/body/div[2]/div[1]/p/span[1]
                         driver.FindElement(By.XPath("/html/body/div[2]/div[1]/p/span[1]")).Click();
                         Thread.Sleep(3000);
                     }
@@ -292,9 +318,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Property Details", driver, "AZ", "Pima");
                     }
                     catch { }
-                    IWebElement Iyear = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div[1]/div/div[1]/div[1]/div[1]/table/tbody/tr[2]/td[2]/div/select"));
-                    SelectElement SYear = new SelectElement(Iyear);
-                    TaxYear = SYear.SelectedOption.Text;
+                    TaxYear = DateTime.Now.Year.ToString();
+                    var year = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div[1]/div/div[1]/div[1]/div[1]/table/tbody/tr[2]/td[2]/div/select"));
+                    var selectElement1 = new SelectElement(year);
+                    selectElement1.SelectByText(TaxYear);
+
+                    //IWebElement Iyear = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div[1]/div/div[1]/div[1]/div[1]/table/tbody/tr[2]/td[2]/div/select"));
+                    //SelectElement SYear = new SelectElement(Iyear);
+                    //TaxYear = SYear.SelectedOption.Text;
                     TaxArea = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div[1]/div/div[1]/div[1]/div[2]/table/tbody/tr[2]/td[2]/button")).Text;
                     PropertyAddress = GlobalClass.After(driver.FindElement(By.Id("PrclAddr")).Text, "Location").Replace("\r\n", "").Trim();
                     string City = "";
@@ -387,7 +418,27 @@ namespace ScrapMaricopa.Scrapsource
                             driver.FindElement(By.XPath("//*[@id='content']/center/form/table[1]/tbody/tr[4]/td/input")).SendKeys(Keys.Enter);
                             Thread.Sleep(2000);
                             gc.CreatePdf(orderNumber, parcelNumber, "Tax Search Result Details" + i, driver, "AZ", "Pima");
-                            string installTitle = "", firstInstall = "", secondInstall = "", totalInstall = "";
+
+
+                            IWebElement ITaxAssess = driver.FindElement(By.XPath("//*[@id='content']/center[1]/table/tbody/tr[1]/td/table"));
+                            string StateCode = gc.Between(ITaxAssess.Text, "STATE CODE:", "TAX YEAR:");
+                            amck.TaxId = StateCode;
+                            string StrTaxYear = gc.Between(ITaxAssess.Text, "TAX YEAR:", "TOTAL TAX:");
+                            amck.TaxYear = StrTaxYear;
+                            string StrTotalTax = "", basetax = "";
+                            StrTotalTax = gc.Between(ITaxAssess.Text, "TOTAL TAX:", "AS OF DATE:");
+
+                            string StrAsOfDate = gc.Between(ITaxAssess.Text, "AS OF DATE:", "TRC NO:");
+                            IWebElement ITaxOwner = driver.FindElement(By.XPath("//*[@id='content']/center[1]/table/tbody/tr[2]/td[3]/table"));
+                            string StrTaxOwner = gc.Between(ITaxOwner.Text.Replace("\r\n", " "), "TAXPAYER NAME/ADDRESS", "PROPERTY ADDRESS");
+                            string StrTaxAddress = gc.Between(ITaxOwner.Text, "PROPERTY ADDRESS", "LEGAL DESCRIPTION");
+                            string StrTaxOwnerName = StrTaxOwner;
+                            string StrTaxLegal = gc.Between(ITaxOwner.Text, "LEGAL DESCRIPTION", "PAID BY");
+                            string StrTaxPaid = gc.Between(ITaxOwner.Text, "PAID BY", "ON BEHALF OF");
+                            string StrTaxBehalf = GlobalClass.After(ITaxOwner.Text, "ON BEHALF OF").Replace("\r\n", "");
+
+                            string installTitle = "", firstInstalldel = "", secondInstalldel = "", firstInstallRem = "", secondInstallRem = "", firstInstall = "", secondInstall = "", totalInstall = "", firstInstalltaxpaid = "", secondInstalltaxpaid = "";
+                            int installcount = 0;
                             IWebElement ITaxInstall = driver.FindElement(By.XPath("//*[@id='content']/center[1]/table/tbody/tr[2]/td[1]/table[1]"));
                             IList<IWebElement> ITaxInstallRow = ITaxInstall.FindElements(By.TagName("tr"));
                             IList<IWebElement> ITaxInstallTD;
@@ -402,6 +453,79 @@ namespace ScrapMaricopa.Scrapsource
                                     if (ITaxInstallTH.Count == 1 && !install.Text.Contains("TOTAL DUE:"))
                                     {
                                         string Currentstatus = yearcount + "~" + ITaxInstallTH[0].Text + "~" + ITaxInstallTD[0].Text + "~" + ITaxInstallTD[1].Text + "~" + ITaxInstallTD[2].Text;
+                                        if (ITaxInstallTH[0].Text == "TAX DUE:")
+                                        {
+                                            firstInstall = ITaxInstallTD[0].Text;
+                                            secondInstall = ITaxInstallTD[1].Text;
+                                            totalInstall = ITaxInstallTD[2].Text;
+                                            if (firstInstall != "")
+                                            {
+                                                amck.Instamount1 = firstInstall;
+                                            }
+                                            if (secondInstall != "")
+                                            {
+                                                amck.Instamount2 = secondInstall;
+                                            }
+                                        }
+                                        if (ITaxInstallTH[0].Text == "TAX PAID:")
+                                        {
+                                            firstInstalltaxpaid = ITaxInstallTD[0].Text;
+                                            secondInstalltaxpaid = ITaxInstallTD[1].Text;
+
+                                            if (firstInstalltaxpaid != "")
+                                            {
+                                                amck.Instamountpaid1 = firstInstalltaxpaid.Replace("(", "").Replace(")", ""); ;
+                                            }
+                                            if (secondInstalltaxpaid != "")
+                                            {
+                                                amck.Instamountpaid2 = secondInstalltaxpaid.Replace("(", "").Replace(")", ""); ;
+                                            }
+                                        }
+                                        if (ITaxInstallTH[0].Text == "REMAINING AMOUNT:")
+                                        {
+                                            firstInstallRem = ITaxInstallTD[0].Text;
+                                            secondInstallRem = ITaxInstallTD[1].Text;
+
+                                            if (firstInstallRem == "$0.00")
+                                            {
+                                                amck.InstPaidDue1 = "Paid";
+                                            }
+                                            else
+                                            {
+                                                amck.InstPaidDue1 = "Due";
+                                            }
+                                            if (secondInstallRem == "$0.00")
+                                            {
+                                                amck.InstPaidDue2 = "Paid";
+                                            }
+                                            else
+                                            {
+                                                amck.InstPaidDue2 = "Due";
+                                            }
+                                        }
+                                        if (ITaxInstallTH[0].Text == "INTEREST DUE:")
+                                        {
+                                            firstInstalldel = ITaxInstallTD[0].Text;
+                                            secondInstalldel = ITaxInstallTD[1].Text;
+
+                                            if (firstInstalldel != "")
+                                            {
+                                                amck.IsDelinquent = "Yes";
+                                            }
+                                            else
+                                            {
+                                                amck.IsDelinquent = "No";
+                                            }
+                                            if (secondInstalldel != "")
+                                            {
+                                                amck.IsDelinquent = "Yes";
+                                            }
+                                            else
+                                            {
+                                                amck.IsDelinquent = "No";
+                                            }
+
+                                        }
                                         gc.insert_date(orderNumber, parcelNumber, 1370, Currentstatus, 1, DateTime.Now);
                                     }
                                     if (install.Text.Contains("TOTAL DUE:"))
@@ -411,14 +535,18 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                 }
                             }
-                            //if (i==0)
-                            //{
-                            //    db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + "Year~Installment~" + installTitle + "' where Id = '" + 1370 + "'");
-                            //}
-                            //gc.insert_date(orderNumber, parcelNumber, 1370, yearcount + "~" + "First Installment~" + firstInstall, 1, DateTime.Now);
-                            //gc.insert_date(orderNumber, parcelNumber, 1370, yearcount + "~" + "SecondInstallment~" + secondInstall, 1, DateTime.Now);
-                            //gc.insert_date(orderNumber, parcelNumber, 1370, yearcount + "~" + "Totals~" + totalInstall, 1, DateTime.Now);
+                            if (i == 0)
+                            {
+                                    if(amck.IsDelinquent != "Yes")
+                            {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                           }
+                            else
+                            {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
 
+                               }
+                    }
                             string HistoryYear = "", HistoryAmount = "";
                             IWebElement ITaxHistory = driver.FindElement(By.XPath("//*[@id='content']/center[1]/table/tbody/tr[2]/td[1]/table[2]/tbody"));
                             IList<IWebElement> ITaxHistoryRow = ITaxHistory.FindElements(By.TagName("tr"));
@@ -438,22 +566,9 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                             }
 
-                            IWebElement ITaxAssess = driver.FindElement(By.XPath("//*[@id='content']/center[1]/table/tbody/tr[1]/td/table"));
-                            string StateCode = gc.Between(ITaxAssess.Text, "STATE CODE:", "TAX YEAR:");
-                            string StrTaxYear = gc.Between(ITaxAssess.Text, "TAX YEAR:", "TOTAL TAX:");
-                            string StrTotalTax = gc.Between(ITaxAssess.Text, "TOTAL TAX:", "AS OF DATE:");
-                            string StrAsOfDate = gc.Between(ITaxAssess.Text, "AS OF DATE:", "TRC NO:");
-                            IWebElement ITaxOwner = driver.FindElement(By.XPath("//*[@id='content']/center[1]/table/tbody/tr[2]/td[3]/table"));
-                            string StrTaxOwner = gc.Between(ITaxOwner.Text.Replace("\r\n", " "), "TAXPAYER NAME/ADDRESS", "PROPERTY ADDRESS");
-                            string StrTaxAddress = gc.Between(ITaxOwner.Text, "PROPERTY ADDRESS", "LEGAL DESCRIPTION");
-                            string StrTaxOwnerName = StrTaxOwner;
-                            string StrTaxLegal = gc.Between(ITaxOwner.Text, "LEGAL DESCRIPTION", "PAID BY");
-                            string StrTaxPaid = gc.Between(ITaxOwner.Text, "PAID BY", "ON BEHALF OF");
-                            string StrTaxBehalf = GlobalClass.After(ITaxOwner.Text, "ON BEHALF OF").Replace("\r\n", "");
-
-
-
-                            driver.Navigate().GoToUrl("http://www.to.pima.gov/tax-information/tax-statement");
+       
+                          
+                                driver.Navigate().GoToUrl("http://www.to.pima.gov/tax-information/tax-statement");
                             IWebElement ITaxStateframe = driver.FindElement(By.Id("blockrandom"));
                             driver.SwitchTo().Frame(ITaxStateframe);
                             driver.FindElement(By.XPath("//*[@id='content']/center/form/table/tbody/tr[1]/td/input")).SendKeys(parcelNumber.Replace("-", "").Trim());

@@ -72,7 +72,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, address, "MO", "Jackson");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_JacksonMO"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -136,9 +143,9 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Wayne"] = "Zero";
+                                HttpContext.Current.Session["Nodata_JacksonMO"] = "Yes";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
 
@@ -208,9 +215,9 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Wayne"] = "Zero";
+                                HttpContext.Current.Session["Nodata_JacksonMO"] = "Yes";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }
@@ -225,9 +232,31 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("mSearchControl_mSubmit")).SendKeys(Keys.Enter);
                         Thread.Sleep(7000);
                         gc.CreatePdf(orderNumber, parcelNumber, "parcel search Result", driver, "MO", "Jackson");
-
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.Id("mSearchControl_mSearchFieldsValidator")).Text;
+                            if (nodata.Contains("does not exist"))
+                            {
+                                HttpContext.Current.Session["Nodata_JacksonMO"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
-
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.Id("Table4")).Text;
+                        if (nodata.Contains("0 records returned") && nodata.Contains("No Values Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_JacksonMO"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     string bulkdata = driver.FindElement(By.XPath("//*[@id='mTabGroup_Summary_mGeneralInformation_mGrid_RealDataGrid']/table/tbody")).Text;
                     string Property_Address = "", owner_name = "", PropertyDesc = "", PropertyCategory = "", Status = "", TaxCodeArea = "", PropertyClass = "", TaxPayer = "", MortgageCompany = "";

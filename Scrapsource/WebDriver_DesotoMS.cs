@@ -58,6 +58,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["DesotoMS_NoRecord"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -74,10 +80,12 @@ namespace ScrapMaricopa.Scrapsource
                         //gc.CreatePdf_WOP(orderNumber, "Address search1", driver, "MS", "DeSoto");
                         try
                         {
-                            IWebElement INorecord = driver.FindElement(By.Id("ext-gen9"));
+                            IWebElement INorecord = driver.FindElement(By.Id("ext-gen18"));
                             if (INorecord.Text.Contains("no records"))
                             {
-                                HttpContext.Current.Session["multiparcel_DesotoMS_NoRecord"] = "Yes";
+                                HttpContext.Current.Session["DesotoMS_NoRecord"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
                         catch { }
@@ -186,10 +194,12 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                         try
                         {
-                            IWebElement INorecord = driver.FindElement(By.Id("ext-gen9"));
+                            IWebElement INorecord = driver.FindElement(By.Id("ext-gen18"));
                             if (INorecord.Text.Contains("no records"))
                             {
-                                HttpContext.Current.Session["multiparcel_DesotoMS_NoRecord"] = "Yes";
+                                HttpContext.Current.Session["DesotoMS_NoRecord"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
                         catch { }
@@ -203,10 +213,12 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Owner search Result1", driver, "MS", "DeSoto");
                         try
                         {
-                            IWebElement INorecord = driver.FindElement(By.Id("ext-gen9"));
+                            IWebElement INorecord = driver.FindElement(By.Id("ext-gen18"));
                             if (INorecord.Text.Contains("no records"))
                             {
-                                HttpContext.Current.Session["multiparcel_DesotoMS_NoRecord"] = "Yes";
+                                HttpContext.Current.Session["DesotoMS_NoRecord"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
                         catch { }

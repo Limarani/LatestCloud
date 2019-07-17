@@ -60,12 +60,19 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", "",address, "FL", "Polk");
-                        if (GlobalClass.TitleFlex_Search == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
-                            return "MultiParcel";                            
+                            driver.Quit();
+                            return "MultiParcel";
                         }
-                            parcelNumber = GlobalClass.titleparcel;
-                            searchType = "parcel";
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLPolk"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
+                        searchType = "parcel";
                     }
                     if (searchType == "address")
                     {
@@ -166,7 +173,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
 
                     }
-
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("CamaDisplayArea"));
+                        if(INodata.Text.Contains("0 Matches found for search results"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLPolk"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     try
                     {
                         IWebElement ImultiCount = driver.FindElement(By.XPath("//*[@id='CamaDisplayArea']/span[1]"));

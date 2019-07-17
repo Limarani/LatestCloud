@@ -55,9 +55,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = streetno + " " + streettype + " " + streetname + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "AR", "Saline");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SalineAR"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -101,9 +108,13 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("Search")).SendKeys(Keys.Enter);
                         gc.CreatePdf(orderNumber, parcelNumber, "SearchParcel Before", driver, "AR", "Saline");
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("//*[@id='parcel_report']/table/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
-                        gc.CreatePdf(orderNumber, parcelNumber, "SearchParcel After", driver, "AR", "Saline");
-                        Thread.Sleep(2000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='parcel_report']/table/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
+                            gc.CreatePdf(orderNumber, parcelNumber, "SearchParcel After", driver, "AR", "Saline");
+                            Thread.Sleep(2000);
+                        }
+                        catch { }
                     }
                     if (searchType == "ownername")
                     {
@@ -129,6 +140,19 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("/html/body/div[2]/div[2]"));
+                        if(INodata.Text.Contains("Nothing matching your search criteria was found"))
+                        {
+                            HttpContext.Current.Session["Nodata_SalineAR"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     // Property_Details
                     string CountyName, OwnerDetails, MailingAddress, PropertyAddress, TotalAcres, SecTwp_Rng, Subdivision, LegalDescription, SchoolDistrict, HomesteadParcel, TaxStatus, Over;
                     // driver.FindElement(By.XPath("//*[@id='parcel_report']/table/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);

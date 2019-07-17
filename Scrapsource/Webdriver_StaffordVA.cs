@@ -62,7 +62,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, titleaddress, "VA", "Stafford");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_StaffordVA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -114,6 +121,19 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
 
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("QuickSearch"));
+                        if (INodata.Text.Contains("no records were found"))
+                        {
+                            HttpContext.Current.Session["Nodata_StaffordVA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string alternate_id = "", property_address = "";
                     string bulkaccesstext = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]")).Text.Trim().Replace("\r\n", "");
 
@@ -146,7 +166,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         var chromeOptions = new ChromeOptions();
 
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);

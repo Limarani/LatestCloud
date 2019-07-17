@@ -72,7 +72,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "FL", "Walton");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_WaltonFL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -142,12 +149,19 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
-                        if (TRmultiaddress.Count <= 4)
+                        if (TRmultiaddress.Count <= 4 && !multiaddress.Text.Contains("No Records Found"))
                         {
                             //TDmultiaddress[0].Click();
                             driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody/tr/td[2]/font")).Click();
                             Thread.Sleep(1000);
                         }
+                        if (TRmultiaddress.Count <= 4 && multiaddress.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_WaltonFL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+
                     }
 
                     if (searchType == "parcel")
@@ -171,6 +185,17 @@ namespace ScrapMaricopa.Scrapsource
                             IWebElement Iclick = driver.FindElement(By.XPath("/html/body/table/tbody/tr[4]/td[1]/a"));
                             Iclick.Click();
                             Thread.Sleep(2000);
+                        }
+                        catch { }
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.XPath("/html/body/table/tbody"));
+                            if (Inodata.Text.Contains("No Records Found"))
+                            {
+                                HttpContext.Current.Session["Nodata_WaltonFL"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
                         }
                         catch { }
                     }
@@ -240,6 +265,12 @@ namespace ScrapMaricopa.Scrapsource
                             //TDmultiaddress[0].Click();
                             driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody/tr/td[2]/font")).Click();
                             Thread.Sleep(1000);
+                        }
+                        if (TRmultiaddress.Count <= 4 && multiaddress.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_WaltonFL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                     }
 
@@ -1556,7 +1587,7 @@ namespace ScrapMaricopa.Scrapsource
         {
             string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -1623,7 +1654,7 @@ namespace ScrapMaricopa.Scrapsource
         }
         public string latestfilename()
         {
-            var downloadDirectory1 = "F:\\AutoPdf\\";
+            var downloadDirectory1 = ConfigurationManager.AppSettings["AutoPdf"];
             var files = new DirectoryInfo(downloadDirectory1).GetFiles("*.*");
             string latestfile = "";
             DateTime lastupdated = DateTime.MinValue;

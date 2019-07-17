@@ -74,10 +74,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
 
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", Address, "FL", "Collier");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLCollier"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -254,8 +260,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Result", driver, "FL", "Collier");
 
                     }
-
-
+                    try
+                    {
+                        IAlert alert = driver.SwitchTo().Alert();
+                        if(alert.Text.Contains("No Parcels Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLCollier"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     string SiteAdr = "", MapNo = "", Strapno = "", Section = "", Township = "", Range = "", Acres = "", MillageArea = "", Condo = "", UseCode = "", School = "", Other = "", Total = "", YearBuilt = "";
 
                     gc.CreatePdf(orderNumber, parcelNumber, "Property Deatil", driver, "FL", "Collier");

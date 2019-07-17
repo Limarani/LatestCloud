@@ -38,6 +38,8 @@ namespace ScrapMaricopa.Scrapsource
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            //driver = new PhantomJSDriver();
+            //driver = new ChromeDriver();
             using (driver = new PhantomJSDriver())
             {
                 try
@@ -56,9 +58,16 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                         gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, address.Trim(), "CA", "Ventura");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_VenturaCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -104,8 +113,11 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
                         catch { }
-
-                        driver.FindElement(By.XPath("//*[@id='pagebody']/div[2]/div[3]/div/table/tbody/tr[1]/td[1]/a")).SendKeys(Keys.Enter);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='pagebody']/div[2]/div[3]/div/table/tbody/tr[1]/td[1]/a")).SendKeys(Keys.Enter);
+                        }
+                        catch { }
                     }
 
                     if (searchType == "parcel")
@@ -115,6 +127,20 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search", driver, "CA", "Ventura");
                         driver.FindElement(By.XPath("//*[@id='tcSearch']/table/tbody/tr[8]/td[3]/input[1]")).SendKeys(Keys.Enter);
                     }
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.XPath("//*[@id='pagebody']/div[2]/div[3]")).Text;
+                        if (nodata.Contains("Property not found"))
+                        {
+                            HttpContext.Current.Session["Nodata_VenturaCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
+
                     string strAddress = "", AssessorProeprty = "", previousParcelNumber = "", trackNumber = "", mapNumber = "", acreage = "", yearBuilt = "";
                     int Assessor = 0;
                     //Property Details
@@ -242,6 +268,12 @@ namespace ScrapMaricopa.Scrapsource
                             catch { }
                             try
                             {
+                                TaxFPaidDate = ITaxTD[3].FindElement(By.Id("ctl00_MainContent_grdvListing_ctl02_lbl1stDuePaid")).Text.Replace("\r\n", " ");
+                                TaxSPaidDate = ITaxTD[3].FindElement(By.Id("ctl00_MainContent_grdvListing_ctl02_lbl2ndDuePaid")).Text.Replace("\r\n", " ");
+                            }
+                            catch { }
+                            try
+                            {
                                 strDefault = ITaxTD[2].Text;
                                 if (strDefault.Contains("For more information"))
                                 {
@@ -252,8 +284,13 @@ namespace ScrapMaricopa.Scrapsource
                             catch { }
                             if (TaxType.Contains("Secured") && !TaxType.Contains("Supplemental"))
                             {
-                                TaxFirst = gc.Between(ITaxTD[2].Text, "1st Installment:", "2nd Installment:").Replace("\r\n", " ");
-                                TaxSecond = GlobalClass.After(ITaxTD[2].Text, "2nd Installment:").Replace("\r\n", " ");
+
+                                try
+                                {
+                                    TaxFirst = gc.Between(ITaxTD[2].Text, "1st Installment:", "2nd Installment:").Replace("\r\n", " ");
+                                    TaxSecond = GlobalClass.After(ITaxTD[2].Text, "2nd Installment:").Replace("\r\n", " ");
+                                }
+                                catch { }
                                 string strTaxLocation = GlobalClass.Before(ITaxTD[1].Text, "\r\nSecured property");
                                 string[] secureSplit = strTaxLocation.Split('\r');
                                 if (secureSplit.Count() == 2)
@@ -413,8 +450,12 @@ namespace ScrapMaricopa.Scrapsource
                                         taxable.Click();
                                         //driver.SwitchTo().Window(driver.WindowHandles.Last());
                                         gc.CreatePdf(orderNumber, parcelNumber, "Tax Delinquent Details", driver, "CA", "Ventura");
-                                        IWebElement IEligible = driver.FindElement(By.Id("ctl00_MainContent_lblAuctionDate"));
-                                        strEligible = IEligible.Text;
+                                        try
+                                        {
+                                            IWebElement IEligible = driver.FindElement(By.Id("ctl00_MainContent_lblAuctionDate"));
+                                            strEligible = IEligible.Text;
+                                        }
+                                        catch { }
                                         IWebElement IdefaultTax = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/div[3]/table/tbody/tr[4]/td/table/tbody/tr/td/table"));
                                         IList<IWebElement> IdefaultTaxRow = IdefaultTax.FindElements(By.TagName("tr"));
                                         IList<IWebElement> IdefaultTaxTD;
@@ -432,66 +473,69 @@ namespace ScrapMaricopa.Scrapsource
                                         string Default = strDStatus + "~" + strDParcelNo + "~" + strDTaxType + "~" + strDTaxDue + "~" + strEligible;
                                         gc.insert_date(orderNumber, TaxParcel, 1051, Default, 1, DateTime.Now);
 
-
-                                        int i = 0;
-                                        foreach (string dTax in strDTax)
+                                        try
                                         {
-                                            IPaidCheck = driver.FindElement(By.Id("ctl00_MainContent_btnCollapse" + dTax + ""));
-                                            if (IPaidCheck.Text == "+")
+                                            int i = 0;
+                                            foreach (string dTax in strDTax)
                                             {
-                                                IPaidCheck.Click();
-                                            }
-                                            try
-                                            {
-                                                strDTaxDate = GlobalClass.After(driver.FindElement(By.Id("ctl00_MainContent_pnl" + dTax + "")).Text, "before ");
-                                            }
-                                            catch { }
-                                            try
-                                            {
-                                                IWebElement ITotal = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_pnlDue']/table[" + (i + 2) + "]"));
-                                                IList<IWebElement> ITotalRow = ITotal.FindElements(By.TagName("tr"));
-                                                IList<IWebElement> ITotalTD;
-                                                foreach (IWebElement total in ITotalRow)
+                                                IPaidCheck = driver.FindElement(By.Id("ctl00_MainContent_btnCollapse" + dTax + ""));
+                                                if (IPaidCheck.Text == "+")
                                                 {
-                                                    ITotalTD = total.FindElements(By.TagName("td"));
-                                                    if (ITotalTD.Count != 0 && total.Text.Contains("TOTAL:"))
+                                                    IPaidCheck.Click();
+                                                }
+                                                try
+                                                {
+                                                    strDTaxDate = GlobalClass.After(driver.FindElement(By.Id("ctl00_MainContent_pnl" + dTax + "")).Text, "before ");
+                                                }
+                                                catch { }
+                                                try
+                                                {
+                                                    IWebElement ITotal = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_pnlDue']/table[" + (i + 2) + "]"));
+                                                    IList<IWebElement> ITotalRow = ITotal.FindElements(By.TagName("tr"));
+                                                    IList<IWebElement> ITotalTD;
+                                                    foreach (IWebElement total in ITotalRow)
                                                     {
-                                                        strTTotal = ITotalTD[0].Text.Replace("TOTAL: ", "").Trim();
+                                                        ITotalTD = total.FindElements(By.TagName("td"));
+                                                        if (ITotalTD.Count != 0 && total.Text.Contains("TOTAL:"))
+                                                        {
+                                                            strTTotal = ITotalTD[0].Text.Replace("TOTAL: ", "").Trim();
+                                                        }
                                                     }
                                                 }
-                                            }
-                                            catch { }
-                                            IWebElement IPaid = driver.FindElement(By.Id("ctl00_MainContent_pnlCollapse" + dTax + ""));
-                                            IList<IWebElement> IPaidRow = IPaid.FindElements(By.TagName("tr"));
-                                            IList<IWebElement> IPaidTD;
-                                            foreach (IWebElement paid in IPaidRow)
-                                            {
-                                                IPaidTD = paid.FindElements(By.TagName("td"));
-                                                if (IPaidTD.Count != 0 && !paid.Text.Contains("Tax Type") && paid.Text.Trim() != "")
+                                                catch { }
+                                                IWebElement IPaid = driver.FindElement(By.Id("ctl00_MainContent_pnlCollapse" + dTax + ""));
+                                                IList<IWebElement> IPaidRow = IPaid.FindElements(By.TagName("tr"));
+                                                IList<IWebElement> IPaidTD;
+                                                foreach (IWebElement paid in IPaidRow)
                                                 {
-                                                    strRedemTaxType = IPaidTD[0].Text;
-                                                    strOriginal = IPaidTD[1].Text;
-                                                    strFeeCost = IPaidTD[2].Text;
-                                                    strPenalty = IPaidTD[3].Text;
-                                                    strTotal = IPaidTD[4].Text;
+                                                    IPaidTD = paid.FindElements(By.TagName("td"));
+                                                    if (IPaidTD.Count != 0 && !paid.Text.Contains("Tax Type") && paid.Text.Trim() != "")
+                                                    {
+                                                        strRedemTaxType = IPaidTD[0].Text;
+                                                        strOriginal = IPaidTD[1].Text;
+                                                        strFeeCost = IPaidTD[2].Text;
+                                                        strPenalty = IPaidTD[3].Text;
+                                                        strTotal = IPaidTD[4].Text;
 
-                                                    string Redemption = strDTaxDate + "~" + strRedemTaxType + "~" + strOriginal + "~" + strFeeCost + "~" + strPenalty + "~" + strTotal;
-                                                    gc.insert_date(orderNumber, TaxParcel, 1052, Redemption, 1, DateTime.Now);
+                                                        string Redemption = strDTaxDate + "~" + strRedemTaxType + "~" + strOriginal + "~" + strFeeCost + "~" + strPenalty + "~" + strTotal;
+                                                        gc.insert_date(orderNumber, TaxParcel, 1052, Redemption, 1, DateTime.Now);
 
+                                                    }
                                                 }
+
+                                                string RedemptionTotal = "" + "~" + "Total" + "~" + "" + "~" + "" + "~" + "" + "~" + strTTotal;
+                                                gc.insert_date(orderNumber, TaxParcel, 1052, RedemptionTotal, 1, DateTime.Now);
+
+                                                i++;
+                                                gc.CreatePdf(orderNumber, parcelNumber, "Tax Delinquent Due Details", driver, "CA", "Ventura");
                                             }
-
-                                            string RedemptionTotal = "" + "~" + "Total" + "~" + "" + "~" + "" + "~" + "" + "~" + strTTotal;
-                                            gc.insert_date(orderNumber, TaxParcel, 1052, RedemptionTotal, 1, DateTime.Now);
-
-                                            i++;
-                                            gc.CreatePdf(orderNumber, parcelNumber, "Tax Delinquent Due Details", driver, "CA", "Ventura");
+                                            for (int j = 0; j < i; j++)
+                                            {
+                                                driver.Navigate().Back();
+                                                Thread.Sleep(2000);
+                                            }
                                         }
-                                        for (int j = 0; j < i; j++)
-                                        {
-                                            driver.Navigate().Back();
-                                            Thread.Sleep(2000);
-                                        }
+                                        catch { }
                                     }
                                 }
                             }
@@ -500,7 +544,7 @@ namespace ScrapMaricopa.Scrapsource
                             TaxType = ""; TaxLocation = ""; TaxPayer = ""; TaxFirst = ""; TaxSecond = ""; TaxFPaidDate = ""; TaxSPaidDate = "";
                         }
                     }
-
+                    try { 
                     //Tax Payment History
                     string strPHYear = "";
                     IWebElement IPayment = driver.FindElement(By.XPath("//*[@id='rightcontentcolumn']/table/tbody/tr[3]/td/table/tbody/tr[2]/td/table"));
@@ -558,6 +602,8 @@ namespace ScrapMaricopa.Scrapsource
                             strPHYear = ITaxPayPastTR[0].Text.Replace("Tax Payments for Calendar Year ", "");
                         }
                     }
+                    }
+                    catch { }
                     //Bill
                     int billcount = 0;
                     try
@@ -617,8 +663,12 @@ namespace ScrapMaricopa.Scrapsource
                                             List<string> strDTax = new List<string>();
                                             strDTax.Add("May"); strDTax.Add("June"); strDTax.Add("July");
                                             string strDParcelNo = "", strDStatus = "", strDTaxDue = "", strDTaxType = "", strEligible = "", strRedemTaxType = "", strOriginal = "", strFeeCost = "", strPenalty = "", strTotal = "", strDTaxDate = "", strTTotal = "";
-                                            IWebElement IEligible = driver.FindElement(By.Id("ctl00_MainContent_lblAuctionDate"));
-                                            strEligible = IEligible.Text;
+                                            try
+                                            {
+                                                IWebElement IEligible = driver.FindElement(By.Id("ctl00_MainContent_lblAuctionDate"));
+                                                strEligible = IEligible.Text;
+                                            }
+                                            catch { }
                                             IWebElement IdefaultTax = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/div[3]/table/tbody/tr[4]/td/table/tbody/tr/td/table"));
                                             IList<IWebElement> IdefaultTaxRow = IdefaultTax.FindElements(By.TagName("tr"));
                                             IList<IWebElement> IdefaultTaxTD;
@@ -636,60 +686,63 @@ namespace ScrapMaricopa.Scrapsource
                                             string Default = strDStatus + "~" + strDParcelNo + "~" + strDTaxType + "~" + strDTaxDue + "~" + strEligible;
                                             gc.insert_date(orderNumber, TaxParcel, 1051, Default, 1, DateTime.Now);
 
-
-                                            int i = 0;
-                                            foreach (string dTax in strDTax)
+                                            try
                                             {
-                                                IPaidCheck = driver.FindElement(By.Id("ctl00_MainContent_btnCollapse" + dTax + ""));
-                                                if (IPaidCheck.Text == "+")
+                                                int i = 0;
+                                                foreach (string dTax in strDTax)
                                                 {
-                                                    IPaidCheck.Click();
-                                                }
-                                                try
-                                                {
-                                                    strDTaxDate = GlobalClass.After(driver.FindElement(By.Id("ctl00_MainContent_pnl" + dTax + "")).Text, "before ");
-                                                }
-                                                catch { }
-                                                try
-                                                {
-                                                    IWebElement ITotal = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_pnlDue']/table[" + (i + 2) + "]"));
-                                                    IList<IWebElement> ITotalRow = ITotal.FindElements(By.TagName("tr"));
-                                                    IList<IWebElement> ITotalTD;
-                                                    foreach (IWebElement total in ITotalRow)
+                                                    IPaidCheck = driver.FindElement(By.Id("ctl00_MainContent_btnCollapse" + dTax + ""));
+                                                    if (IPaidCheck.Text == "+")
                                                     {
-                                                        ITotalTD = total.FindElements(By.TagName("td"));
-                                                        if (ITotalTD.Count != 0 && total.Text.Contains("TOTAL:"))
+                                                        IPaidCheck.Click();
+                                                    }
+                                                    try
+                                                    {
+                                                        strDTaxDate = GlobalClass.After(driver.FindElement(By.Id("ctl00_MainContent_pnl" + dTax + "")).Text, "before ");
+                                                    }
+                                                    catch { }
+                                                    try
+                                                    {
+                                                        IWebElement ITotal = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_pnlDue']/table[" + (i + 2) + "]"));
+                                                        IList<IWebElement> ITotalRow = ITotal.FindElements(By.TagName("tr"));
+                                                        IList<IWebElement> ITotalTD;
+                                                        foreach (IWebElement total in ITotalRow)
                                                         {
-                                                            strTTotal = ITotalTD[0].Text.Replace("TOTAL: ", "").Trim();
+                                                            ITotalTD = total.FindElements(By.TagName("td"));
+                                                            if (ITotalTD.Count != 0 && total.Text.Contains("TOTAL:"))
+                                                            {
+                                                                strTTotal = ITotalTD[0].Text.Replace("TOTAL: ", "").Trim();
+                                                            }
                                                         }
                                                     }
-                                                }
-                                                catch { }
-                                                IWebElement IPaid = driver.FindElement(By.Id("ctl00_MainContent_pnlCollapse" + dTax + ""));
-                                                IList<IWebElement> IPaidRow = IPaid.FindElements(By.TagName("tr"));
-                                                IList<IWebElement> IPaidTD;
-                                                foreach (IWebElement paid in IPaidRow)
-                                                {
-                                                    IPaidTD = paid.FindElements(By.TagName("td"));
-                                                    if (IPaidTD.Count != 0 && !paid.Text.Contains("Tax Type") && paid.Text.Trim() != "")
+                                                    catch { }
+                                                    IWebElement IPaid = driver.FindElement(By.Id("ctl00_MainContent_pnlCollapse" + dTax + ""));
+                                                    IList<IWebElement> IPaidRow = IPaid.FindElements(By.TagName("tr"));
+                                                    IList<IWebElement> IPaidTD;
+                                                    foreach (IWebElement paid in IPaidRow)
                                                     {
-                                                        strRedemTaxType = IPaidTD[0].Text;
-                                                        strOriginal = IPaidTD[1].Text;
-                                                        strFeeCost = IPaidTD[2].Text;
-                                                        strPenalty = IPaidTD[3].Text;
-                                                        strTotal = IPaidTD[4].Text;
+                                                        IPaidTD = paid.FindElements(By.TagName("td"));
+                                                        if (IPaidTD.Count != 0 && !paid.Text.Contains("Tax Type") && paid.Text.Trim() != "")
+                                                        {
+                                                            strRedemTaxType = IPaidTD[0].Text;
+                                                            strOriginal = IPaidTD[1].Text;
+                                                            strFeeCost = IPaidTD[2].Text;
+                                                            strPenalty = IPaidTD[3].Text;
+                                                            strTotal = IPaidTD[4].Text;
 
-                                                        string Redemption = strDTaxDate + "~" + strRedemTaxType + "~" + strOriginal + "~" + strFeeCost + "~" + strPenalty + "~" + strTotal;
-                                                        gc.insert_date(orderNumber, TaxParcel, 1052, Redemption, 1, DateTime.Now);
+                                                            string Redemption = strDTaxDate + "~" + strRedemTaxType + "~" + strOriginal + "~" + strFeeCost + "~" + strPenalty + "~" + strTotal;
+                                                            gc.insert_date(orderNumber, TaxParcel, 1052, Redemption, 1, DateTime.Now);
 
+                                                        }
                                                     }
-                                                }
-                                                string RedemptionTotal = "" + "~" + "Total" + "~" + "" + "~" + "" + "~" + "" + "~" + strTTotal;
-                                                gc.insert_date(orderNumber, TaxParcel, 1052, RedemptionTotal, 1, DateTime.Now);
+                                                    string RedemptionTotal = "" + "~" + "Total" + "~" + "" + "~" + "" + "~" + "" + "~" + strTTotal;
+                                                    gc.insert_date(orderNumber, TaxParcel, 1052, RedemptionTotal, 1, DateTime.Now);
 
-                                                i++;
-                                                gc.CreatePdf(orderNumber, parcelNumber, "Tax Delinquent Due Details", driver, "CA", "Ventura");
+                                                    i++;
+                                                    gc.CreatePdf(orderNumber, parcelNumber, "Tax Delinquent Due Details", driver, "CA", "Ventura");
+                                                }
                                             }
+                                            catch { }
                                         }
                                     }
                                 }

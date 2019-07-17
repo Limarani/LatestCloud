@@ -55,9 +55,16 @@ namespace ScrapMaricopa
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderno, parcelNumber, "", Address, "SC", "Charleston");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SCCharleston"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -99,9 +106,12 @@ namespace ScrapMaricopa
                                     gc.insert_date(orderno, parcelNumber, 212, MutiDetail, 1, DateTime.Now);
                                 }
                             }
-                            HttpContext.Current.Session["multiParcel_SCCharleston"] = "Yes";
-                            driver.Quit();
-                            return "MultiParcel";
+                            if (MultiTR.Count > 3)
+                            {
+                                HttpContext.Current.Session["multiParcel_SCCharleston"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
                         }
                         catch { }
 
@@ -170,9 +180,12 @@ namespace ScrapMaricopa
                                     gc.insert_date(orderno, parcelNumber, 212, MutiDetail, 1, DateTime.Now);
                                 }
                             }
-                            HttpContext.Current.Session["multiParcel_SCCharleston"] = "Yes";
-                            driver.Quit();
-                            return "MultiParcel";
+                            if (MultiTR.Count > 3)
+                            {
+                                HttpContext.Current.Session["multiParcel_SCCharleston"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
 
                         }
                         catch { }
@@ -183,6 +196,19 @@ namespace ScrapMaricopa
                     //now use the switch command
                     driver.SwitchTo().Frame(iframeElement1);
                     string AlternateParcel = "", PropertyAddress = "", MailingAddress = "", PropertyType = "", YearBuilt = "", LegalDescription = "";
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr/td/table"));
+                        if(INodata.Text.Contains("No Records Found"))
+                        {
+                            HttpContext.Current.Session["Nodata_SCCharleston"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
 
                     ownername = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table[1]/tbody/tr/td/table[2]/tbody/tr/td/table[1]/tbody/tr[2]/td[1]/table/tbody/tr[1]/td[2]/font")).Text;
                     parcelNumber = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table[1]/tbody/tr/td/table[1]/tbody/tr[2]/td[1]/font/span")).Text;

@@ -56,9 +56,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", Address, "OR", "Marion");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ORMarion"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -87,6 +94,7 @@ namespace ScrapMaricopa.Scrapsource
                             if ((Convert.ToInt32(MultiCount)) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Marion_Count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                         }
@@ -98,10 +106,9 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         else if (Multi == "0 properties found.\r\nPlease modify your search criteria.")
                         {
-                            HttpContext.Current.Session["Norecord"] = "No Record Found";
+                            HttpContext.Current.Session["Nodata_ORMarion"] = "Yes";
+                            driver.Quit();
                             return "No Record Found";
-
-
                         }
                         else
                         {
@@ -197,6 +204,7 @@ namespace ScrapMaricopa.Scrapsource
                             if ((Convert.ToInt32(MultiCount)) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Marion_Count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                         }
@@ -205,8 +213,9 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (Multi == "1 property found." || Multi == "0 properties found.\r\nPlease modify your search criteria.")
                         {
-
-
+                            HttpContext.Current.Session["Nodata_ORMarion"] = "Yes";
+                            driver.Quit();
+                            return "No Record Found";
                         }
                         else
                         {

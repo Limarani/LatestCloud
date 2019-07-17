@@ -53,9 +53,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "FL", "Sarasota");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLSarasota"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -73,22 +80,25 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             string multi = driver.FindElement(By.XPath("//*[@id='container']/form/div/span[1]")).Text;
-                            multiparcel(orderNumber);
-                            return "MulitParcel";
+                            if(!multi.Contains("0 matching") && !multi.Contains(""))
+                            {
+                                multiparcel(orderNumber);
+                                return "MulitParcel";
+                            }
                         }
                         catch
                         {
 
                         }
                     }
-                    else if (searchType == "parcel")
+                    if (searchType == "parcel")
                     {
                         driver.FindElement(By.Id("Strap")).SendKeys(parcelNumber);
                         // gc.CreatePdf(orderNumber, parcelNumber, "Assessment Details", driver, "FL", "Sarasota");
                         driver.FindElement(By.Id("search")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                     }
-                    else if (searchType == "ownername")
+                    if (searchType == "ownername")
                     {
                         driver.FindElement(By.Id("OwnerKeywords")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "Input Passed Ownername search", driver, "FL", "Sarasota");
@@ -98,14 +108,29 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             string multi = driver.FindElement(By.XPath("//*[@id='container']/form/div/span[1]")).Text;
-                            multiparcel(orderNumber);
-                            return "MulitParcel";
+                            if (!multi.Contains("0 matching") && !multi.Contains(""))
+                            {
+                                multiparcel(orderNumber);
+                                return "MulitParcel";
+                            }
                         }
                         catch
                         {
 
                         }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='container']/form/div"));
+                        if (INodata.Text.Contains("0 matching"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLSarasota"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property details
                     outparcelno = driver.FindElement(By.XPath("//*[@id='targetElemForTooltips']/div[2]/span")).Text;

@@ -58,10 +58,141 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + sname + " " + stype + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TX", "Nueces");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Nueces"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
+                        searchType = "parcel";
+                    }
+
+                    //if (searchType == "address")
+                    //{
+
+                    //    var Select1 = driver.FindElement(By.Id("propertySearchOptions_searchType"));
+                    //    var selectElement11 = new SelectElement(Select1);
+                    //    selectElement11.SelectByText("Property Address");
+                    //    driver.FindElement(By.Id("propertySearchOptions_streetNumber")).SendKeys(houseno);
+                    //    driver.FindElement(By.Id("propertySearchOptions_streetName")).SendKeys(sname);
+                    //    gc.CreatePdf_WOP(orderNumber, "address search", driver, "TX", "Nueces");
+                    //    driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                    //    Thread.Sleep(2000);
+                    //    gc.CreatePdf_WOP(orderNumber, "address search result", driver, "TX", "Nueces");
+                    //}
+                    //if (searchType == "parcel")
+                    //{
+                    //    var Select1 = driver.FindElement(By.Id("propertySearchOptions_searchType"));
+                    //    var selectElement11 = new SelectElement(Select1);
+                    //    selectElement11.SelectByText("Account Number");
+                    //    driver.FindElement(By.Id("propertySearchOptions_propertyid")).SendKeys(parcelNumber);
+                    //    gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "TX", "Nueces");
+                    //    driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                    //    Thread.Sleep(2000);
+                    //    gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "TX", "Nueces");
+                    //}
+
+                    //if (searchType == "ownername")
+                    //{
+                    //    driver.FindElement(By.Id("propertySearchOptions_ownerName")).SendKeys(ownername);
+                    //    gc.CreatePdf_WOP(orderNumber, "owner search", driver, "TX", "Nueces");
+                    //    driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                    //    Thread.Sleep(2000);
+                    //    gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Nueces");
+                    //}
+                    //if (searchType == "block")
+                    //{
+                    //    var Select1 = driver.FindElement(By.Id("propertySearchOptions_searchType"));
+                    //    var selectElement11 = new SelectElement(Select1);
+                    //    selectElement11.SelectByText("Account Number");
+                    //    driver.FindElement(By.Id("propertySearchOptions_geoid")).SendKeys(unitno);
+                    //    gc.CreatePdf_WOP(orderNumber, "Account Number Search ", driver, "TX", "Nueces");
+                    //    driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                    //    Thread.Sleep(4000);
+                    //    gc.CreatePdf_WOP(orderNumber, "Account Number Search  result", driver, "TX", "Nueces");
+
+                    //    //       gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Williamson");
+                    //}
+                    ////Geographic ID~Type~Property Address~Owner Name
+
+                    //int trCount = driver.FindElements(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr")).Count;
+                    //if (trCount > 3)
+                    //{
+                    //    int maxCheck = 0;
+                    //    IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody"));
+                    //    IList<IWebElement> TRmulti5 = tbmulti.FindElements(By.TagName("tr"));
+                    //    IList<IWebElement> TDmulti5;
+                    //    foreach (IWebElement row in TRmulti5)
+                    //    {
+                    //        if (maxCheck <= 25)
+                    //        {
+                    //            TDmulti5 = row.FindElements(By.TagName("td"));
+                    //            if (TDmulti5.Count == 10)
+                    //            {
+                    //                string multi1 = TDmulti5[2].Text + "~" + TDmulti5[3].Text + "~" + TDmulti5[4].Text + "~" + TDmulti5[6].Text;
+                    //                gc.insert_date(orderNumber, TDmulti5[1].Text, 813, multi1, 1, DateTime.Now);
+                    //            }
+                    //            maxCheck++;
+                    //        }
+                    //    }
+                    //    if (TRmulti5.Count > 25)
+                    //    {
+                    //        HttpContext.Current.Session["multiParcel_Nueces_Multicount"] = "Maximum";
+                    //    }
+                    //    else
+                    //    {
+                    //        HttpContext.Current.Session["multiparcel_Nueces"] = "Yes";
+                    //    }
+
+                    //    driver.Quit();
+                    //    return "MultiParcel";
+                    //}
+                    //else
+                    //{
+
+                    //    driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[9]/a")).Click();
+                    //    Thread.Sleep(2000);
+
+
+                    //}
+
+                    //try
+                    //{
+                    //    IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
+                    //    if(INodata.Text.Contains("None found"))
+                    //    {
+                    //        HttpContext.Current.Session["Nodata_Nueces"] = "Yes";
+                    //        driver.Quit();
+                    //        return "No Data Found";
+                    //    }
+                    //}
+                    //catch { }
+
+                    try
+                    {
+                        driver.FindElement(By.Id("propertySearchOptions_advanced")).SendKeys(Keys.Enter);
+                    }
+                    catch { }
+                    if (searchType == "titleflex")
+                    {
+                        string titleaddress = houseno + " " + sname + " " + stype + " " + unitno;
+                        gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TX", "Nueces");
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
+                        {
+                            driver.Quit();
+                            return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_Nueces"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -69,25 +200,36 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "address")
                     {
-
-                        var Select1 = driver.FindElement(By.Id("propertySearchOptions_searchType"));
-                        var selectElement11 = new SelectElement(Select1);
-                        selectElement11.SelectByText("Property Address");
                         driver.FindElement(By.Id("propertySearchOptions_streetNumber")).SendKeys(houseno);
                         driver.FindElement(By.Id("propertySearchOptions_streetName")).SendKeys(sname);
                         gc.CreatePdf_WOP(orderNumber, "address search", driver, "TX", "Nueces");
-                        driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        }
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_searchAdv")).Click();
+                        }
+                        catch { }
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "address search result", driver, "TX", "Nueces");
                     }
                     if (searchType == "parcel")
                     {
-                        var Select1 = driver.FindElement(By.Id("propertySearchOptions_searchType"));
-                        var selectElement11 = new SelectElement(Select1);
-                        selectElement11.SelectByText("Account Number");
                         driver.FindElement(By.Id("propertySearchOptions_propertyid")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "TX", "Nueces");
-                        driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        }
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_searchAdv")).Click();
+                        }
+                        catch { }
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "TX", "Nueces");
                     }
@@ -96,18 +238,33 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.Id("propertySearchOptions_ownerName")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "owner search", driver, "TX", "Nueces");
-                        driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        }
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_searchAdv")).Click();
+                        }
+                        catch { }
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Nueces");
                     }
                     if (searchType == "block")
                     {
-                        var Select1 = driver.FindElement(By.Id("propertySearchOptions_searchType"));
-                        var selectElement11 = new SelectElement(Select1);
-                        selectElement11.SelectByText("Account Number");
                         driver.FindElement(By.Id("propertySearchOptions_geoid")).SendKeys(unitno);
                         gc.CreatePdf_WOP(orderNumber, "Account Number Search ", driver, "TX", "Nueces");
-                        driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        }
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.Id("propertySearchOptions_searchAdv")).Click();
+                        }
+                        catch { }
                         Thread.Sleep(4000);
                         gc.CreatePdf_WOP(orderNumber, "Account Number Search  result", driver, "TX", "Nueces");
 
@@ -149,12 +306,32 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     else
                     {
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[9]/a")).Click();
+                        }
+                        catch { }
 
-                        driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[9]/a")).Click();
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                        }
+                        catch { }
                         Thread.Sleep(2000);
 
-
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
+                        if (INodata.Text.Contains("None found"))
+                        {
+                            HttpContext.Current.Session["Nodata_Nueces"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //property details
                     string ownership = "", PropertyID = "", GeographicID = "", Name = "", MailingAddress = "", OwnerID = "", LegalDescription = "", Neighborhood = "", Type = "", Address = "", NeighborhoodCD = "", Exemptions = "", MapID = "", YearBuilt = "", Acres = "";

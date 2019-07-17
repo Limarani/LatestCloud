@@ -73,16 +73,19 @@ namespace ScrapMaricopa.Scrapsource
 
                         gc.CreatePdf_WOP(orderNumber, "Address search result", driver, "AZ", "Pinal");
 
-
+                        string mul = "";
                         //  string mul = driver.FindElement(By.XPath("//*[@id='ctl00_m_g_e7e24a7d_b298_4c40_8411_c65d5498a997_ctl00_ctl03_lbl_SearchResults']")).Text;
                         //*[@id="tblTitle"]/tbody/tr/td[2]
+                        try
+                        {
+                            mul = driver.FindElement(By.Id("ctl00_m_g_e7e24a7d_b298_4c40_8411_c65d5498a997_ctl00_ctl03_lbl_SearchResults")).Text;
 
-                        string mul = driver.FindElement(By.Id("ctl00_m_g_e7e24a7d_b298_4c40_8411_c65d5498a997_ctl00_ctl03_lbl_SearchResults")).Text;
+                            mul = WebDriverTest.Before(mul, " Entries");
+                            mul = WebDriverTest.After(mul, "(").Trim();
+                        }
+                        catch { }
 
-                        mul = WebDriverTest.Before(mul, " Entries");
-                        mul = WebDriverTest.After(mul, "(").Trim();
-
-                        if ((mul != "1") && (mul != "0"))
+                        if ((mul != "1") && (mul != "0") && (mul != ""))
                         {
                             //multi parcel
                             IWebElement tbmulti = driver.FindElement(By.XPath("/html/body/form/placeholder/table/tbody/tr[3]/td/table[2]/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/div/div[2]/div[1]/div/div[2]/div/div/div[2]/div/table/tbody"));
@@ -123,8 +126,16 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "AZ", "Pinal");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_AZPinal"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -178,11 +189,16 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("ctl00_m_g_e7e24a7d_b298_4c40_8411_c65d5498a997_ctl00_ctl02_btn_GoOwner")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf_WOP(orderNumber, "Owner Name search result", driver, "AZ", "Pinal");
-                        string mul = driver.FindElement(By.XPath("//*[@id='ctl00_m_g_e7e24a7d_b298_4c40_8411_c65d5498a997_ctl00_ctl03_lbl_SearchResults']")).Text;
-                        mul = WebDriverTest.Before(mul, " Entries");
-                        mul = WebDriverTest.After(mul, "(").Trim();
+                        string mul = "";
+                        try
+                        {
+                            mul = driver.FindElement(By.XPath("//*[@id='ctl00_m_g_e7e24a7d_b298_4c40_8411_c65d5498a997_ctl00_ctl03_lbl_SearchResults']")).Text;
+                            mul = WebDriverTest.Before(mul, " Entries");
+                            mul = WebDriverTest.After(mul, "(").Trim();
+                        }
+                        catch { }
 
-                        if ((mul != "1") && (mul != "0"))
+                        if ((mul != "1") && (mul != "0") && (mul != ""))
                         {
                             //multi parcel
                             IWebElement tbmulti = driver.FindElement(By.XPath("/html/body/form/placeholder/table/tbody/tr[3]/td/table[2]/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/div/div[2]/div[1]/div/div[2]/div/div/div[2]"));
@@ -218,8 +234,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Owner Name search result", driver, "AZ", "Pinal");
                     }
 
-
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("ctl00_m_g_e7e24a7d_b298_4c40_8411_c65d5498a997_ctl00_ctl02_lbl_NoResults"));
+                        if(Inodata.Text.Contains("Your search returned 0 results, please try again."))
+                        {
+                            HttpContext.Current.Session["Nodata_AZPinal"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property_details
 
                     Thread.Sleep(5000);
@@ -456,7 +481,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     // View Bill 
                     var chromeOptions = new ChromeOptions();
-                    var downloadDirectory = "F:\\AutoPdf\\";
+                    var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
                     chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                     chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);

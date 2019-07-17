@@ -64,9 +64,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + sname;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "NM", "Bernalillo");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_NMBernalillio"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -78,14 +85,18 @@ namespace ScrapMaricopa.Scrapsource
                         driver.Navigate().GoToUrl("http://assessor.bernco.gov/public.access/Search/Disclaimer.aspx?FromUrl=../search/commonsearch.aspx?mode=realprop");
                         try
                         {
-                            driver.FindElement(By.XPath("//*[@id='topmenu']/ul/li[1]/a")).Click();
+                            driver.FindElement(By.Id("btAgree")).Click();
                             Thread.Sleep(2000);
                         }
                         catch
                         { }
-                        driver.FindElement(By.XPath("//*[@id='btAgree']")).SendKeys(Keys.Enter);
+                        try
+                        {
+                            driver.FindElement(By.Id("btAgree")).SendKeys(Keys.Enter);
+                        }
+                        catch { }
                         driver.FindElement(By.Id("inpNo")).SendKeys(houseno);
-                        driver.FindElement(By.XPath("//*[@id='inpStreet']")).SendKeys(sname);
+                        driver.FindElement(By.Id("inpStreet")).SendKeys(sname);
                         gc.CreatePdf_WOP(orderNumber, "InputPassed AddressSearch", driver, "NM", "Bernalillo");
                         driver.FindElement(By.Id("inpStreet")).SendKeys(Keys.Enter);
                         Thread.Sleep(6000);
@@ -103,42 +114,43 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             srtAddress = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td/table/tbody/tr[3]/td/center/table[1]/tbody/tr/td[3]")).Text;
                             Address = Convert.ToInt32(WebDriverTest.Between(srtAddress, "Displaying 1 - ", " of"));
+
+
+                            if (Address > 15)
+                            {
+                                HttpContext.Current.Session["multiParcel_NMBernalillo_count"] = "Maximum";
+                                driver.Quit();
+                                return "Maximum";
+                            }
+                            if (srtAddress != "" && Address <= 15 && !result.Contains("Return to Search Results"))
+                            {
+                                IWebElement IAddressTable = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
+                                IList<IWebElement> IAddressrow = IAddressTable.FindElements(By.TagName("tr"));
+                                IList<IWebElement> IAddressTD;
+                                foreach (IWebElement Row in IAddressrow)
+                                {
+                                    IAddressTD = Row.FindElements(By.TagName("td"));
+                                    HttpContext.Current.Session["multiparcel_NMBernalillo"] = "Yes";
+                                    if (IAddressTD.Count != 0 && !Row.Text.Contains("Parcel ID") && Row.Text != "")
+                                    {
+                                        string ParcelID = IAddressTD[0].Text.Replace("...", "").Trim();
+                                        string Owner = IAddressTD[1].Text;
+                                        string Addres = IAddressTD[2].Text;
+                                        string Property = Owner + "~" + Addres;
+                                        gc.insert_date(orderNumber, ParcelID, 98, Property, 1, DateTime.Now);
+                                        gc.CreatePdf_WOP(orderNumber, "Mulitparcelgrid", driver, "NM", "Bernalillo");
+                                    }
+                                }
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
+                            else
+                            {
+
+                            }
                         }
                         catch { }
-
-                        if (Address > 15)
-                        {
-                            HttpContext.Current.Session["multiParcel_NMBernalillo_count"] = "Maximum";
-                            return "Maximum";
-                        }
-                        if (srtAddress != "" && Address <= 15 && !result.Contains("Return to Search Results"))
-                        {
-                            IWebElement IAddressTable = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
-                            IList<IWebElement> IAddressrow = IAddressTable.FindElements(By.TagName("tr"));
-                            IList<IWebElement> IAddressTD;
-                            foreach (IWebElement Row in IAddressrow)
-                            {
-                                IAddressTD = Row.FindElements(By.TagName("td"));
-                                HttpContext.Current.Session["multiparcel_NMBernalillo"] = "Yes";
-                                if (IAddressTD.Count != 0 && !Row.Text.Contains("Parcel ID") && Row.Text != "")
-                                {
-                                    string ParcelID = IAddressTD[0].Text;
-                                    string Owner = IAddressTD[1].Text;
-                                    string Addres = IAddressTD[2].Text;
-                                    string Property = Owner + "~" + Addres;
-                                    gc.insert_date(orderNumber, ParcelID, 98, Property, 1, DateTime.Now);
-                                    gc.CreatePdf_WOP(orderNumber, "Mulitparcelgrid", driver, "NM", "Bernalillo");
-                                }
-                            }
-                            driver.Quit();
-                            return "MultiParcel";
-                        }
-
-                        else
-                        {
-
-                        }
-                    }
+                    }                    
 
                     if (searchType == "parcel")
                     {
@@ -151,14 +163,34 @@ namespace ScrapMaricopa.Scrapsource
                         catch
                         { }
                         driver.FindElement(By.XPath("//*[@id='btAgree']")).SendKeys(Keys.Enter);
-                        driver.FindElement(By.Id("inpSuf")).SendKeys(parcelNumber);
+                        driver.FindElement(By.Id("inpSuf")).SendKeys(parcelNumber.Replace("...","").Trim());
                         gc.CreatePdf(orderNumber, parcelNumber, "InputPassed ParcelSearch", driver, "NM", "Bernalillo");
                         driver.FindElement(By.XPath("//*[@id='btSearch']")).SendKeys(Keys.Enter);
                         Thread.Sleep(6000);
                     }
 
-                    //Property Details  
-                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[1]/a")).SendKeys(Keys.Enter);
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]"));
+                        if(INodata.Text.Contains("search did not find any records"))
+                        {
+                            HttpContext.Current.Session["Nodata_NMBernalillio"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
+                    //Property Details  //*[@id="searchResults"]/tbody/tr[3]
+                    //driver.FindElement(By.XPath("")).SendKeys(Keys.Enter);
+                    try
+                    {
+                        IWebElement IAddressSearch1 = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]"));
+                        IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                        js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                        Thread.Sleep(3000);
+                    }
+                    catch { }
                     //Screenshot
                     gc.CreatePdf_WOP(orderNumber, "PropertyDetails", driver, "NM", "Bernalillo");
                     //Profile
@@ -181,8 +213,13 @@ namespace ScrapMaricopa.Scrapsource
                     gc.insert_date(orderNumber, outparcelno, 100, property_details, 1, DateTime.Now);
 
                     //Assement Details
-                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[2]/a")).SendKeys(Keys.Enter);
+                    //driver.FindElement(By.XPath("//*[@id='sidemenu']/li[2]/a")).SendKeys(Keys.Enter);
                     //Screenshot
+                    IWebElement IAddressSearch2 = driver.FindElement(By.LinkText("Values"));
+                    IJavaScriptExecutor js2 = driver as IJavaScriptExecutor;
+                    js2.ExecuteScript("arguments[0].click();", IAddressSearch2);
+                    Thread.Sleep(3000);
+
                     gc.CreatePdf(orderNumber, outparcelno, "Assessment Details", driver, "NM", "Bernalillo");
                     //Values
                     strValues = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/div[3]/div/div/table/tbody/tr/td/table/tbody/tr[2]/td/div/div[1]/table[2]/tbody/tr[1]/td[2]")).Text;
@@ -203,44 +240,48 @@ namespace ScrapMaricopa.Scrapsource
                     //Tax Status
 
                     driver.Navigate().GoToUrl("https://www.bernco.gov/treasurer/property-tax-search.aspx");
-
+                    Thread.Sleep(3000);
                     //Screenshot
                     gc.CreatePdf(orderNumber, outparcelno, "Address Search Result", driver, "NM", "Bernalillo");
 
                     //Tax Authority
                     Tax_Authority = "One Civic Plaza NW Albuquerque, NM 87102";
-
-                    IWebElement LinkSearch = driver.FindElement(By.XPath("//*[@id='_af46712e95534fbaab28f66852f6c7ca_pnl02cd722299cd4618a01367f388ce5d42Content']/p[5]")).FindElement(By.TagName("a"));
-                    string linkhref = LinkSearch.GetAttribute("href");
-                    driver.Navigate().GoToUrl(linkhref);
-                    IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                    //js1.ExecuteScript("arguments[0].click();", LinkSearch);
-                    //Thread.Sleep(7000);
-
-                    //js1.ExecuteScript("document.getElementById('ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_parcelId').value='" + outparcelno + "'");
-                    //gc.CreatePdf(orderNumber, outparcelno, "Parcel Search", driver, "NM", "Bernalillo");
-
+                    
+                    IWebElement Multyaddresstable1 = driver.FindElement(By.Id("iFrameResizer1"));
+                    driver.SwitchTo().Frame(Multyaddresstable1);
                     Thread.Sleep(3000);
-                    gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result", driver, "NM", "Bernalillo");
-                    driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel")).Click();
-                    Thread.Sleep(3000);
+                    try { 
+                    IWebElement LinkSearch = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel"));
+                    IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+                    js.ExecuteScript("arguments[0].click();", LinkSearch);
+                    Thread.Sleep(5000);
+                    gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result1", driver, "NM", "Bernalillo");
+                    }
+                    catch { }
+                    try
+                    {
+                        driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel")).Click();
+                        Thread.Sleep(5000);
+                        gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result2", driver, "NM", "Bernalillo");
+                    }
+                    catch { }
+                    try
+                    {
+                        driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel")).SendKeys(Keys.Enter);
+                        Thread.Sleep(5000);
+                        gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result3", driver, "NM", "Bernalillo");
+                    }
+                    catch { }
+                    driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_parcelId")).Click();
+                    Thread.Sleep(5000);
                     driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_parcelId")).SendKeys(outparcelno);
                     gc.CreatePdf(orderNumber, outparcelno, "Parcel Click Result", driver, "NM", "Bernalillo");
                     driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_submit")).Click();
-                    Thread.Sleep(2000);
-                    //IWebElement ParcelLinkSearch = driver.FindElement(By.XPath("//*[@id='ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_placeHolder_ctl00_resultList_ctl00_ctl04_parcel']"));
-                    //js1.ExecuteScript("arguments[0].click();", ParcelLinkSearch);
-                    //Thread.Sleep(7000);
-                    //gc.CreatePdf(orderNumber, outparcelno, "Parcel Search", driver, "NM", "Bernalillo");
-
-                    ////Current OwnerShip Data   
-                    //IWebElement IOwnerSubmit = driver.FindElement(By.XPath("/html/body/form/div[6]/div[5]/div[1]/div[1]/div[3]/div[2]/div/table/tbody"));
-                    //js1.ExecuteScript("arguments[0].click();", IOwnerSubmit);
-                    //gc.CreatePdf(orderNumber, outparcelno, "Current OwnerShip Search", driver, "NM", "Bernalillo");
-                    //Thread.Sleep(7000);
-                    //outparcelno = driver.FindElement(By.XPath("/html/body/form/div[6]/div[5]/div[1]/div[1]/div[3]/div[2]/div/table/tbody/tr[2]/td/table/tbody/tr[1]/td")).Text;
+                    Thread.Sleep(7000); 
+                                      
                     IWebElement ButtonLinkSearch = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_placeHolder_ctl00_resultList_ctl00_ctl04_parcel"));
-                    js1.ExecuteScript("arguments[0].click();", ButtonLinkSearch);
+                    IJavaScriptExecutor js3 = driver as IJavaScriptExecutor;
+                    js3.ExecuteScript("arguments[0].click();", ButtonLinkSearch);
                     Thread.Sleep(9000);
                     string Ownershiptable = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[6]/div[5]/div[1]/div[1]/div[3]/div[2]/div/table/tbody/tr[2]/td/table/tbody")).Text;
                     if (Ownershiptable.Contains("OWNER 2:"))

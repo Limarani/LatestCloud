@@ -54,9 +54,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "MO", "St Charles");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MOStCharles"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -76,84 +83,92 @@ namespace ScrapMaricopa.Scrapsource
 
                         //multi parcel
 
-
-                        var MultiparcellSplit = Parcellcount.Substring(0, Parcellcount.IndexOf("\r\n"));
-
-                        if (MultiparcellSplit != "Showing 1 to 1 out of 1")
+                        try
                         {
-                            HttpContext.Current.Session["multiParcel_StCharles"] = "Yes";
-                            IWebElement Propertytable = driver.FindElement(By.XPath("/html/body/div[1]/div/form/div/table"));
-                            IList<IWebElement> propertytableRow = Propertytable.FindElements(By.TagName("tr"));
-                            int rowcount = propertytableRow.Count;
-                            IList<IWebElement> propertyrowTD;
-                            List<string> listurl = new List<string>();
-                            foreach (IWebElement rownew in propertytableRow)
+                            var MultiparcellSplit = Parcellcount.Substring(0, Parcellcount.IndexOf("\r\n"));
+
+                            if (MultiparcellSplit != "Showing 1 to 1 out of 1")
                             {
-                                propertyrowTD = rownew.FindElements(By.TagName("a"));
-                                if (propertyrowTD.Count != 0 && rownew.Text.Contains("Details"))
+                                IWebElement Propertytable = driver.FindElement(By.XPath("/html/body/div[1]/div/form/div/table"));
+                                IList<IWebElement> propertytableRow = Propertytable.FindElements(By.TagName("tr"));
+                                int rowcount = propertytableRow.Count;
+                                IList<IWebElement> propertyrowTD;
+                                List<string> listurl = new List<string>();
+                                foreach (IWebElement rownew in propertytableRow)
                                 {
-                                    string url = propertyrowTD[0].GetAttribute("href");
-                                    listurl.Add(url);
-                                }
-                            }
-
-                            foreach (string URL in listurl)
-                            {
-
-                                driver.Navigate().GoToUrl(URL);
-                                Thread.Sleep(3000);
-                                //CreatePdf_WOP(orderNumber, "Property search Result");
-
-                                string ParcellNumberDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[1]/td[2]")).Text;
-                                string OwnerNameDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[1]")).Text;
-                                string AddressDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[2]")).Text;
-
-
-                                var splitted1 = ParcellNumberDuplicate.Split(':');
-                                ParcellNumberDuplicate = splitted1[1];
-
-                                ParcellNumber = ParcellNumberDuplicate;
-                                //Split 3
-                                string[] stringSeparators = new string[] { "\r\n" };
-
-
-                                string result1 = string.Concat(OwnerNameDuplicate.TakeWhile(c => c < '0' || c > '9'));
-
-                                string[] lines = result1.Split(stringSeparators, StringSplitOptions.None);
-                                string ownerName = "";
-                                foreach (string s in lines)
-                                {
-                                    if (s != "Owner(s):")
+                                    propertyrowTD = rownew.FindElements(By.TagName("a"));
+                                    if (propertyrowTD.Count != 0 && rownew.Text.Contains("Details"))
                                     {
+                                        string url = propertyrowTD[0].GetAttribute("href");
+                                        listurl.Add(url);
+                                    }
+                                }
 
-                                        ownerName = s + "" + ownerName;
+                                foreach (string URL in listurl)
+                                {
+
+                                    driver.Navigate().GoToUrl(URL);
+                                    Thread.Sleep(3000);
+                                    //CreatePdf_WOP(orderNumber, "Property search Result");
+
+                                    string ParcellNumberDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[1]/td[2]")).Text;
+                                    string OwnerNameDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[1]")).Text;
+                                    string AddressDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[2]")).Text;
+
+
+                                    var splitted1 = ParcellNumberDuplicate.Split(':');
+                                    ParcellNumberDuplicate = splitted1[1];
+
+                                    ParcellNumber = ParcellNumberDuplicate;
+                                    //Split 3
+                                    string[] stringSeparators = new string[] { "\r\n" };
+
+
+                                    string result1 = string.Concat(OwnerNameDuplicate.TakeWhile(c => c < '0' || c > '9'));
+
+                                    string[] lines = result1.Split(stringSeparators, StringSplitOptions.None);
+                                    string ownerName = "";
+                                    foreach (string s in lines)
+                                    {
+                                        if (s != "Owner(s):")
+                                        {
+
+                                            ownerName = s + "" + ownerName;
+
+                                        }
 
                                     }
 
+
+                                    string OwnerName = ownerName;
+                                    //Split 4
+
+
+                                    var splitted4 = AddressDuplicate.Split(':');
+                                    AddressDuplicate = splitted4[1];
+
+                                    string Address = AddressDuplicate;
+
+
+                                    string multiparcedata = OwnerName + "~" + Address;
+                                    gc.insert_date(orderNumber, ParcellNumber, 96, multiparcedata, 1, DateTime.Now);
+                                }
+                                if (propertytableRow.Count > 25)
+                                {
+                                    HttpContext.Current.Session["multiParcel_StCharles_Multicount"] = "Maximum";
+                                    driver.Quit();
+                                    return "Maximum";
+                                }
+                                if (propertytableRow.Count <= 25)
+                                {
+                                    HttpContext.Current.Session["multiParcel_StCharles"] = "Yes";
+                                    driver.Quit();
+                                    return "MultiParcel";
                                 }
 
-
-                                string OwnerName = ownerName;
-                                //Split 4
-
-
-                                var splitted4 = AddressDuplicate.Split(':');
-                                AddressDuplicate = splitted4[1];
-
-                                string Address = AddressDuplicate;
-
-
-                                string multiparcedata = OwnerName + "~" + Address;
-                                gc.insert_date(orderNumber, ParcellNumber, 96, multiparcedata, 1, DateTime.Now);
                             }
-                            if (propertytableRow.Count > 25)
-                            {
-                                HttpContext.Current.Session["multiParcel_StCharles_Multicount"] = "Maximum";
-                            }
-                            driver.Quit();
-                            return "MultiParcel";
-
                         }
+                        catch { }
 
                     }
 
@@ -213,90 +228,107 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Unit Number search Result", driver, "MO", "St Charles");
                         //multi parcel
 
-
-                        var MultiparcellSplit = Parcellcount.Substring(0, Parcellcount.IndexOf("\r\n"));
-
-                        if (MultiparcellSplit != "Showing 1 to 1 out of 1")
+                        try
                         {
-                            HttpContext.Current.Session["multiParcel_StCharles"] = "Yes";
-                            IWebElement Propertytable = driver.FindElement(By.XPath("/html/body/div[1]/div/form/div/table"));
-                            IList<IWebElement> propertytableRow = Propertytable.FindElements(By.TagName("tr"));
-                            int rowcount = propertytableRow.Count;
-                            IList<IWebElement> propertyrowTD;
-                            List<string> listurl = new List<string>();
-                            foreach (IWebElement rownew in propertytableRow)
+                            var MultiparcellSplit = Parcellcount.Substring(0, Parcellcount.IndexOf("\r\n"));
+
+                            if (MultiparcellSplit != "Showing 1 to 1 out of 1")
                             {
-                                propertyrowTD = rownew.FindElements(By.TagName("a"));
-                                if (propertyrowTD.Count != 0 && rownew.Text.Contains("Details"))
+                                IWebElement Propertytable = driver.FindElement(By.XPath("/html/body/div[1]/div/form/div/table"));
+                                IList<IWebElement> propertytableRow = Propertytable.FindElements(By.TagName("tr"));
+                                int rowcount = propertytableRow.Count;
+                                IList<IWebElement> propertyrowTD;
+                                List<string> listurl = new List<string>();
+                                foreach (IWebElement rownew in propertytableRow)
                                 {
-                                    string url = propertyrowTD[0].GetAttribute("href");
-                                    listurl.Add(url);
-                                }
-                            }
-
-                            foreach (string URL in listurl)
-                            {
-
-                                driver.Navigate().GoToUrl(URL);
-                                Thread.Sleep(3000);
-                                gc.CreatePdf_WOP(orderNumber, "Account search Detail", driver, "MO", "St Charles");
-                                string ParcellNumberDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[1]/td[2]")).Text;
-                                string OwnerNameDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[1]")).Text;
-                                string AddressDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[2]")).Text;
-
-                                ////Split 2
-
-                                var splitted1 = ParcellNumberDuplicate.Split(':');
-                                ParcellNumberDuplicate = splitted1[1];
-
-                                ParcellNumber = ParcellNumberDuplicate;
-                                //Split 3
-                                string[] stringSeparators = new string[] { "\r\n" };
-
-
-
-
-                                string result1 = string.Concat(OwnerNameDuplicate.TakeWhile(c => c < '0' || c > '9'));
-
-                                string[] lines = result1.Split(stringSeparators, StringSplitOptions.None);
-                                string ownerName = "";
-                                foreach (string s in lines)
-                                {
-                                    if (s != "Owner(s):")
+                                    propertyrowTD = rownew.FindElements(By.TagName("a"));
+                                    if (propertyrowTD.Count != 0 && rownew.Text.Contains("Details"))
                                     {
+                                        string url = propertyrowTD[0].GetAttribute("href");
+                                        listurl.Add(url);
+                                    }
+                                }
 
-                                        ownerName = s + "" + ownerName;
+                                foreach (string URL in listurl)
+                                {
+
+                                    driver.Navigate().GoToUrl(URL);
+                                    Thread.Sleep(3000);
+                                    gc.CreatePdf_WOP(orderNumber, "Account search Detail", driver, "MO", "St Charles");
+                                    string ParcellNumberDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[1]/td[2]")).Text;
+                                    string OwnerNameDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[1]")).Text;
+                                    string AddressDuplicate = driver.FindElement(By.XPath("/html/body/div[1]/div/table/tbody/tr[2]/td[2]")).Text;
+
+                                    ////Split 2
+
+                                    var splitted1 = ParcellNumberDuplicate.Split(':');
+                                    ParcellNumberDuplicate = splitted1[1];
+
+                                    ParcellNumber = ParcellNumberDuplicate;
+                                    //Split 3
+                                    string[] stringSeparators = new string[] { "\r\n" };
+
+
+
+
+                                    string result1 = string.Concat(OwnerNameDuplicate.TakeWhile(c => c < '0' || c > '9'));
+
+                                    string[] lines = result1.Split(stringSeparators, StringSplitOptions.None);
+                                    string ownerName = "";
+                                    foreach (string s in lines)
+                                    {
+                                        if (s != "Owner(s):")
+                                        {
+
+                                            ownerName = s + "" + ownerName;
+
+                                        }
 
                                     }
 
+
+                                    string OwnerName = ownerName;
+                                    //Split 4
+
+
+                                    var splitted4 = AddressDuplicate.Split(':');
+                                    AddressDuplicate = splitted4[1];
+
+                                    string Address = AddressDuplicate;
+                                    //Split 6
+
+                                    string multiparcedata = OwnerName + "~" + Address;
+                                    gc.insert_date(orderNumber, ParcellNumber, 96, multiparcedata, 1, DateTime.Now);
+
                                 }
-
-
-                                string OwnerName = ownerName;
-                                //Split 4
-
-
-                                var splitted4 = AddressDuplicate.Split(':');
-                                AddressDuplicate = splitted4[1];
-
-                                string Address = AddressDuplicate;
-                                //Split 6
-
-                                string multiparcedata = OwnerName + "~" + Address;
-                                gc.insert_date(orderNumber, ParcellNumber, 96, multiparcedata, 1, DateTime.Now);
-
+                                if (propertytableRow.Count > 25)
+                                {
+                                    HttpContext.Current.Session["multiParcel_StCharles_Multicount"] = "Maximum";
+                                    driver.Quit();
+                                    return "Maximum";
+                                }
+                                if (propertytableRow.Count <= 25)
+                                {
+                                    HttpContext.Current.Session["multiParcel_StCharles"] = "Yes";
+                                    driver.Quit();
+                                    return "MultiParcel";
+                                }
                             }
-                            if (propertytableRow.Count > 25)
-                            {
-                                HttpContext.Current.Session["multiParcel_StCharles_Multicount"] = "Maximum";
-                            }
-                            driver.Quit();
-                            return "MultiParcel";
-
                         }
-
+                        catch { }
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.XPath("//*[@id='main']/div[1]/p")); 
+                        if(INodata.Text.Contains("No results were found"))
+                        {
+                            HttpContext.Current.Session["Nodata_MOStCharles"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     string Accountnumber = "";
 
@@ -538,7 +570,20 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(3000);
                     gc.CreatePdf_WOP(orderNumber, "AccountNumber search Result", driver, "MO", "St Charles");
                     //Note Pending
-                    IWebElement Propertytable2 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    IWebElement Propertytable2 = null;
+                    try
+                    {
+                        Propertytable2 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    }
+                    catch { }
+                    try
+                    {
+                        if (Propertytable2 == null)
+                        {
+                            Propertytable2 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                        }
+                    }
+                    catch { }
                     IList<IWebElement> propertytableRow2 = Propertytable2.FindElements(By.TagName("tr"));
                     IList<IWebElement> propertyrowTD2;
                     foreach (IWebElement rownew in propertytableRow2)
@@ -560,7 +605,20 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(2000);
                             gc.CreatePdf_WOP(orderNumber, "AccountNumber Year Result" + i, driver, "MO", "St Charles");
                             //*[@id="avalon"]/div/div[3]/div[2]/table/tbody
-                            IWebElement Propertytable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                            IWebElement Propertytable = null;
+                            try
+                            {
+                                Propertytable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                            }
+                            catch { }
+                            try
+                            {
+                                if (Propertytable == null)
+                                {
+                                    Propertytable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                                }
+                            }
+                            catch { }
                             IList<IWebElement> propertytableRow = Propertytable.FindElements(By.TagName("tr"));
                             IList<IWebElement> propertyrowTD;
                             foreach (IWebElement rownew in propertytableRow)
@@ -587,8 +645,16 @@ namespace ScrapMaricopa.Scrapsource
                             string Peoprtyinfotable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[2]/div[1]/table/tbody")).Text;
                             string Taxyear = gc.Between(Peoprtyinfotable, "Tax Year", "Account # / PIN");
                             string Account = gc.Between(Peoprtyinfotable, "Account # / PIN", "Description");
-                            string Description = gc.Between(Peoprtyinfotable, "Description", "Acres");
-                            string Acres = gc.Between(Peoprtyinfotable, "Acres", "Geo CD");
+                            string Description = "", Acres = "";
+                            if (!Peoprtyinfotable.Contains("Acres"))
+                            {
+                                Description = gc.Between(Peoprtyinfotable, "Description", "Geo CD");
+                            }
+                            else
+                            {
+                                Description = gc.Between(Peoprtyinfotable, "Description", "Acres");
+                                Acres = gc.Between(Peoprtyinfotable, "Acres", "Geo CD");
+                            }
                             string GeoCD = gc.Between(Peoprtyinfotable, "Geo CD", "Situs Address");
                             string SitusAddress = GlobalClass.After(Peoprtyinfotable, "Situs Address");
                             string Paymentinfotable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[1]/div[2]/table/tbody")).Text;

@@ -67,7 +67,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "OH", "Lucas");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LucasOH"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -91,6 +98,7 @@ namespace ScrapMaricopa.Scrapsource
                         //Multiparcel
                         try
                         {
+                            string Assess = "", Landused = "", Totalval = "";
                             IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
                             IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
                             IList<IWebElement> THmultiaddress = multiaddress.FindElements(By.TagName("th"));
@@ -98,6 +106,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (TRmultiaddress.Count > 28)
                             {
                                 HttpContext.Current.Session["multiParcel_Lucas_Maximum"] = "Maimum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                             if (TRmultiaddress.Count > 3)
@@ -110,9 +119,13 @@ namespace ScrapMaricopa.Scrapsource
                                         try
                                         {
                                             Parcelno = TDmultiaddress[1].Text;
+                                            Assess = TDmultiaddress[2].Text;
                                             Ownername = TDmultiaddress[3].Text;
                                             parcellocation = TDmultiaddress[4].Text;
-                                            string Multi = Ownername + "~" + parcellocation;
+                                            Landused = TDmultiaddress[5].Text;
+                                            Totalval = TDmultiaddress[6].Text;
+                                            //Assessor~Owner Name~Address~Land Use~Total Value
+                                            string Multi = Assess + "~" + Ownername + "~" + parcellocation + "~" + Landused + "~" + Totalval;
                                             gc.insert_date(orderNumber, Parcelno, 1709, Multi, 1, DateTime.Now);
                                         }
                                         catch { }
@@ -130,7 +143,6 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
                         catch { }
-
                         try
                         {
                             //No Data Found
@@ -154,10 +166,10 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                         driver.FindElement(By.Id("inpParid")).SendKeys(parcelNumber);
-                        gc.CreatePdf(orderNumber,parcelNumber, "Parcel Search", driver, "OH", "Lucas");
+                        gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search", driver, "OH", "Lucas");
                         driver.FindElement(By.Id("btSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(1000);
-                        gc.CreatePdf(orderNumber,parcelNumber, "Parcel Search Result", driver, "OH", "Lucas");
+                        gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Result", driver, "OH", "Lucas");
                         try
                         {
                             IWebElement Iclick = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody"));
@@ -195,6 +207,7 @@ namespace ScrapMaricopa.Scrapsource
                         //Multiparcel
                         try
                         {
+                            string Assess = "", Landused = "", Totalval = "";
                             IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='searchResults']/tbody"));
                             IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
                             IList<IWebElement> THmultiaddress = multiaddress.FindElements(By.TagName("th"));
@@ -202,6 +215,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (TRmultiaddress.Count > 28)
                             {
                                 HttpContext.Current.Session["multiParcel_Lucas_Maximum"] = "Maimum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                             if (TRmultiaddress.Count > 3)
@@ -214,9 +228,13 @@ namespace ScrapMaricopa.Scrapsource
                                         try
                                         {
                                             Parcelno = TDmultiaddress[1].Text;
+                                            Assess = TDmultiaddress[2].Text;
                                             Ownername = TDmultiaddress[3].Text;
                                             parcellocation = TDmultiaddress[4].Text;
-                                            string Multi = Ownername + "~" + parcellocation;
+                                            Landused = TDmultiaddress[5].Text;
+                                            Totalval = TDmultiaddress[6].Text;
+                                            //Assessor~Owner Name~Address~Land Use~Total Value
+                                            string Multi = Assess + "~" + Ownername + "~" + parcellocation + "~" + Landused + "~" + Totalval;
                                             gc.insert_date(orderNumber, Parcelno, 1709, Multi, 1, DateTime.Now);
                                         }
                                         catch { }
@@ -226,7 +244,7 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.Quit();
                                 return "MultiParcel";
                             }
-                            if (TRmultiaddress.Count <=3)
+                            if (TRmultiaddress.Count <= 3)
                             {
                                 //TDmultiaddress[0].Click();
                                 driver.FindElement(By.XPath("//*[@id='searchResults']/tbody/tr[3]/td[1]/table/tbody/tr/td[2]/font")).Click();
@@ -234,6 +252,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
                         catch { }
+
                         try
                         {
                             //No Data Found
@@ -264,7 +283,7 @@ namespace ScrapMaricopa.Scrapsource
                     Class = gc.Between(Bulkdata, "Class", "Land Use").Trim();
                     Landuse = gc.Between(Bulkdata, "Land Use", "Market Area").Trim();
                     Marketarea = gc.Between(Bulkdata, "Market Area", "Zoning Code").Replace("- Click here to view map", " ").Trim();
-                    Zoningcode = gc.Between(Bulkdata, "Zoning Code", "Zoning Description").Replace("Click here for zoning details", " ").Trim().Replace("-", " ").Trim();
+                    Zoningcode = gc.Between(Bulkdata, "Zoning Code", "Zoning Description").Replace("- Click here for zoning details", " ").Trim();
                     Zoningdes = gc.Between(Bulkdata, "Zoning Description", "Water and Sewer").Trim();
                     Legaldes = gc.Between(Bulkdata, "Legal Desc.", "Certified Delinquent Year").Trim();
                     Censustract = GlobalClass.After(Bulkdata, "Census Tract").Trim();
@@ -282,7 +301,7 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderNumber, Parcelid, "Yearbuilt", driver, "OH", "Lucas");
                     try
                     {
-                        Yearbuilt = driver.FindElement(By.XPath("//*[@id='Residential Building Information']/tbody/tr[9]/td[2]")).Text.Trim();                        
+                        Yearbuilt = driver.FindElement(By.XPath("//*[@id='Residential Building Information']/tbody/tr[9]/td[2]")).Text.Trim();
                     }
                     catch { }
 
@@ -322,6 +341,57 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, Parcelid, 1696, TaxCreditvaluedetails, 1, DateTime.Now);
                         }
                     }
+
+                    //Tranfers and Values Pdf
+                    //By Fund and By Fund & Levy Pdf
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[4]/a")).Click();
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcelid, "Transfers", driver, "OH", "Lucas");
+
+
+                    //Value Change History Details Table
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[5]/a")).Click();
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcelid, "Values", driver, "OH", "Lucas");
+
+                    //*******************************//
+                    //Value Change History (35%) - To 2014
+                    string valuehistitle = driver.FindElement(By.XPath("//*[@id='datalet_div_5']/table[1]/tbody/tr/td/font")).Text.Trim();
+
+                    IWebElement Valuechange1 = driver.FindElement(By.Id("Value Change History (35%) - To 2014"));
+                    IList<IWebElement> TRValuechange1 = Valuechange1.FindElements(By.TagName("tr"));
+                    IList<IWebElement> THValuechange1 = Valuechange1.FindElements(By.TagName("th"));
+                    IList<IWebElement> TDValuechange1;
+                    foreach (IWebElement rowValuechange1 in TRValuechange1)
+                    {
+                        TDValuechange1 = rowValuechange1.FindElements(By.TagName("td"));
+
+                        if (TDValuechange1.Count == 7 && TDValuechange1.Count != 0 && !rowValuechange1.Text.Contains("Land") && Valuechange1.Text.Trim() != "")
+                        {
+                            string valuedetails1 = valuehistitle + "~" + TDValuechange1[0].Text + "~" + TDValuechange1[1].Text + "~" + TDValuechange1[2].Text + "~" + TDValuechange1[3].Text + "~" + TDValuechange1[4].Text + "~" + TDValuechange1[5].Text + "~" + TDValuechange1[6].Text;
+                            gc.insert_date(orderNumber, Parcelid, 1536, valuedetails1, 1, DateTime.Now);
+                        }
+                    }
+                    //Value Change History (35%) - Prior to 2014
+                    string valuehistitle1 = driver.FindElement(By.XPath("//*[@id='datalet_div_7']/table[1]/tbody/tr/td/font")).Text.Trim();
+
+
+                    IWebElement Valuechange2 = driver.FindElement(By.Id("Value Change History (35%) - Prior to 2014"));
+                    IList<IWebElement> TRValuechange2 = Valuechange2.FindElements(By.TagName("tr"));
+                    IList<IWebElement> THValuechange2 = Valuechange2.FindElements(By.TagName("th"));
+                    IList<IWebElement> TDValuechange2;
+                    foreach (IWebElement rowValuechange2 in TRValuechange2)
+                    {
+                        TDValuechange2 = rowValuechange2.FindElements(By.TagName("td"));
+
+                        if (TDValuechange2.Count == 7 && TDValuechange2.Count != 0 && !rowValuechange2.Text.Contains("Land") && Valuechange2.Text.Trim() != "")
+                        {
+                            string valuedetails2 = valuehistitle1 + "~" + TDValuechange2[0].Text + "~" + TDValuechange2[1].Text + "~" + TDValuechange2[2].Text + "~" + TDValuechange2[3].Text + "~" + TDValuechange2[4].Text + "~" + TDValuechange2[5].Text + "~" + TDValuechange2[6].Text;
+                            gc.insert_date(orderNumber, Parcelid, 1536, valuedetails2, 1, DateTime.Now);
+                        }
+                    }
+
                     //CAUV / Forest / Recoupment Details
                     driver.FindElement(By.XPath("//*[@id='sidemenu']/li[11]/a")).Click();
                     Thread.Sleep(2000);
@@ -374,7 +444,7 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, Parcelid, 1704, Distributionvaluedetails, 1, DateTime.Now);
                         }
                     }
-                   
+
                     IWebElement Taxspecialassess = driver.FindElement(By.Id("Special Assessments"));
                     IList<IWebElement> TRTaxspecialassess = Taxspecialassess.FindElements(By.TagName("tr"));
                     IList<IWebElement> TDTaxspecialassess;
@@ -402,6 +472,16 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, Parcelid, 1704, specialassessvaluedetails1, 1, DateTime.Now);
                         }
                     }
+
+                    //By Fund and By Fund and Levy Pdf
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[13]/a")).Click();
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcelid, "By Fund", driver, "OH", "Lucas");
+
+                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[14]/a")).Click();
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcelid, "By Fund and Levy", driver, "OH", "Lucas");
+
                     //Prior Year Taxes Details
                     string TaxYear = "";
 
@@ -520,24 +600,12 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, Parcelid, 1713, Paymentdetails1, 1, DateTime.Now);
                         }
                     }
-                    //By Fund and By Fund & Levy Pdf
-                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[13]/a")).Click();
-                    Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, Parcelid, "By Fund", driver, "OH", "Lucas");
-
-                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[14]/a")).Click();
-                    Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, Parcelid, "By Fund and Levy", driver, "OH", "Lucas");
 
 
-                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[4]/a")).Click();
-                    Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, Parcelid, "Transfers", driver, "OH", "Lucas");
 
 
-                    driver.FindElement(By.XPath("//*[@id='sidemenu']/li[5]/a")).Click();
-                    Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, Parcelid, "Values", driver, "OH", "Lucas");
+
+
 
 
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");

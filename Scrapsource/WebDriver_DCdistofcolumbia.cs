@@ -61,10 +61,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + sname + " " + sttype + " " + blockno;
                         gc.TitleFlexSearch(orderNumber, "", directParcel, titleaddress, "DC", "District of Columbia");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_DCDC"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -86,6 +92,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
 
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.XPath("//*[@id='SearchForm']/div/table/tbody/tr/td/table[1]/tbody/tr[3]/td"));
+                            if (INodata.Text.Contains("No records were found"))
+                            {
+                                HttpContext.Current.Session["Nodata_DCDC"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         //Multiparcel for Address
                         if (strMulti.Contains("Results 1 to "))
                         {
@@ -169,17 +186,41 @@ namespace ScrapMaricopa.Scrapsource
                             //Screenshot
                             gc.CreatePdf(orderNumber, Outparcelno, "DCParcelSearch", driver, "DC", "District of Columbia");
                             driver.FindElement(By.Id("imgSearch")).SendKeys(Keys.Enter);
+
+                            try
+                            {
+                                IWebElement INodata = driver.FindElement(By.XPath("//*[@id='SearchForm']/div/table/tbody/tr/td/table[1]/tbody/tr[3]/td"));
+                                if (INodata.Text.Contains("No records were found"))
+                                {
+                                    HttpContext.Current.Session["Nodata_DCDC"] = "Zero";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                            catch { }
                             ParcelSearch(orderNumber, Outparcelno);
                         }
                         if (Outparcelno.Length == 8)
                         {
                             strsplitparfirst = Outparcelno.Substring(0, 4);
-                            driver.FindElement(By.XPath("//*[@id='SearchForm']/table/tbody/tr/td/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td[2]/input")).SendKeys(strsplitparfirst);
+                            driver.FindElement(By.XPath("//*[@id='SearchForm']/div/table/tbody/tr/td/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td[2]/input")).SendKeys(strsplitparfirst);
                             strsplitparsecond = Outparcelno.Substring(4, 4);
-                            driver.FindElement(By.XPath("//*[@id='SearchForm']/table/tbody/tr/td/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td[6]/input")).SendKeys(strsplitparsecond);
+                            driver.FindElement(By.XPath("//*[@id='SearchForm']/div/table/tbody/tr/td/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td[6]/input")).SendKeys(strsplitparsecond);
                             driver.FindElement(By.Id("imgSearch")).SendKeys(Keys.Enter);
                             //Screenshot
                             gc.CreatePdf(orderNumber, Outparcelno, "DCParcelSearch", driver, "DC", "District of Columbia");
+
+                            try
+                            {
+                                IWebElement INodata = driver.FindElement(By.XPath("//*[@id='SearchForm']/div/table/tbody/tr/td/table[1]/tbody/tr[3]/td"));
+                                if (INodata.Text.Contains("No records were found"))
+                                {
+                                    HttpContext.Current.Session["Nodata_DCDC"] = "Zero";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                            catch { }
                             propertyDetails(orderNumber, Outparcelno);
                         }
                     }
@@ -233,7 +274,6 @@ namespace ScrapMaricopa.Scrapsource
                 string strAssementDetails = strLand + "~" + strImprovements + "~" + strTotalvalue + "~" + strTotalAssvalue;
                 // db.ExecuteQuery("insert into data_value_master(Order_no,parcel_no,Data_Field_Text_Id,Data_Field_value,Is_Table,Sequence) Values('" + orderNumber + "','" + parcelNumber + "',27,'" + strAssementDetails + "',1,1)");
                 gc.insert_date(orderNumber, parcelNumber, 27, strAssementDetails, 1, DateTime.Now);
-
                 AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
 
                 try
@@ -300,6 +340,7 @@ namespace ScrapMaricopa.Scrapsource
                     IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                     js1.ExecuteScript("arguments[0].click();", Iviewpay);
                     Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, parcelNumber, "Payment Details", driver, "DC", "District of Columbia");
                     IWebElement IrealPaytable = driver.FindElement(By.XPath("//*[@id='TABLE1']/tbody/tr/td[2]/div/table[1]/tbody"));
                     IList<IWebElement> Irealpaytrow = IrealPaytable.FindElements(By.TagName("tr"));
                     IList<IWebElement> IrealpayTD;
@@ -346,6 +387,8 @@ namespace ScrapMaricopa.Scrapsource
                     gc.downloadfile(URL, orderNumber, parcelNumber, "CurrentTax_Bill", "DC", "District of Columbia");
                 }
                 catch { }
+
+          
             }
             catch (Exception ex)
             {

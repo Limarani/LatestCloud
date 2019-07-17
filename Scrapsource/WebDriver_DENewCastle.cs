@@ -62,7 +62,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, address, "DE", "New Castle");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_DENewCastle"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -159,13 +166,27 @@ namespace ScrapMaricopa.Scrapsource
 
                         //Screenshot
                         gc.CreatePdf_Chrome(orderNumber, parcelNumber, "ParcelSearch", driver, "DE", "New Castle");
-
-                        driver.FindElement(By.XPath("/html/body/form/div[4]/div[2]/div[2]/div/div[2]/div[2]/table/tbody/tr[2]/td[1]")).Click();
-                        Thread.Sleep(3000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("/html/body/form/div[4]/div[2]/div[2]/div/div[2]/div[2]/table/tbody/tr[2]/td[1]")).Click();
+                            Thread.Sleep(3000);
+                        }
+                        catch { }
                         //Screenshot                    
                         gc.CreatePdf_Chrome(orderNumber, parcelNumber, "Tax Information", driver, "DE", "New Castle");
                     }
 
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolder1__UpdatePanelSummary']/div[2]/p"));
+                        if(Inodata.Text.Contains("There are 0 parcels matching your search criteria"))
+                        {
+                            HttpContext.Current.Session["Nodata_DENewCastle"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Scrapped Data   
 
                     //parcelNumber = driver.FindElement(By.XPath("//*[@id='ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolder1__Header']")).Text;

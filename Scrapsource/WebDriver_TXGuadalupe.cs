@@ -55,11 +55,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = streetno + " " + streetname + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", titleaddress, "TX", "Guadalupe");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_TXGuadalupe"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -112,46 +119,61 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                     }
 
-                    int trCount = driver.FindElements(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr")).Count;
-                    if (trCount > 1)
+                    try
                     {
-                        int maxCheck = 0;
-                        IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody"));
-                        gc.CreatePdf_Chrome(orderNumber, parcelNumber, "Multi Address Search", driver, "TX", "Guadalupe");
-                        IList<IWebElement> TRmulti5 = tbmulti.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TDmulti5;
-                        foreach (IWebElement row in TRmulti5)
+                        int trCount = driver.FindElements(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr")).Count;
+                        if (trCount > 1)
                         {
-                            if (maxCheck <= 25)
+                            int maxCheck = 0;
+                            IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody"));
+                            gc.CreatePdf_Chrome(orderNumber, parcelNumber, "Multi Address Search", driver, "TX", "Guadalupe");
+                            IList<IWebElement> TRmulti5 = tbmulti.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TDmulti5;
+                            foreach (IWebElement row in TRmulti5)
                             {
-                                TDmulti5 = row.FindElements(By.TagName("td"));
-                                if (TDmulti5.Count != 0)
+                                if (maxCheck <= 25)
                                 {
-                                    string multi1 = TDmulti5[1].Text + "~" + TDmulti5[3].Text + "~" + TDmulti5[4].Text;
-                                    gc.insert_date(orderNumber, TDmulti5[0].Text, 1025, multi1, 1, DateTime.Now);
+                                    TDmulti5 = row.FindElements(By.TagName("td"));
+                                    if (TDmulti5.Count != 0)
+                                    {
+                                        string multi1 = TDmulti5[1].Text + "~" + TDmulti5[3].Text + "~" + TDmulti5[4].Text;
+                                        gc.insert_date(orderNumber, TDmulti5[0].Text, 1025, multi1, 1, DateTime.Now);
+                                    }
+                                    maxCheck++;
                                 }
-                                maxCheck++;
                             }
-                        }
-                        if (TRmulti5.Count > 25)
-                        {
-                            HttpContext.Current.Session["multiParcel_TXGuadalupe_Multicount"] = "Maximum";
+                            if (TRmulti5.Count > 25)
+                            {
+                                HttpContext.Current.Session["multiParcel_TXGuadalupe_Multicount"] = "Maximum";
+                            }
+                            else
+                            {
+                                HttpContext.Current.Session["multiParcel_TXGuadalupe"] = "Yes";
+                            }
+
+                            driver.Quit();
+                            return "MultiParcel";
                         }
                         else
                         {
-                            HttpContext.Current.Session["multiParcel_TXGuadalupe"] = "Yes";
+                            driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr/td[1]")).Click();
+                            Thread.Sleep(2000);
                         }
-
-                        driver.Quit();
-                        return "MultiParcel";
                     }
-                    else
+                    catch { }
+
+                    try
                     {
-                        driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table/tbody/tr/td[1]")).Click();
-                        Thread.Sleep(2000);
+                        //No Data Found
+                        string nodata = driver.FindElement(By.XPath("//*[@id='grid']/div[2]/table")).Text;
+                        if (nodata.Contains("No properties found"))
+                        {
+                            HttpContext.Current.Session["Nodata_TXGuadalupe"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                     }
-
-
+                    catch { }
                     //property details              
                     try
                     {
@@ -388,7 +410,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

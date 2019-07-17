@@ -26,8 +26,8 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class Webdriver_SpartanburgSC
     {
-        string Parcelno = "", Owner = "", Property_Address = "", City = "", MultiAddress_details = "", Parcelhref="";
-        string ParcelID = "", Account = "", Land_Size = "", Location_Address = "", Legal_Desc = "", Neighberwood = "", Property_Usage = "", property = "", Owner1 = "", Owner2 = "", OwnerN = "",Year_Built = "";
+        string Parcelno = "", Owner = "", Property_Address = "", City = "", MultiAddress_details = "", Parcelhref = "";
+        string ParcelID = "", Account = "", Land_Size = "", Location_Address = "", Legal_Desc = "", Neighberwood = "", Property_Usage = "", property = "", Owner1 = "", Owner2 = "", OwnerN = "", Year_Built = "";
         string Year1 = "", Year2 = "", Year3 = "", Taxing = "", Phone = "", Fax = "", Taxing_Authority = "", Dist = "", Ac = "", AsVal = "", AppVal = "";
         string Owners = "", year = "", receipt = "", Desc = "", Type = "", Paid = "", Paid_date = "", Payment_details = "", Assemnt_Details1 = "", Assemnt_Details2 = "", Assemnt_Details3 = "";
         string Dis = "", Acres = "", Assed_Val = "", Appr_Value = "", Description = "", Sta = "", Latpay = "", Pstmrk = "", Amtpaid = "";
@@ -55,7 +55,7 @@ namespace ScrapMaricopa.Scrapsource
             //driver = new PhantomJSDriver();
             var option = new ChromeOptions();
             option.AddArgument("No-Sandbox");
-           using (driver = new ChromeDriver(option))
+            using (driver = new ChromeDriver(option))
             //using (driver = new ChromeDriver())
             {
                 try
@@ -66,10 +66,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = houseno + " " + sname + " " + sttype + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "SC", "Spartanburg");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Spartanburg_Zero"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -130,7 +136,7 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["multiParcel_Spartanburg_Multicount"] = "Maximum";
                                 driver.Quit();
-                                return "MultiParcel";
+                                return "Maximum";
                             }
                             if (AddressmaxCheck > 1 && AddressmaxCheck < 26)
                             {
@@ -344,20 +350,27 @@ namespace ScrapMaricopa.Scrapsource
 
                     try
                     {
-                        Owner1 = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl01_mSection']/div/div/div[1]")).Text;
-                        Owner1 = WebDriverTest.Before(Owner1, " &");
+                        Owner1 = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl01_mSection']/div/div/div[1]")).GetAttribute("innerText").ToString().Replace("\r\n", " ");
+                        // Owner1 = WebDriverTest.Before(Owner1, " &");
                     }
                     catch
                     { }
 
                     try
                     {
-                        Owner2 = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl01_ctl01_lstDeed_ctl01_lblDeedName_lblSearch']")).Text;
+                        Owner2 = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl01_ctl01_lstDeed_ctl01_lblDeedName_lblSearch']")).GetAttribute("innerText").ToString();
                     }
                     catch
                     { }
+                    if (Owner2 == "")
+                    {
+                        OwnerN = Owner1;
+                    }
+                    else
+                    {
+                        OwnerN = Owner1 + " & " + Owner2;
+                    }
 
-                    OwnerN = Owner1 + " & " + Owner2;
 
                     try
                     {
@@ -403,11 +416,11 @@ namespace ScrapMaricopa.Scrapsource
                         AssmTh = Assm.FindElements(By.TagName("th"));
                         if (AssmTh.Count != 0)
                         {
-                            Year1 = AssmTh[2].Text;
+                            Year1 = AssmTh[0].Text;
                             try
                             {
-                                Year2 = AssmTh[3].Text;
-                                Year3 = AssmTh[4].Text;
+                                Year2 = AssmTh[1].Text;
+                                Year3 = AssmTh[2].Text;
                             }
                             catch
                             { }
@@ -603,7 +616,10 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             Assemnt_Details2 = Year2 + "~" + MarketLand_Value[1] + "~" + MarketImprovement_Value[1] + "~" + MarketMisc_Value[1] + "~" + TotalMarket_Value[1] + "~" + TaxableLand_Value[1] + "~" + TaxableImprovement_Value[1] + "~" + TaxableMisc_Value[1] + "~" + AgCredit_Value[1] + "~" + TotalTaxable_Value[1] + "~" + AssessedLand_Value[1] + "~" + AssessedImprovement_Value[1] + "~" + AssessedMisc_Value[1] + "~" + TotalAssessed_Value[1];
-                            Assemnt_Details3 = Year3 + "~" + MarketLand_Value[2] + "~" + MarketImprovement_Value[2] + "~" + MarketMisc_Value[2] + "~" + TotalMarket_Value[2] + "~" + TaxableLand_Value[2] + "~" + TaxableImprovement_Value[2] + "~" + TaxableMisc_Value[2] + "~" + AgCredit_Value[2] + "~" + TotalTaxable_Value[2] + "~" + AssessedLand_Value[2] + "~" + AssessedImprovement_Value[2] + "~" + AssessedMisc_Value[2] + "~" + TotalAssessed_Value[2];
+                            if (Year3 != "")
+                            {
+                                Assemnt_Details3 = Year3 + "~" + MarketLand_Value[2] + "~" + MarketImprovement_Value[2] + "~" + MarketMisc_Value[2] + "~" + TotalMarket_Value[2] + "~" + TaxableLand_Value[2] + "~" + TaxableImprovement_Value[2] + "~" + TaxableMisc_Value[2] + "~" + AgCredit_Value[2] + "~" + TotalTaxable_Value[2] + "~" + AssessedLand_Value[2] + "~" + AssessedImprovement_Value[2] + "~" + AssessedMisc_Value[2] + "~" + TotalAssessed_Value[2];
+                            }
                         }
                         catch
                         { }
@@ -612,7 +628,10 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             gc.insert_date(orderNumber, ParcelID, 608, Assemnt_Details2, 1, DateTime.Now);
-                            gc.insert_date(orderNumber, ParcelID, 608, Assemnt_Details3, 1, DateTime.Now);
+                            if (Year3 != "")
+                            {
+                                gc.insert_date(orderNumber, ParcelID, 608, Assemnt_Details3, 1, DateTime.Now);
+                            }
                         }
                         catch
                         { }
@@ -650,13 +669,30 @@ namespace ScrapMaricopa.Scrapsource
                     { }
                     //ParcelID = WebDriverTest.Before(ParcelID, ".");
                     driver.FindElement(By.Id("searchBox")).SendKeys(ParcelID);
-                    driver.FindElement(By.XPath("//*[@id='searchForm']/div[1]/div/span/button")).SendKeys(Keys.Enter);
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='searchForm']/div[1]/div/span/button")).SendKeys(Keys.Enter);
+                    }
+                    catch { }
                     Thread.Sleep(4000);
 
                     //TaxPayment Receipt Details
                     try
                     {
-                        IWebElement TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        IWebElement TaxPaymentTB = null;
+                        try
+                        {
+                            TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        }
+                        catch { }
+                        try
+                        {
+                            if (TaxPaymentTB == null)
+                            {
+                                TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                            }
+                        }
+                        catch { }
                         IList<IWebElement> TaxPaymentTR = TaxPaymentTB.FindElements(By.TagName("tr"));
                         IList<IWebElement> TaxPaymentTD;
 
@@ -689,9 +725,29 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch (Exception)
                     { }
+                    try
+                    {
+                        ByVisibleElement(driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody")));
+                        gc.CreatePdf(orderNumber, ParcelID, "Tax Payment Details1", driver, "SC", "Spartanburg");
+                    }
+                    catch (Exception)
+                    { }
                     //Tax Info Details
-
-                    IWebElement Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    IWebElement Receipttable = null;
+                    try
+                    {
+                        Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    }
+                    catch { }
+                    try
+                    {
+                        if (Receipttable == null)
+                        {
+                            Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                        }
+                    }
+                    catch { }
+                    //IWebElement Receipttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
                     IList<IWebElement> ReceipttableRow = Receipttable.FindElements(By.TagName("tr"));
                     int rowcount = ReceipttableRow.Count;
 
@@ -699,7 +755,22 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         if (p < 4)
                         {
-                            driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p + "]/td[9]/button")).Click();
+                            try
+                            {
+                                //driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p + "]/td[9]/button")).Click();
+                                IWebElement IAddressSearch1 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p + "]/td[9]/button"));
+                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                            }
+                            catch { }
+                            try
+                            {
+                                //driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody/tr[" + p + "]/td[9]/button")).Click();
+                                IWebElement IAddressSearch1 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody/tr[" + p + "]/td[9]/button"));
+                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                            }
+                            catch { }
                             Thread.Sleep(4000);
 
                             IWebElement TaxTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[2]/div[1]/table/tbody"));

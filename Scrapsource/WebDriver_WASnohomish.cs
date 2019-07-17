@@ -64,6 +64,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SnohomishWA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -148,8 +154,8 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctl00_BodyContentPlaceHolder_ErrorLabel")).Text;
-                            if (nodata.Contains("Returned 0 records."))
+                            string nodata = driver.FindElement(By.Id("mMessage")).Text;
+                            if (nodata.Contains("0 records returned"))
                             {
                                 HttpContext.Current.Session["Nodata_SnohomishWA"] = "Yes";
                                 driver.Quit();
@@ -169,8 +175,8 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctl00_BodyContentPlaceHolder_ErrorLabel")).Text;
-                            if (nodata.Contains("Returned 0 records."))
+                            string nodata = driver.FindElement(By.Id("mAccountSearchLabel")).Text;
+                            if (nodata.Contains("does not exist"))
                             {
                                 HttpContext.Current.Session["Nodata_SnohomishWA"] = "Yes";
                                 driver.Quit();

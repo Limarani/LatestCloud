@@ -84,6 +84,13 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CASanJauin"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -101,41 +108,45 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Address search result", driver, "CA", "San Joaquin");
                         Thread.Sleep(6000);
 
-                        IWebElement tbmulti = driver.FindElement(By.XPath("/html/body/form/center/table/tbody"));
-                        IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
-                        if (TRmulti.Count > 6)
+                        try
                         {
-                            IList<IWebElement> TDmulti;
-                            foreach (IWebElement row in TRmulti)
+                            IWebElement tbmulti = driver.FindElement(By.XPath("/html/body/form/center/table/tbody"));
+                            IList<IWebElement> TRmulti = tbmulti.FindElements(By.TagName("tr"));
+                            if (TRmulti.Count > 6)
                             {
-                                if (!row.Text.Contains("Asmt"))
+                                IList<IWebElement> TDmulti;
+                                foreach (IWebElement row in TRmulti)
                                 {
-                                    if (row.Text.Contains("Assessor Inquiry: Please enter ONLY ONE search criteria"))
+                                    if (!row.Text.Contains("Asmt"))
                                     {
-                                        IWebElement runButton1 = driver.FindElement(By.XPath("/html/body/form/center/table/tbody/tr[2]/td[1]/a"));
-                                        runButton1.Click();
+                                        if (row.Text.Contains("Assessor Inquiry: Please enter ONLY ONE search criteria"))
+                                        {
+                                            IWebElement runButton1 = driver.FindElement(By.XPath("/html/body/form/center/table/tbody/tr[2]/td[1]/a"));
+                                            runButton1.Click();
 
-                                    }
-                                    TDmulti = row.FindElements(By.TagName("td"));
-                                    if (TDmulti.Count == 3 && TDmulti[0].Text.Trim() != "")
-                                    {
-                                        Assess = TDmulti[0].Text;
-                                        fee_parcel = TDmulti[1].Text;
-                                        Tra = TDmulti[2].Text;
-                                    }
-                                    if (TDmulti.Count == 1 && TDmulti[0].Text.Trim() != "")
-                                    {
-                                        address1 = TDmulti[0].Text;
-                                        string multi1 = Assess + "~" + Tra + "~" + address1;
-                                        gc.insert_date(orderNumber, fee_parcel, 218, multi1, 1, DateTime.Now);
+                                        }
+                                        TDmulti = row.FindElements(By.TagName("td"));
+                                        if (TDmulti.Count == 3 && TDmulti[0].Text.Trim() != "")
+                                        {
+                                            Assess = TDmulti[0].Text;
+                                            fee_parcel = TDmulti[1].Text;
+                                            Tra = TDmulti[2].Text;
+                                        }
+                                        if (TDmulti.Count == 1 && TDmulti[0].Text.Trim() != "")
+                                        {
+                                            address1 = TDmulti[0].Text;
+                                            string multi1 = Assess + "~" + Tra + "~" + address1;
+                                            gc.insert_date(orderNumber, fee_parcel, 218, multi1, 1, DateTime.Now);
+                                        }
                                     }
                                 }
+                                HttpContext.Current.Session["multiparcel_CASanJoaquin"] = "Yes";
+                                driver.Quit();
+                                gc.mergpdf(orderNumber, "CA", "San Joaquin");
+                                return "MultiParcel";
                             }
-                            HttpContext.Current.Session["multiparcel_CASanJoaquin"] = "Yes";
-                            driver.Quit();
-                            gc.mergpdf(orderNumber, "CA", "San Joaquin");
-                            return "MultiParcel";
                         }
+                        catch { }
 
                     }
                     if (searchType == "parcel")
@@ -169,12 +180,24 @@ namespace ScrapMaricopa.Scrapsource
 
                     }
 
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.XPath("/html/body/form/center/table"));
+                        if (Inodata.Text.Contains("Field") && Inodata.Text.Contains("Search Type") && Inodata.Text.Contains("Parcel or Tail"))
+                        {
+                            HttpContext.Current.Session["Nodata_CASanJauin"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     Thread.Sleep(6000);
                     gc.CreatePdf(orderNumber, parcelNumber, "Parcel search11", driver, "CA", "San Joaquin");
                     IWebElement runButton = driver.FindElement(By.XPath("/html/body/form/center/table/tbody/tr[2]/td[1]/a"));
                     runButton.Click();
                     Thread.Sleep(4000);
+
 
                     string date = DateTime.Today.ToString("dd-MM-yyyy");
                     //property details
@@ -224,8 +247,8 @@ namespace ScrapMaricopa.Scrapsource
                     //string strSearch = ISearch.GetAttribute("href");
                     //driver.Navigate().GoToUrl(strSearch);
                     taxclick(orderNumber, parcelNumber);
-                    
-                    if(Tax>0)
+
+                    if (Tax > 0)
                     {
                         return "No Data Found";
                     }
@@ -267,7 +290,8 @@ namespace ScrapMaricopa.Scrapsource
             //    }
             //}
             //catch { }
-            try { 
+            try
+            {
                 strtaxTRA = driver.FindElement(By.XPath("//*[@id='ResultDiv']/div[1]/div/div/p")).Text;
                 if (strtaxTRA.Contains("TRA : "))
                 {
@@ -313,7 +337,7 @@ namespace ScrapMaricopa.Scrapsource
                 taxdetails(orderNumber, parcelNumber);
             }
         }
-       
+
         public void taxdetails(string orderNumber, string parcelNumber)
         {
             for (int i = 1; i < 3; i++)

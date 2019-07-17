@@ -59,11 +59,18 @@ namespace ScrapMaricopa.Scrapsource
                 {
                     //string address = houseno + " " + direction + " " + streetname + " " + streettype;
                     gc.TitleFlexSearch(orderNumber, "", ownername, Address, "CA", "Stanislaus");
-                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                     {
+                        driver.Quit();
                         return "MultiParcel";
                     }
-                    parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace("-", "");
+                    else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                    {
+                        HttpContext.Current.Session["Zero_Stanislaus"] = "Zero";
+                        driver.Quit();
+                        return "No Data Found";
+                    }
+                    parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                     searchType = "parcel";
                 }
                 if (searchType == "parcel")
@@ -76,6 +83,7 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(4000);
                     try
                     {
+                        gc.CreatePdf_WOP(orderNumber, "Parcel search Result", driver, "CA", "Stanislaus");
                         int count = 0;
                         string Multiparcelnumber = "", Singlerowclick = "";
                         IWebElement Multyaddresstable1 = driver.FindElement(By.XPath("/html/body/center/iframe"));
@@ -128,6 +136,7 @@ namespace ScrapMaricopa.Scrapsource
 
                 //Assessment Details
                 //insert 1267
+                gc.CreatePdf_WOP(orderNumber, "Assessment Details", driver, "CA", "Stanislaus");
                 YearBuilt = driver.FindElement(By.XPath("/html/body/center[2]/center[2]/table/tbody/tr[8]/td")).Text;
                 string Assessmentdetails1 = "", assessmentdescrip = "", Assessment = "", ParcelNumber = "", TaxRateArea = "", Taxability = "", LandUse = "", Assessee = "", Land = "", Structure = "", Fixtures = "", Growingimprovement = "", TotalLandImp = "", PersonalProperty = "", PersonalPropertyMH = "", Homeownerexpm = "", Otherexmp = "", NetAssessment = "", Ownership = "";
 
@@ -138,42 +147,42 @@ namespace ScrapMaricopa.Scrapsource
                 {
                     TDBigdata1 = row.FindElements(By.TagName("td"));
 
-                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 2 && !row.Text.Contains("Current Document") && !row.Text.Contains("Land Sq Ft"))
+                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 2 && !row.Text.Contains("Current Document") && !row.Text.Contains("Land Sq Ft") && !row.Text.Contains("No assessment found"))
                     {
                         Assessment = TDBigdata1[0].Text;
                         ParcelNumber = TDBigdata1[1].Text;
 
                         //gc.insert_date(orderNumber, ParcelNumber, 1267, Assessmentdetails1, 1, DateTime.Now);
                     }
-                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 2 && !row.Text.Contains("Assessment") && !row.Text.Contains("Current Document"))
+                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 2 && !row.Text.Contains("Assessment") && !row.Text.Contains("Current Document") && !row.Text.Contains("No assessment found"))
                     {
 
                         TaxRateArea = TDBigdata1[1].Text;
 
                         //gc.insert_date(orderNumber, ParcelNumber, 1267, Assessmentdetails1, 1, DateTime.Now);
                     }
-                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && !row.Text.Contains("Land Use") && !row.Text.Contains("Assessee") && !row.Text.Contains("Assessment Description"))
+                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && !row.Text.Contains("Land Use") && !row.Text.Contains("Assessee") && !row.Text.Contains("Assessment Description") && !row.Text.Contains("No assessment found"))
                     {
 
                         Taxability = TDBigdata1[0].Text;
 
                         //gc.insert_date(orderNumber, ParcelNumber, 1267, Assessmentdetails1, 1, DateTime.Now);
                     }
-                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && !row.Text.Contains("Taxability") && !row.Text.Contains("Assessee") && !row.Text.Contains("Assessment Description"))
+                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && !row.Text.Contains("Taxability") && !row.Text.Contains("Assessee") && !row.Text.Contains("Assessment Description") && !row.Text.Contains("No assessment found"))
                     {
 
                         LandUse = TDBigdata1[0].Text;
 
                         //gc.insert_date(orderNumber, ParcelNumber, 1267, Assessmentdetails1, 1, DateTime.Now);
                     }
-                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && !row.Text.Contains("Taxability") && !row.Text.Contains("Land Use") && !row.Text.Contains("Assessment Description"))
+                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && !row.Text.Contains("Taxability") && !row.Text.Contains("Land Use") && !row.Text.Contains("Assessment Description") && !row.Text.Contains("No assessment found"))
                     {
 
                         Assessee = TDBigdata1[0].Text;
 
                         //gc.insert_date(orderNumber, ParcelNumber, 1267, Assessmentdetails1, 1, DateTime.Now);
                     }
-                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && row.Text.Contains("Assessment Description"))
+                    if (TDBigdata1.Count != 0 && TDBigdata1.Count == 1 && row.Text.Contains("Assessment Description") && !row.Text.Contains("No assessment found"))
                     {
 
                         assessmentdescrip = TDBigdata1[0].Text;
@@ -182,67 +191,74 @@ namespace ScrapMaricopa.Scrapsource
                     }
 
                 }
-
-
-                IWebElement Rollvalues = driver.FindElement(By.XPath("/html/body/center[2]/table/thead[2]/tr/th"));
-                string Rollvaluesasof = GlobalClass.After(Rollvalues.Text, "Roll Values as of:").Trim();
-
-                IWebElement Bigdata2 = driver.FindElement(By.XPath("/html/body/center[2]/table/tbody[2]"));
-                IList<IWebElement> TRBigdata2 = Bigdata2.FindElements(By.TagName("tr"));
-                IList<IWebElement> TDBigdata2;
-                foreach (IWebElement row2 in TRBigdata2)
+                string Rollvaluesasof = "";
+                try
                 {
-                    TDBigdata2 = row2.FindElements(By.TagName("td"));
+                    IWebElement Rollvalues = driver.FindElement(By.XPath("/html/body/center[2]/table/thead[2]/tr/th"));
+                    Rollvaluesasof = GlobalClass.After(Rollvalues.Text, "Roll Values as of:").Trim();
 
-                    if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Land") && !row2.Text.Contains("Net Assessment"))
+                    IWebElement Bigdata2 = driver.FindElement(By.XPath("/html/body/center[2]/table/tbody[2]"));
+                    IList<IWebElement> TRBigdata2 = Bigdata2.FindElements(By.TagName("tr"));
+                    IList<IWebElement> TDBigdata2;
+                    foreach (IWebElement row2 in TRBigdata2)
                     {
-                        Land = TDBigdata2[0].Text;
-                        PersonalProperty = TDBigdata2[1].Text;
-                    }
-                    if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Structure(s)"))
-                    {
-                        Structure = TDBigdata2[0].Text;
-                        PersonalPropertyMH = TDBigdata2[1].Text;
-                    }
-                    if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Fixtures"))
-                    {
-                        Fixtures = TDBigdata2[0].Text;
-                        Homeownerexpm = TDBigdata2[1].Text;
-                    }
-                    if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Growing Improvements"))
-                    {
-                        Growingimprovement = TDBigdata2[0].Text;
-                        Otherexmp = TDBigdata2[1].Text;
-                    }
-                    if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Total Land & Improvements"))
-                    {
-                        TotalLandImp = TDBigdata2[0].Text;
-                        NetAssessment = TDBigdata2[1].Text;
-                    }
+                        TDBigdata2 = row2.FindElements(By.TagName("td"));
 
+                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Land") && !row2.Text.Contains("Net Assessment"))
+                        {
+                            Land = TDBigdata2[0].Text;
+                            PersonalProperty = TDBigdata2[1].Text;
+                        }
+                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Structure(s)"))
+                        {
+                            Structure = TDBigdata2[0].Text;
+                            PersonalPropertyMH = TDBigdata2[1].Text;
+                        }
+                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Fixtures"))
+                        {
+                            Fixtures = TDBigdata2[0].Text;
+                            Homeownerexpm = TDBigdata2[1].Text;
+                        }
+                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Growing Improvements"))
+                        {
+                            Growingimprovement = TDBigdata2[0].Text;
+                            Otherexmp = TDBigdata2[1].Text;
+                        }
+                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 2 && row2.Text.Contains("Total Land & Improvements"))
+                        {
+                            TotalLandImp = TDBigdata2[0].Text;
+                            NetAssessment = TDBigdata2[1].Text;
+                        }
+
+                    }
                 }
+                catch { }
 
-                string OwnerName1 = "", OwnPercentage = "", Pri = "";
-
-                IWebElement Bigdata3 = driver.FindElement(By.XPath("/html/body/center[2]/center[1]/table"));
-                IList<IWebElement> TRBigdata3 = Bigdata3.FindElements(By.TagName("tr"));
-                IList<IWebElement> TDBigdata3;
-                foreach (IWebElement row3 in TRBigdata3)
+                try
                 {
-                    TDBigdata3 = row3.FindElements(By.TagName("td"));
+                    string OwnerName1 = "", OwnPercentage = "", Pri = "";
 
-                    if (TDBigdata3.Count != 0 && TDBigdata3.Count == 6 && !row3.Text.Contains("Owner Name") /*&& !row3.Text.Contains("Net Assessment")*/)
+                    IWebElement Bigdata3 = driver.FindElement(By.XPath("/html/body/center[2]/center[1]/table"));
+                    IList<IWebElement> TRBigdata3 = Bigdata3.FindElements(By.TagName("tr"));
+                    IList<IWebElement> TDBigdata3;
+                    foreach (IWebElement row3 in TRBigdata3)
                     {
-                        OwnerName1 += TDBigdata3[0].Text + ", ";
-                        OwnPercentage += TDBigdata3[1].Text + ", ";
-                        Pri = TDBigdata3[2].Text + ", ";
+                        TDBigdata3 = row3.FindElements(By.TagName("td"));
+
+                        if (TDBigdata3.Count != 0 && TDBigdata3.Count == 6 && !row3.Text.Contains("Owner Name") /*&& !row3.Text.Contains("Net Assessment")*/)
+                        {
+                            OwnerName1 += TDBigdata3[0].Text + ", ";
+                            OwnPercentage += TDBigdata3[1].Text + ", ";
+                            Pri = TDBigdata3[2].Text + ", ";
+                        }
+
+
                     }
 
-
+                    string Assessesult = OwnerName1.Replace(",", "").Trim() + "~" + OwnPercentage.Replace(",", "").Trim() + "~" + Pri.Replace(",", "").Trim() + "~" + TaxRateArea.Trim() + "~" + Taxability.Trim() + "~" + LandUse.Trim() + "~" + Assessee.Trim() + "~" + assessmentdescrip.Trim() + "~" + Rollvaluesasof.Trim() + "~" + Land.Trim() + "~" + Structure.Trim() + "~" + Fixtures.Trim() + "~" + Growingimprovement.Trim() + "~" + TotalLandImp.Trim() + "~" + PersonalProperty.Trim() + "~" + PersonalPropertyMH.Trim() + "~" + Homeownerexpm.Trim() + "~" + Otherexmp.Trim() + "~" + NetAssessment.Trim() + "~" + YearBuilt.Trim();
+                    gc.insert_date(orderNumber, parcelNumber, 1267, Assessesult, 1, DateTime.Now);
                 }
-
-                string Assessesult = OwnerName1.Replace(",", "").Trim() + "~" + OwnPercentage.Replace(",", "").Trim() + "~" + Pri.Replace(",", "").Trim() + "~" + TaxRateArea.Trim() + "~" + Taxability.Trim() + "~" + LandUse.Trim() + "~" + Assessee.Trim() + "~" + assessmentdescrip.Trim() + "~" + Rollvaluesasof.Trim() + "~" + Land.Trim() + "~" + Structure.Trim() + "~" + Fixtures.Trim() + "~" + Growingimprovement.Trim() + "~" + TotalLandImp.Trim() + "~" + PersonalProperty.Trim() + "~" + PersonalPropertyMH.Trim() + "~" + Homeownerexpm.Trim() + "~" + Otherexmp.Trim() + "~" + NetAssessment.Trim() + "~" + YearBuilt.Trim();
-                gc.insert_date(orderNumber, parcelNumber, 1267, Assessesult, 1, DateTime.Now);
+                catch { }
                 gc.CreatePdf(orderNumber, ParcelNumber, "Assessor Public Inquiry", driver, "CA", "Stanislaus");
                 AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
                 //tax Information
@@ -330,9 +346,21 @@ namespace ScrapMaricopa.Scrapsource
                     for (int j = 1; j < 3; j++)
                     {
                         IWebElement firstinstalment = driver.FindElement(By.XPath("//*[@id='h2tab1']/div[1]/div[" + j + "]"));
+                        string PaidStatus1 = "", Due_PaidDate = "";
                         string instalfirst = GlobalClass.Before(firstinstalment.Text, "Paid Status");
-                        string PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Delinq. Date").Trim();
-                        string Due_PaidDate = gc.Between(firstinstalment.Text, "Delinq. Date", "Total Due").Trim();
+                        if (firstinstalment.Text.Contains("Delinq. Date"))
+                        {
+                            PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Delinq. Date").Trim();
+                            Due_PaidDate = gc.Between(firstinstalment.Text, "Delinq. Date", "Total Due").Trim();
+                        }
+                        else
+                        {
+                            PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Paid Date").Trim();
+                            Due_PaidDate = gc.Between(firstinstalment.Text, "Paid Date", "Total Due").Trim();
+                        }
+
+                        // string PaidStatus1 = gc.Between(firstinstalment.Text, "Paid Status", "Delinq. Date").Trim();
+                        // string Due_PaidDate = gc.Between(firstinstalment.Text, "Delinq. Date", "Total Due").Trim();
                         string totaldue = gc.Between(firstinstalment.Text, "Total Due", "Total Paid").Trim();
                         string TotalPaid = gc.Between(firstinstalment.Text, "Total Paid", "Balance").Trim();
                         if (firstinstalment.Text.Contains("ADD"))

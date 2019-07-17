@@ -45,23 +45,29 @@ namespace ScrapMaricopa.Scrapsource
             driverService.HideCommandPromptWindow = true;
             // driver = new PhantomJSDriver();
             // driver = new ChromeDriver();
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver()) //PhantomJSDriver
             {
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
 
-                    driver.Navigate().GoToUrl("http://taxweb.co.comal.tx.us/ClientDB/PropertySearch.aspx?cid=1");
+                    driver.Navigate().GoToUrl("https://propaccess.trueautomation.com/clientdb/?cid=56");
 
 
                     if (searchType == "titleflex")
                     {
                         string titleaddress = houseno + " " + sname + " " + stype + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TX", "Comal");
-                        if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ComalTX"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -100,9 +106,11 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "ownername")
                     {
+                        driver.FindElement(By.Id("propertySearchOptions_advanced")).Click();
+                        Thread.Sleep(2000);
                         driver.FindElement(By.Id("propertySearchOptions_ownerName")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "owner search", driver, "TX", "Comal");
-                        driver.FindElement(By.Id("propertySearchOptions_search")).Click();
+                        driver.FindElement(By.Id("propertySearchOptions_searchAdv")).Click();
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Comal");
                     }
@@ -120,56 +128,71 @@ namespace ScrapMaricopa.Scrapsource
                         //       gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Williamson");
                     }
                     //Geographic ID~Type~Property Address~Owner Name
-
-                    int trCount = driver.FindElements(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr")).Count;
-                    if (trCount > 3)
-                    {//*[@id="propertySearchResults_resultsTable"]/tbody
-                        int maxCheck = 0;
-                        IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody"));
-                        IList<IWebElement> TRmulti5 = tbmulti.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TDmulti5;
-                        foreach (IWebElement row in TRmulti5)
-                        {
-                            if (maxCheck <= 25)
-                            {
-                                TDmulti5 = row.FindElements(By.TagName("td"));
-                                if (TDmulti5.Count == 10)
-                                {
-                                    string multi1 = TDmulti5[2].Text + "~" + TDmulti5[3].Text + "~" + TDmulti5[4].Text + "~" + TDmulti5[6].Text;
-                                    gc.insert_date(orderNumber, TDmulti5[1].Text, 866, multi1, 1, DateTime.Now);
-                                }
-                                maxCheck++;
-                            }
-                        }
-                        if (TRmulti5.Count > 25)
-                        {
-                            HttpContext.Current.Session["multiParcel_Comal_Multicount"] = "Maximum";
-                        }
-                        else
-                        {
-                            HttpContext.Current.Session["multiparcel_Comal"] = "Yes";
-                        }
-
-                        driver.Quit();
-                        return "MultiParcel";
-                    }
-                    else
+                    try
                     {
 
-                        string type = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[4]")).Text.Replace("\r\n", " ");
-                        if (type == "Real")
-                        {
-                            driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
-                            Thread.Sleep(2000);
-                        }
-                        else
-                        {
-                            HttpContext.Current.Session["alert_msg"] = "Yes";
+                        int trCount = driver.FindElements(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr")).Count;
+                        if (trCount > 3)
+                        {//*[@id="propertySearchResults_resultsTable"]/tbody
+                            int maxCheck = 0;
+                            IWebElement tbmulti = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody"));
+                            IList<IWebElement> TRmulti5 = tbmulti.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TDmulti5;
+                            foreach (IWebElement row in TRmulti5)
+                            {
+                                if (maxCheck <= 25)
+                                {
+                                    TDmulti5 = row.FindElements(By.TagName("td"));
+                                    if (TDmulti5.Count == 10)
+                                    {
+                                        string multi1 = TDmulti5[2].Text + "~" + TDmulti5[3].Text + "~" + TDmulti5[4].Text + "~" + TDmulti5[6].Text;
+                                        gc.insert_date(orderNumber, TDmulti5[1].Text, 866, multi1, 1, DateTime.Now);
+                                    }
+                                    maxCheck++;
+                                }
+                            }
+                            if (TRmulti5.Count > 25)
+                            {
+                                HttpContext.Current.Session["multiParcel_Comal_Multicount"] = "Maximum";
+                            }
+                            else
+                            {
+                                HttpContext.Current.Session["multiparcel_Comal"] = "Yes";
+                            }
+
                             driver.Quit();
                             return "MultiParcel";
                         }
-                    }
+                        else
+                        {
 
+                            string type = driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[4]")).Text.Replace("\r\n", " ");
+                            if (type == "Real")
+                            {
+                                driver.FindElement(By.XPath("//*[@id='propertySearchResults_resultsTable']/tbody/tr[2]/td[10]/a")).Click();
+                                Thread.Sleep(2000);
+                            }
+                            else
+                            {
+                                HttpContext.Current.Session["alert_msg"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
+                        }
+                    }
+                    catch { }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
+                        if(INodata.Text.Contains("None found"))
+                        {
+                            HttpContext.Current.Session["Nodata_ComalTX"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
                     //    string ownership = "", PropertyID = "", GeographicID = "", Name = "", MailingAddress = "", OwnerID = "", LegalDescription = "", Neighborhood = "", Type = "", Address = "", NeighborhoodCD = "", Exemptions = "", MapID = "", YearBuilt = "", Acres = "";
 
@@ -399,12 +422,38 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
                     //*[@id="avalon"]/div/div[2]/div[1]/div[3]
-                    mul = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[2]/div[1]/div[3]")).Text;
+                    try
+                    {
+                        mul = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[2]/div[1]/div[3]")).Text;
+                    }
+                    catch { }
+
+                    try
+                    {
+                        if(mul.Trim() == "")
+                        {
+                            mul = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[1]/div[3]")).Text;
+                        }
+                    }
+                    catch { }
+
 
                     mul = GlobalClass.Before(mul, " record");
                     int trcount = Int32.Parse(mul);
-
-                    IWebElement multitableElement6 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    IWebElement multitableElement6 = null;
+                    try
+                    {
+                        multitableElement6 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    }
+                    catch { }
+                    try
+                    {
+                        if (multitableElement6 == null)
+                        {
+                            multitableElement6 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                        }
+                    }
+                    catch { }
                     IList<IWebElement> multitableRow6 = multitableElement6.FindElements(By.TagName("tr"));
                     IList<IWebElement> multirowTD6;
                     foreach (IWebElement row in multitableRow6)
@@ -420,11 +469,33 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         if (trcount > 20)
                         {
-
-                            driver.FindElement(By.XPath("//*[@id='avalon']/div/div[2]/div[2]/div[2]/ul/li[4]/a")).Click();
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='avalon']/div/div[2]/div[2]/div[2]/ul/li[4]/a")).Click();
+                            }
+                            catch { }
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/div[2]/ul/li[4]/a")).Click();
+                            }
+                            catch { }
+                           
                             Thread.Sleep(4000);
                             gc.CreatePdf(orderNumber, PropertyID, "tax search result2", driver, "TX", "Comal");
-                            IWebElement multitableElement61 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                            IWebElement multitableElement61 = null;
+                            try
+                            {
+                                multitableElement61 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                            }
+                            catch { }
+                            try
+                            {
+                                if (multitableElement61 == null)
+                                {
+                                    multitableElement61 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                                }
+                            }
+                            catch { }
                             IList<IWebElement> multitableRow61 = multitableElement61.FindElements(By.TagName("tr"));
                             IList<IWebElement> multirowTD61;
                             foreach (IWebElement row in multitableRow61)
@@ -446,8 +517,24 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(4000);
                     }
                     catch { }
-                    driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[1]/td[7]/button")).Click();
-                    Thread.Sleep(4000);
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/div[2]/ul/li[1]/a")).Click();
+                        Thread.Sleep(4000);
+                    }
+                    catch { }
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[1]/td[7]/button")).Click();
+                        Thread.Sleep(4000);
+                    }
+                    catch { }
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody/tr[1]/td[7]/button")).Click();
+                        Thread.Sleep(4000);
+                    }
+                    catch { }
                     gc.CreatePdf(orderNumber, PropertyID, "tax info", driver, "TX", "Comal");
                     //Tax Breakdown Details Table: 
                     //Entity~Description~Assessed~Homestead Exemption~OV65 or DP Exemption~Other Exemption~Freeze Year~Freeze Ceiling~Taxable Value~Rate per $100~Base Tax Due

@@ -72,6 +72,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_SantaCruzCA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -283,6 +289,12 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         ITaxbillhistorySearch = driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr[2]/td[2]/table/tbody/tr[3]/td/table[6]/tbody/tr/td[2]/form/input"));
+
+                    }
+                    catch { }
+                    try
+                    {
+                        ITaxbillhistorySearch = driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr[2]/td[2]/table/tbody/tr[3]/td/table[4]/tbody/tr/td[2]/form/input"));
 
                     }
                     catch { }

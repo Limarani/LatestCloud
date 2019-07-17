@@ -57,9 +57,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string Address = streetNo + " " + streetName;
                         gc.TitleFlexSearch(orderNumber, "", ownername, Address, "CA", "Kern");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CAKern"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -73,6 +80,17 @@ namespace ScrapMaricopa.Scrapsource
                         //string parcelNumber = "463-520-22-00-0";
                         //string parcelNumber = parcelNumber;
                         TaxSearch(orderNumber, parcelNumber);
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.Id("ctl00_ContentPlaceHolder1_lblNoResults"));
+                            if (Inodata.Text.Contains("No matches found"))
+                            {
+                                HttpContext.Current.Session["Nodata_CAKern"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, parcelNumber, "CurrentYear Tax_Aummary", driver, "CA", "Kern");
                         taxdetails(orderNumber, parcelNumber);
@@ -492,7 +510,6 @@ namespace ScrapMaricopa.Scrapsource
             {
 
             }
-
         }
     }
 }

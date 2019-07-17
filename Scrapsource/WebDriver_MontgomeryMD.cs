@@ -62,18 +62,18 @@ namespace ScrapMaricopa.Scrapsource
 
                         }
                         gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, titleaddress, "MD", "Montgomery");
-
-                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null)
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
-                            if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
-                            {
-                                driver.Quit();
-                                return "MultiParcel";
-                            }
+                            driver.Quit();
+                            return "MultiParcel";
                         }
-
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_MontgomeryMD"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -171,6 +171,19 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Result", driver, "MD", "Montgomery");
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_divError"));
+                        if (INodata.Text.Contains("There are no records that match your criteria for county"))
+                        {
+                            HttpContext.Current.Session["Nodata_MontgomeryMD"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string LegalDescription = "", parcelno = "", Parcel = "", Use = "", PrincipalResidence = "", Map = "", Grid = "", SubDistrict = "", Subdivision = "", Section = "", Block = "", Lot = "", AssessmentYear = "", Town = "";
                     string HomesteadApplicationStatus = "", HomeownersTaxCreditApplicationStatus = "", HomeownersTaxCreditApplicationDate = "", District = "";
                     parcelno = driver.FindElement(By.XPath("//*[@id='MainContent_MainContent_cphMainContentArea_ucSearchType_wzrdRealPropertySearch_ucDetailsSearch_dlstDetaisSearch_lblDetailsStreetHeader_0']")).Text.Replace("Folio:", "");

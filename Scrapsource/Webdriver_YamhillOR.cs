@@ -36,10 +36,10 @@ namespace ScrapMaricopa.Scrapsource
             HttpContext.Current.Session["orderNo"] = orderNumber;
             GlobalClass.global_parcelNo = parcelNumber;
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
-            string multi = "", TaxAuthority="";
+            string multi = "", TaxAuthority = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             //driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            using (driver = new ChromeDriver())
             {
                 //driver = new ChromeDriver();
                 try
@@ -72,7 +72,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", address.Trim(), "OR", "Yamhill");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["nodata_Yamhill"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "account";
@@ -97,6 +104,18 @@ namespace ScrapMaricopa.Scrapsource
                         //IWebElement multirecord = driver.FindElement(By.XPath("//*[@id='mMessage']"));
 
                         gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "OR", "Yamhill");
+                        try
+                        {
+                            string nodata = driver.FindElement(By.XPath("//*[@id='mMessage']")).Text;
+                            if (nodata.Contains("0 records"))
+                            {
+                                HttpContext.Current.Session["nodata_Yamhill"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
+
                         IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='mGrid']/tbody"));
                         IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
                         IList<IWebElement> THmultiaddress = multiaddress.FindElements(By.TagName("th"));
@@ -111,6 +130,7 @@ namespace ScrapMaricopa.Scrapsource
                         if (TRmultiaddress.Count > 28)
                         {
                             HttpContext.Current.Session["multiParcel_Yamhill_Maximum"] = "Maimum";
+                            driver.Quit();
                             return "Maximum";
                         }
                         if (TRmultiaddress.Count > 2)
@@ -157,6 +177,18 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(1000);
 
                     }
+
+                    try
+                    {
+                        string nodata = driver.FindElement(By.XPath("//*[@id='mSearchFieldsValidator']")).Text;
+                        if (nodata.Contains("does not exist"))
+                        {
+                            HttpContext.Current.Session["nodata_Yamhill"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     // Property Details
 

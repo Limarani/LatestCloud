@@ -66,6 +66,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_BentonAR"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -281,6 +287,24 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
                     db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + title + "Year Built" + "' where Id = '" + 1457 + "'");
                     gc.insert_date(orderNumber, ParcelID, 1457, value + YearBuilt, 1, DateTime.Now);
+                    //Land pdf
+                    try
+                    {
+                        driver.FindElement(By.XPath("/html/body/div[2]/div[3]/div/ul/li[2]/a")).Click();
+                        Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, ParcelID, "Land Pdf", driver, "AR", "Benton");
+                    }
+                    catch { }
+
+                    //Sales
+                    try
+                    {
+                        driver.FindElement(By.XPath("/html/body/div[2]/div[3]/div/ul/li[3]/a")).Click();
+                        Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, ParcelID, "Sales Pdf", driver, "AR", "Benton");
+                    }
+                    catch { }
+
                     //Assessment Details                    
                     try
                     {
@@ -324,6 +348,12 @@ namespace ScrapMaricopa.Scrapsource
                             title1 = ""; value1 = ""; value2 = "";
                         }
                     }
+                    //Tax Authority Details
+                    driver.Navigate().GoToUrl("https://propertytax.ark.org/benton/index.php");
+
+                    string Taxing_Authority1 = driver.FindElement(By.XPath("//*[@id='app-container']/div[3]/h4")).Text;
+                    Taxing_Authority = GlobalClass.After(Taxing_Authority1, "MAIN BRANCH").Trim();
+
                     //Tax Information Details
                     for (int i = 1; i < 4; i++)
                     {
@@ -344,11 +374,11 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             string Nodata = driver.FindElement(By.XPath("/html/body/div[2]/div[3]")).Text;
-                            if(Nodata.Contains("Nothing Matching"))
+                            if (Nodata.Contains("Nothing Matching"))
                             {
                                 driver.FindElement(By.Id("SearchClose")).Click();
                                 Thread.Sleep(2000);
-                               newyears = driver.FindElement(By.XPath("//*[@id='SearchPanel']/div/form/div[1]/div[4]/select"));
+                                newyears = driver.FindElement(By.XPath("//*[@id='SearchPanel']/div/form/div[1]/div[4]/select"));
                                 SelectElement newsss = new SelectElement(driver.FindElement(By.XPath("//*[@id='SearchPanel']/div/form/div[1]/div[4]/select")));
                                 i++;
                                 newsss.SelectByText(yearsplit[i]);
@@ -374,12 +404,14 @@ namespace ScrapMaricopa.Scrapsource
                             }
                         }
                         catch { }
+
                         //Proof Of Payment Download
                         try
                         {
                             string current1 = driver.CurrentWindowHandle;
                             driver.FindElement(By.XPath("/html/body/div[2]/table[2]/tbody/tr[3]/td[9]/a")).Click();
                             Thread.Sleep(2000);
+
                             driver.SwitchTo().Window(driver.WindowHandles.Last());
                             Thread.Sleep(5000);
                             gc.CreatePdf(orderNumber, ParcelID, "Proof Of Payment1", driver, "AR", "Benton");
@@ -404,10 +436,10 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             AherfTax = Tax.FindElements(By.TagName("td"));
 
-                            if (AherfTax.Count != 0 && AherfTax.Count == 2 && AherfTax[0].Text.Trim() != "" && !Tax.Text.Contains("View Parcel") && !Tax.Text.Contains("Parcel #:") && !Tax.Text.Contains("Legal") && !Tax.Text.Contains("Proof Of Payment"))
+                            if (AherfTax.Count != 0 && AherfTax.Count == 2 && AherfTax[0].Text.Trim() != "" && !Tax.Text.Contains("View Parcel") && !Tax.Text.Contains("Parcel #:") && !Tax.Text.Contains("Proof Of Payment"))
                             {
                                 Taxtitle += AherfTax[0].Text.Replace("\r\n", "").Replace(":", "").Replace("?", "") + "~";
-                                Taxvalue += AherfTax[1].Text.Replace("\r\n", "").Replace(":", "").Replace("?", "") + "~";
+                                Taxvalue += AherfTax[1].Text.Replace("\r\n", " ").Replace(":", "").Replace("?", "") + "~";
                             }
                             if (AherfTax.Count != 0 && AherfTax.Count == 4 && AherfTax[0].Text.Trim() != "" && !Tax.Text.Contains("Parcel #:"))
                             {
@@ -417,8 +449,8 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         Taxtitle = Taxtitle.TrimEnd('~').Replace("/", "");
                         Taxvalue = Taxvalue.TrimEnd('~');
-                        db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + "Tax Year~" + Taxtitle.Trim() + "' where Id = '" + 1460 + "'");
-                        gc.insert_date(orderNumber, ParcelID, 1460, Taxyear + "~" + Taxvalue.Trim(), 1, DateTime.Now);
+                        db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Taxtitle.Trim() + "~" + "Tax Authority" + "' where Id = '" + 1460 + "'");
+                        gc.insert_date(orderNumber, ParcelID, 1460, Taxvalue.Trim() + "~" + Taxing_Authority, 1, DateTime.Now);
                         Taxtitle = ""; Taxvalue = "";
                         //Tax Information Details Table
                         gc.CreatePdf(orderNumber, ParcelID, "Tax Page" + Taxyear, driver, "AR", "Benton");

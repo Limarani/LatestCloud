@@ -63,9 +63,16 @@ namespace ScrapMaricopa.Scrapsource
 
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "AR", "Washington");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ARWashington"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -284,19 +291,37 @@ namespace ScrapMaricopa.Scrapsource
                         js.ExecuteScript("arguments[0].click();", IParcel);
                         Thread.Sleep(2000);
 
-
-                        //*[@id="SearchFeedback"]/div[3]/table/thead/tr/td[1]
-
-                        IWebElement button = driver.FindElement(By.XPath("//*[@id='SearchFeedback']/div[3]/table/thead/tr/td[1]"));
-                        IList<IWebElement> MultiOwnerbtn = button.FindElements(By.TagName("button"));
-                        foreach (IWebElement row1 in MultiOwnerbtn)
+                        try
                         {
-                            row1.Click();
-                            break;
+                            //*[@id="SearchFeedback"]/div[3]/table/thead/tr/td[1]
 
+                            IWebElement button = driver.FindElement(By.XPath("//*[@id='SearchFeedback']/div[3]/table/thead/tr/td[1]"));
+                            IList<IWebElement> MultiOwnerbtn = button.FindElements(By.TagName("button"));
+                            foreach (IWebElement row1 in MultiOwnerbtn)
+                            {
+                                row1.Click();
+                                break;
+
+                            }
                         }
+                        catch { }
 
                     }
+
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.Id("RPSearch")).Text;
+                        if (nodata.Contains("No results"))
+                        {
+                            HttpContext.Current.Session["Nodata_ARWashington"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
+
                     string PreviousParcel = "", MailingAddress = "", LegalDescription = "", PropertyType = "", TaxDistrict = "", MillageRate = "", YearBuilt = "";
 
                     parcelNumber = driver.FindElement(By.XPath("//*[@id='printArea']/div[1]/div/span[1]")).Text.Trim();

@@ -57,6 +57,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_NCForsyth"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -151,8 +157,12 @@ namespace ScrapMaricopa.Scrapsource
 
                         else
                         {
-                            driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_ParcelStreetsGridView']/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
-                            Thread.Sleep(2000);
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='ctl00_ContentPlaceHolder1_ParcelStreetsGridView']/tbody/tr[2]/td[1]/a")).SendKeys(Keys.Enter);
+                                Thread.Sleep(2000);
+                            }
+                            catch { }
                         }
 
                         try
@@ -190,8 +200,8 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.XPath("//*[@id='aspnetForm']/div[3]/table/tbody/tr[2]/td[2]/div/div/div/div/table/tbody/tr[1]/td[2]/span")).Text;
-                            if (nodata.Contains("0 Records Matched Search Criteria"))
+                            string nodata = driver.FindElement(By.Id("ctl00_PageHeader1_ErrorMessageLabel")).Text;
+                            if (nodata.Contains("No Records Found"))
                             {
                                 HttpContext.Current.Session["Nodata_NCForsyth"] = "Yes";
                                 driver.Quit();
@@ -248,6 +258,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (TRmulti.Count > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Forsyth_Multicount"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                             else

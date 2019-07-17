@@ -46,17 +46,17 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "titleflex")
                     {
-                        gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, address, "IN", "Marion");
-                        if (GlobalClass.TitleFlex_Search == "Yes")
+                        gc.TitleFlexSearch(orderNumber, "", ownername, address, "IN", "Marion");
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
-                        else
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
                         {
-                            string strTitleAssess = GlobalClass.TitleFlexAssess;
-                            parcelNumber = GlobalClass.titleparcel;
-                            gc.insert_date(orderNumber, parcelNumber, 319, strTitleAssess, 1, DateTime.Now);
-                            searchType = "parcel";
+                            HttpContext.Current.Session["Nodata_INMarion"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                     }
 
@@ -93,6 +93,18 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(4000);
                         driver.FindElement(By.Id("parcelNumberButton")).Click();
                         Thread.Sleep(4000);
+                        gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch11", driver, "IN", "Marion");
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.Id("dojox_mobile_Pane_0"));
+                            if (INodata.Text.Contains("No Results"))
+                            {
+                                HttpContext.Current.Session["Nodata_INMarion"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
 
                         //Tax Information
 

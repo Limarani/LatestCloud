@@ -56,9 +56,16 @@ namespace ScrapMaricopa.Scrapsource
                         string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "FL", "Flagler");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLFlagler"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -203,7 +210,17 @@ namespace ScrapMaricopa.Scrapsource
                         catch
                         { }
                     }
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults"));
+                        if(Inodata.Text.Contains("No results match"))
+                        {
+                            HttpContext.Current.Session["Nodata_FLFlagler"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property Details
                     IWebElement PropertyTB = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl01_mSection']/div/table/tbody"));
                     IList<IWebElement> PropertyTR = PropertyTB.FindElements(By.TagName("tr"));

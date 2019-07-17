@@ -77,14 +77,18 @@ namespace ScrapMaricopa.Scrapsource
                             Address = houseno + " " + directParcel+" "+ sname + " " + stype + " " + unitnumber;
                         }
                         gc.TitleFlexSearch(orderNumber, "", ownername, Address, "IL", "Will");
-                        parcelNumber = GlobalClass.global_parcelNo;
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
-
                         }
-
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ILWill"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
 
@@ -135,15 +139,20 @@ namespace ScrapMaricopa.Scrapsource
                                 }
 
                             }
-
-                            HttpContext.Current.Session["multiparcel_ILWill"] = "Yes";
-                            if (MultiTR.Count > 25)
+                            
+                            if (MultiTR.Count > 30)
                             {
                                 HttpContext.Current.Session["multiparcel_ILWill_count"] = "Maximum";
+                                driver.Quit();
+                                return "Maximum";
                                 //return GlobalClass.multiparcel_ILWill = "Yes";
                             }
-                            driver.Quit();
-                            return "MultiParcel";
+                            if (MultiTR.Count > 5 && MultiTR.Count < 30)
+                            {
+                                HttpContext.Current.Session["multiparcel_ILWill"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
                         }
                         catch
                         { }
@@ -189,6 +198,17 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("ctl00_BC_gvParcels"));
+                        if(INodata.Text.Contains("There are no records that match your criteria"))
+                        {
+                            HttpContext.Current.Session["Nodata_ILWill"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Property Details
                     InserParcel = driver.FindElement(By.XPath("/html/body/form/div[3]/table/tbody/tr/td[2]/table/tbody/tr[3]/td/table/tbody/tr/td[2]/table/tbody/tr[3]/td[1]/div[1]/div/table[2]/tbody/tr/td[1]/table/tbody/tr[1]/td")).Text.Replace("PIN #:", "");
                     if (InserParcel.Contains("-"))

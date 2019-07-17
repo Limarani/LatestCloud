@@ -49,10 +49,17 @@ namespace ScrapMaricopa.Scrapsource
                 if (searchType == "titleflex")
                 {
                     string address = streetno + " " + streettype + " " + streetname + "" + unitnumber;
-                    gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "MO", "Jefferson");
-                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    gc.TitleFlexSearch(orderNumber, "", "", address, "MO", "Jefferson");
+                    if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                     {
+                        driver.Quit();
                         return "MultiParcel";
+                    }
+                    else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                    {
+                        HttpContext.Current.Session["Nodata_MOJeferrson"] = "Yes";
+                        driver.Quit();
+                        return "No Data Found";
                     }
                     parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                     searchType = "parcel";
@@ -102,6 +109,12 @@ namespace ScrapMaricopa.Scrapsource
                             foreach (IWebElement Addressc in Addressrow)
                             {
                                 Addressid = Addressc.FindElements(By.TagName("td"));
+                                if (Addressc.Text.Contains("No data available in table"))
+                                {
+                                    HttpContext.Current.Session["Nodata_MOJeferrson"] = "Yes";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
                                 if (Addressid.Count != 0)
                                 {
                                     if (Addressc.Text.Contains(AddressMerge))
@@ -152,6 +165,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     gc.CreatePdf_WOP(orderNumber, "Parcel Number", driver, "MO", "Jefferson");
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("search-results"));
+                        if (INodata.Text.Contains("No data available in table"))
+                        {
+                            HttpContext.Current.Session["Nodata_MOJeferrson"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                 }
                 if (searchType == "ownername")
                 {
@@ -192,6 +216,12 @@ namespace ScrapMaricopa.Scrapsource
                             foreach (IWebElement Owner in Ownermultirow)
                             {
                                 Ownenid = Owner.FindElements(By.TagName("td"));
+                                if (Owner.Text.Contains("No data available in table"))
+                                {
+                                    HttpContext.Current.Session["Nodata_MOJeferrson"] = "Yes";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
                                 if (Ownenid.Count != 0)
                                 {
                                     string parcelId = Ownenid[1].Text;
@@ -213,6 +243,9 @@ namespace ScrapMaricopa.Scrapsource
                     { }
 
                 }
+
+               
+
                 IWebElement PropertydetailTable = driver.FindElement(By.XPath("/html/body/div[2]/div[1]/div[1]/div[2]/div[2]"));
                 string parcel_Number = gc.Between(PropertydetailTable.Text, "Parcel Number", "Tax Year");
                 string TaxYear1 = gc.Between(PropertydetailTable.Text, "Tax Year", "Class").Trim();

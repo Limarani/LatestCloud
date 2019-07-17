@@ -130,14 +130,19 @@
 
                     <div class="col-sm-12">
                         <div class="row">
-                            <div class="col-sm-6 form-group form-inline" style="left: 310px;">
+                           <div class="col-sm-4 form-group form-inline" style="left: 134px;">
                                 <label>State: </label>
                                 <asp:DropDownList class="form-control" runat="server" ID="dropState" AutoPostBack="true" Style="width: 170px" OnSelectedIndexChanged="dropState_SelectedIndexChanged">
                                 </asp:DropDownList>
                             </div>
-                            <div class="col-sm-6 form-group form-inline">
+                            <div class="col-sm-4 form-group form-inline">
                                 <label>County:</label>
                                 <asp:DropDownList class="form-control" runat="server" ID="dropCounty" AutoPostBack="true" Style="width: 170px" OnSelectedIndexChanged="dropCounty_SelectedIndexChanged">
+                                </asp:DropDownList>
+                            </div>
+                             <div class="col-sm-4 form-group form-inline">
+                                <asp:label runat="server" Visible ="false" id="labelTown">Township:</asp:label>
+                                <asp:DropDownList class="form-control" runat="server" ID="dropTownship" AutoPostBack="true" Style="width: 170px" Visible="False">
                                 </asp:DropDownList>
                             </div>
                             <div class="col-sm-6 form-group form-inline">
@@ -218,7 +223,13 @@
         </div>
         <br />
         <br />
-
+         <div style="margin-left: 38px; margin-right: 30px;">
+            <asp:Label runat="server" ID="LabelAmrock" CssClass="GridLabel"></asp:Label>
+            <br />
+               <asp:GridView ID="GridViewAmrock" runat="server" CssClass="table table-striped table-bordered table-hover th" GridLines="None" AutoGenerateColumns="true">
+                <HeaderStyle BackColor="dimgray" ForeColor="White" />
+            </asp:GridView>
+        </div>
         <div style="margin-left: 38px; margin-right: 30px;">
             <asp:Label runat="server" ID="Label3" CssClass="GridLabel"></asp:Label>
             <br />

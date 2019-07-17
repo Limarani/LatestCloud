@@ -58,7 +58,7 @@ namespace ScrapMaricopa.Scrapsource
             // using (driver = new PhantomJSDriver())
             using (driver = new PhantomJSDriver())
             {
-                
+
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
@@ -100,7 +100,7 @@ namespace ScrapMaricopa.Scrapsource
                                         string multi = multiaddrrowTD[1].Text.Trim() + "~" + multiaddrrowTD[2].Text.Trim() + "~" + multiaddrrowTD[3].Text.Trim() + "~" + multiaddrrowTD[4].Text.Trim();
                                         gc.insert_date(orderNumber, multiaddrrowTD[0].Text.Trim(), 36, multi, 1, DateTime.Now);
                                         //db.ExecuteQuery("insert into la_multiowner(parcel_no,type,status,taxpayer_name,situs_address,order_no) values('" + multiaddrrowTD[0].Text + "','" + multiaddrrowTD[1].Text + "','" + multiaddrrowTD[2].Text + "','" + multiaddrrowTD[3].Text + "','" + multiaddrrowTD[4].Text + "','" + orderNumber + "') ");
-                                         xpath = "//*[@id='customContent']/table/tbody/tr[1]/td/table[3]/tbody/tr/td/table/tbody/tr["+ m +"]/td[1]/a";
+                                        xpath = "//*[@id='customContent']/table/tbody/tr[1]/td/table[3]/tbody/tr/td/table/tbody/tr[" + m + "]/td[1]/a";
                                         mcheck.Add(multiaddrrowTD[0].Text.Trim());
                                     }
                                     m++;
@@ -137,11 +137,18 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", directParcel, "", "WA", "Pierce");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_PierceWA"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "parcel")
@@ -161,6 +168,19 @@ namespace ScrapMaricopa.Scrapsource
                         var wait = new WebDriverWait(driver, TimeSpan.FromMilliseconds(3000));
                         wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//*[@id='customContent']/table/tbody/tr[1]/td/table[2]/tbody/tr[3]/td/table/tbody/tr/td[1]/table/tbody/tr/td/form/input[3]")));
                         driver.FindElement(By.XPath("//*[@id='customContent']/table/tbody/tr[1]/td/table[2]/tbody/tr[3]/td/table/tbody/tr/td[1]/table/tbody/tr/td/form/input[3]")).Click();
+                        try
+                        {
+                            Thread.Sleep(3000);
+                            IWebElement Iresult = driver.FindElement(By.XPath("//*[@id='customContent']/table/tbody/tr[1]/td/table[2]/tbody/tr/td"));
+                            string result = Iresult.Text;
+                            if (result.Contains("0 record(s)"))
+                            {
+                                HttpContext.Current.Session["Nodata_PierceWA"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         driver.FindElement(By.LinkText(parcelNumber)).Click();
                         Thread.Sleep(3000);
                     }
@@ -179,6 +199,12 @@ namespace ScrapMaricopa.Scrapsource
                         string result = Iresult.Text;
                         if (!result.Contains("1 record(s)"))
                         {
+                            if (result.Contains("0 record(s)"))
+                            {
+                                HttpContext.Current.Session["Nodata_PierceWA"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
                             gc.CreatePdf_WOP(orderNumber, "MultipleAddress", driver, "WA", "Pierce");
                             HttpContext.Current.Session["multiparcel_WAPierce"] = "Yes";
                             //Select address from list....
@@ -283,23 +309,26 @@ namespace ScrapMaricopa.Scrapsource
                     //Treasurer Details
 
                     // receipt Details
-                    IWebElement receiptstableElement = driver.FindElement(By.XPath(".//*[@id='customContent']/table/tbody/tr[1]/td/table[4]/tbody/tr/td[2]/table[3]/tbody/tr[2]/td/table"));
-                    IList<IWebElement> receiptstableRow = receiptstableElement.FindElements(By.TagName("tr"));
-                    IList<IWebElement> receiptsrowTD;
-                    foreach (IWebElement row in receiptstableRow)
+                    try
                     {
-                        receiptsrowTD = row.FindElements(By.TagName("td"));
-                        if (receiptsrowTD.Count != 0)
+                        IWebElement receiptstableElement = driver.FindElement(By.XPath(".//*[@id='customContent']/table/tbody/tr[1]/td/table[4]/tbody/tr/td[2]/table[3]/tbody/tr[2]/td/table"));
+                        IList<IWebElement> receiptstableRow = receiptstableElement.FindElements(By.TagName("tr"));
+                        IList<IWebElement> receiptsrowTD;
+                        foreach (IWebElement row in receiptstableRow)
                         {
-                            //Paid_date~Receipt_number~Paid_Amount
-                            string bill = receiptsrowTD[0].Text.Trim() + "~" + receiptsrowTD[1].Text.Trim() + "~" + receiptsrowTD[2].Text.Trim();
-                            gc.insert_date(orderNumber, outparcelno, 37, bill, 1, DateTime.Now);
-                            //db.ExecuteQuery("insert into bill_details (order_no,parcel_no,paid_date,receipt_no,amount) values ('" + orderNumber + "', '" + outparcelno + "', '" + receiptsrowTD[0].Text + "', '" + receiptsrowTD[1].Text + "', '" + receiptsrowTD[2].Text + "')");
+                            receiptsrowTD = row.FindElements(By.TagName("td"));
+                            if (receiptsrowTD.Count != 0)
+                            {
+                                //Paid_date~Receipt_number~Paid_Amount
+                                string bill = receiptsrowTD[0].Text.Trim() + "~" + receiptsrowTD[1].Text.Trim() + "~" + receiptsrowTD[2].Text.Trim();
+                                gc.insert_date(orderNumber, outparcelno, 37, bill, 1, DateTime.Now);
+                                //db.ExecuteQuery("insert into bill_details (order_no,parcel_no,paid_date,receipt_no,amount) values ('" + orderNumber + "', '" + outparcelno + "', '" + receiptsrowTD[0].Text + "', '" + receiptsrowTD[1].Text + "', '" + receiptsrowTD[2].Text + "')");
 
+                            }
                         }
+
                     }
-
-
+                    catch { }
                     //delinquent details
                     try
                     {

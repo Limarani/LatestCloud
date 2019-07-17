@@ -57,7 +57,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TN", "Knox");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_KnoxTN"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -73,60 +80,69 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Address search result", driver, "TN", "Knox");
 
                         string mul = "";
-                        IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[1]/div[2]"));
-                        mul = gc.Between(multiaddress.Text, "Your search returned ", "records.").Trim();
-                        int count = Convert.ToInt32(mul);
-
-                        if (count > 25)
-                        {
-                            HttpContext.Current.Session["multiParcel_KnoxTN_Multicount"] = "Maximum";
-                            return "Maximum";
-
-                        }
                         try
                         {
-                            string Nodata = driver.FindElement(By.XPath("//*[@id='QuickSearch']/p")).Text;
-                            if (Nodata.Contains("Sorry, no"))
+                            IWebElement multiaddress = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[1]/div[2]"));
+                            mul = gc.Between(multiaddress.Text, "Your search returned ", "records.").Trim();
+                            int count = Convert.ToInt32(mul);
+
+                            if (count > 25)
                             {
-                                HttpContext.Current.Session["KnoxTN_Zero"] = "Zero";
-                                return "No Data Found";
+                                HttpContext.Current.Session["multiParcel_KnoxTN_Multicount"] = "Maximum";
+                                driver.Quit();
+                                return "Maximum";
+
+                            }
+                            try
+                            {
+                                string Nodata = driver.FindElement(By.XPath("//*[@id='QuickSearch']/p")).Text;
+                                if (Nodata.Contains("Sorry, no"))
+                                {
+                                    HttpContext.Current.Session["Nodata_KnoxTN"] = "Yes";
+                                    driver.Quit();
+                                    return "No Data Found";
+                                }
+                            }
+                            catch { }
+
+                            if ((mul != "1") && (mul != "0") && count <= 25)
+                            {
+                                for (int i = 1; i <= count; i++)
+                                {
+
+                                    string owner_name = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[1]/a")).Text;
+                                    string pro_add1 = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[2]")).Text;
+                                    string pro_add2 = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[3]")).Text;
+                                    string pro_add = pro_add1 + " " + pro_add2;
+                                    driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+                                    string parcel_num = "";
+                                    string bulkdata = driver.FindElement(By.XPath("//*[@id='Body']")).Text.Trim();
+                                    parcel_num = gc.Between(bulkdata, "Property ID", "Alternate ID").Trim();
+                                    driver.FindElement(By.XPath("//*[@id='lxT491']/div/a[1]")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+                                    string multi1 = owner_name + "~" + pro_add;
+                                    gc.insert_date(orderNumber, parcel_num, 707, multi1, 1, DateTime.Now);
+
+                                }
+
+                                HttpContext.Current.Session["multiparcel_KnoxTN"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
+
+                            else
+                            {
+                                try
+                                {
+                                    driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+                                    gc.CreatePdf_WOP(orderNumber, "Address single search", driver, "TN", "Knox");
+                                }
+                                catch { }
                             }
                         }
                         catch { }
-
-                        if ((mul != "1") && (mul != "0") && count <= 25)
-                        {
-                            for (int i = 1; i <= count; i++)
-                            {
-
-                                string owner_name = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[1]/a")).Text;
-                                string pro_add1 = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[2]")).Text;
-                                string pro_add2 = driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[3]")).Text;
-                                string pro_add = pro_add1 + " " + pro_add2;
-                                driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[" + i + "]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
-                                Thread.Sleep(3000);
-                                string parcel_num = "";
-                                string bulkdata = driver.FindElement(By.XPath("//*[@id='Body']")).Text.Trim();
-                                parcel_num = gc.Between(bulkdata, "Property ID", "Alternate ID").Trim();
-                                driver.FindElement(By.XPath("//*[@id='lxT491']/div/a[1]")).SendKeys(Keys.Enter);
-                                Thread.Sleep(3000);
-                                string multi1 = owner_name + "~" + pro_add;
-                                gc.insert_date(orderNumber, parcel_num, 707, multi1, 1, DateTime.Now);
-
-                            }
-
-                            HttpContext.Current.Session["multiparcel_KnoxTN"] = "Yes";
-                            driver.Quit();
-                            return "MultiParcel";
-                        }
-
-                        else
-                        {
-                            driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
-                            Thread.Sleep(3000);
-                            gc.CreatePdf_WOP(orderNumber, "Address single search", driver, "TN", "Knox");
-                        }
-
 
                     }
 
@@ -169,9 +185,13 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             else
                             {
-                                driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
-                                Thread.Sleep(3000);
-                                gc.CreatePdf_WOP(orderNumber, "Ownername single search ", driver, "TN", "Knox");
+                                try
+                                {
+                                    driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+                                    gc.CreatePdf_WOP(orderNumber, "Ownername single search ", driver, "TN", "Knox");
+                                }
+                                catch { }
                             }
                         }
                         catch { }
@@ -186,12 +206,27 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='QuickSearch']/div/div/table/tbody/tr/td[2]/button[1]")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, strparcelNumber, "parcel search Result", driver, "TN", "Knox");
-                        driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
-                        Thread.Sleep(2000);
-                        gc.CreatePdf(orderNumber, strparcelNumber, "parcel Result view", driver, "TN", "Knox");
-
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='QuickSearch']/div[2]/div[1]/ul[2]/li[1]/a")).SendKeys(Keys.Enter);
+                            Thread.Sleep(2000);
+                            gc.CreatePdf(orderNumber, strparcelNumber, "parcel Result view", driver, "TN", "Knox");
+                        }
+                        catch { }
                     }
 
+
+                    try
+                    {
+                        string Nodata = driver.FindElement(By.XPath("//*[@id='QuickSearch']/p")).Text;
+                        if (Nodata.Contains("Sorry, no"))
+                        {
+                            HttpContext.Current.Session["Nodata_KnoxTN"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     string name_address = "", parcel_id = "", alternate_id = "", property_address = "", property_class = "", neighborhood = "", deed_acres = "", year_built = "", legal_desc1 = "", legal_desc2 = "";
                     string bulktext = driver.FindElement(By.XPath("//*[@id='Body']")).Text.Trim();

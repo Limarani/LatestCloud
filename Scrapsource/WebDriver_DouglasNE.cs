@@ -27,7 +27,7 @@ namespace ScrapMaricopa.Scrapsource
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
-
+        
         MySqlConnection con = new MySqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ToString());
 
         public string FTP_DouglasNE(string houseno, string Direction, string sname, string stype, string unitNumber, string parcelNumber, string ownername, string searchType, string orderNumber, string directParcel)
@@ -41,11 +41,11 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-               using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver())
+            //     using (driver = new ChromeDriver())
             {
-               // using (driver = new ChromeDriver())
 
-                    try
+                try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
 
@@ -68,7 +68,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "NE", "Douglas");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_DouglasNE"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -76,7 +83,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "address")
                     {
-                        if(Direction != "" && stype!="")
+                        if (Direction != "" && stype != "")
                         {
                             address = houseno + " " + Direction + " " + sname + " " + stype + " " + unitNumber;
                         }
@@ -104,9 +111,9 @@ namespace ScrapMaricopa.Scrapsource
                             string strowner = "", strAddress = "", strCity = "";
                             string Record = "";
                             IWebElement multiaddress;
-                           
+
                             gc.CreatePdf(orderNumber, parcelNumber, "Parcel search Result", driver, "NE", "Douglas");
-                            
+
                             multiaddress = driver.FindElement(By.XPath("//*[@id='ext-gen683']"));
 
                             IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
@@ -152,27 +159,28 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.Quit();
                                 return "No Data Found";
                             }
-                         
+
                         }
                         catch { }
                     }
 
+
+
                     else if (searchType == "parcel")
                     {
-                      
+
                         driver.FindElement(By.Id("ext-comp-1016")).SendKeys(parcelNumber);
-                        Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "NE", "Douglas");
                         try
                         {
                             driver.FindElement(By.XPath("//*[@id='ext-gen311']")).SendKeys(Keys.Enter);
-                            Thread.Sleep(3000);
+                            Thread.Sleep(7000);
                         }
                         catch { }
                         try
                         {
                             driver.FindElement(By.LinkText("Submit")).Click();
-                            Thread.Sleep(4000);
+                            Thread.Sleep(7000);
                         }
                         catch { }
                         try
@@ -181,60 +189,62 @@ namespace ScrapMaricopa.Scrapsource
                             string strowner = "", strAddress = "", strCity = "";
                             string Record = "";
                             IWebElement multiaddress;
-                         
+
                             gc.CreatePdf(orderNumber, parcelNumber, "Parcel search Result", driver, "NE", "Douglas");
-                            
-                                multiaddress = driver.FindElement(By.XPath("//*[@id='ext-gen683']/div/table/tbody"));
-                           
-                                IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
-                                IList<IWebElement> multiTD;
-                                foreach (IWebElement multi in multiRow)
+
+                            multiaddress = driver.FindElement(By.XPath("//*[@id='ext-gen683']/div/table/tbody"));
+
+                            IList<IWebElement> multiRow = multiaddress.FindElements(By.TagName("tr"));
+                            IList<IWebElement> multiTD;
+                            foreach (IWebElement multi in multiRow)
+                            {
+                                multiTD = multi.FindElements(By.TagName("td"));
+                                if (multiTD.Count != 0 && multiRow.Count >= 1 && multiRow.Count <= 25 && multi.Text.Trim() != "")
                                 {
-                                    multiTD = multi.FindElements(By.TagName("td"));
-                                    if (multiTD.Count != 0 && multiRow.Count >= 1 && multiRow.Count <= 25 && multi.Text.Trim() != "")
-                                    {
-                                        Strownername = multiTD[1].Text;
-                                       
-                                        parcelNumber = multiTD[0].Text;
-                                        PropertyAdd = multiTD[2].Text + " " + multiTD[3].Text;
+                                    Strownername = multiTD[1].Text;
 
-                                        string multidetails = Strownername + "~" + PropertyAdd;
-                                        gc.insert_date(orderNumber, parcelNumber, 1715, multidetails, 1, DateTime.Now);
-                                        Max++;
-                                    }
-                                    if (multiTD.Count != 0 && multiRow.Count > 25)
-                                    {
-                                        HttpContext.Current.Session["multiparcel_DouglasNE_Maximum"] = "Maximum";
-                                        driver.Quit();
-                                        return "Maximum";
-                                    }
+                                    parcelNumber = multiTD[0].Text;
+                                    PropertyAdd = multiTD[2].Text + " " + multiTD[3].Text;
 
+                                    string multidetails = Strownername + "~" + PropertyAdd;
+                                    gc.insert_date(orderNumber, parcelNumber, 1715, multidetails, 1, DateTime.Now);
+                                    Max++;
                                 }
-                                if (Max > 1 && Max < 26)
+                                if (multiTD.Count != 0 && multiRow.Count > 25)
                                 {
-                                    HttpContext.Current.Session["multiparcel_DouglasNE"] = "Yes";
+                                    HttpContext.Current.Session["multiparcel_DouglasNE_Maximum"] = "Maximum";
                                     driver.Quit();
-                                    return "MultiParcel";
+                                    return "Maximum";
                                 }
+
+                            }
+                            if (Max > 1 && Max < 26)
+                            {
+                                HttpContext.Current.Session["multiparcel_DouglasNE"] = "Yes";
+                                driver.Quit();
+                                return "MultiParcel";
+                            }
                             if (Max == 1)
                             {
-                                driver.Navigate().GoToUrl("http://douglascone.wgxtreme.com/java/wgx_douglasne/static/accountinfo.jsp?ext=false&accountno=R2321820562");
-                                Thread.Sleep(4000);
+                                string nparcel = "R" + parcelNumber;
+                                string url = "http://douglascone.wgxtreme.com/java/wgx_douglasne/static/accountinfo.jsp?accountno=" + nparcel;
+                                driver.Navigate().GoToUrl(url);
+                                Thread.Sleep(7000);
                             }
                             if (Max == 0)
-                                {
-                                    HttpContext.Current.Session["Zero_DouglasNE"] = "Zero";
-                                    driver.Quit();
-                                    return "No Data Found";
-                                }
-                           // }
+                            {
+                                HttpContext.Current.Session["Zero_DouglasNE"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                            // }
                         }
                         catch { }
                     }
 
                     if (searchType == "ownername")
                     {
-                      
+
                         driver.FindElement(By.Id("ext-comp-1015")).SendKeys(ownername);
                         Thread.Sleep(3000);
 
@@ -294,7 +304,7 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["Zero_DouglasNE"] = "Zero";
                                 driver.Quit();
-                                return "No Record Found";
+                                return "No Data Found";
                             }
 
                         }
@@ -303,34 +313,61 @@ namespace ScrapMaricopa.Scrapsource
 
 
                     //property details
-                    
-                    string  MailingAddress = "", KeyNumber="", AccountType="", LegalDesc="" ;
-                    string OwnerName = "",  PropertyAddress = "", Acres = "", YearBuilt = "";
+
+                    string MailingAddress = "", KeyNumber = "", AccountType = "", LegalDesc = "";
+                    string OwnerName = "", PropertyAddress = "", Acres = "", YearBuilt = "";
 
 
                     parcelNumber = driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr[3]/td")).Text;
                     OwnerName = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td")).Text;
-                   // MailingAddress = driver.FindElement(By.XPath("")).Text;
+                    // MailingAddress = driver.FindElement(By.XPath("")).Text;
                     KeyNumber = driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr[1]/td")).Text;
                     AccountType = driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr[2]/td")).Text;
                     PropertyAddress = driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr[4]/td")).Text;
                     LegalDesc = driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr[5]/td")).Text;
-                    
-                    try
+
+
+                    //read all tables
+
+                    IList<IWebElement> tables = driver.FindElements(By.XPath("/html/body/table"));
+                    int count = tables.Count;
+                    int j = 0;
+                    foreach (IWebElement tab in tables)
                     {
-                        Acres = driver.FindElement(By.XPath("/html/body/table[5]/tbody/tr/td[1]/p")).Text;
-                        YearBuilt = driver.FindElement(By.XPath("/html/body/table[10]/tbody/tr[2]/td[1]/p")).Text;
-                    }
-                    catch { }
-                    try
-                    {
-                        if (Acres=="" && YearBuilt=="")
+                        if (tab.Text.Contains("Acres"))
                         {
-                            Acres = driver.FindElement(By.XPath("/html/body/table[9]/tbody/tr/td[1]/p")).Text;
-                            YearBuilt = driver.FindElement(By.XPath("/html/body/table[15]/tbody/tr[2]/td[1]/p")).Text;
+                            IList<IWebElement> currtaxbill = tab.FindElements(By.XPath("tbody/tr"));
+                            IList<IWebElement> TDCurrentTax;
+                            foreach (IWebElement row in currtaxbill)
+                            {
+                                TDCurrentTax = row.FindElements(By.TagName("td"));
+                                if (TDCurrentTax.Count != 0 && row.Text.Trim() != "" && !row.Text.Contains("Acres"))
+                                {
+                                    Acres = TDCurrentTax[0].Text;
+
+                                }
+
+                            }
                         }
+                        else if (tab.Text.Contains("Year Built"))
+                        {
+
+                            IList<IWebElement> currtaxbill = tab.FindElements(By.XPath("tbody/tr"));
+                            IList<IWebElement> TDCurrentTax;
+                            foreach (IWebElement row in currtaxbill)
+                            {
+                                TDCurrentTax = row.FindElements(By.TagName("td"));
+                                if (TDCurrentTax.Count != 0 && row.Text.Trim() != "" && !row.Text.Contains("Year Built"))
+                                {
+                                    YearBuilt = TDCurrentTax[0].Text;
+
+                                }
+
+                            }
+                        }
+
                     }
-                    catch { }
+
                     string propertydetails = OwnerName + "~" + KeyNumber + "~" + AccountType + "~" + PropertyAddress + "~" + LegalDesc + "~" + Acres + "~" + YearBuilt;
                     gc.insert_date(orderNumber, parcelNumber, 1714, propertydetails, 1, DateTime.Now);
 
@@ -358,16 +395,16 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
-                   
+
                     // Tax Information Details
                     string taxAuth = "", taxauth1 = "", taxauth2 = "";
                     try
                     {
                         driver.Navigate().GoToUrl("https://www.dctreasurer.org/contact-us");
-                        taxAuth = driver.FindElement(By.XPath("//*[@id='content-bg']/div/div[1]/div[2]/div[1]/div[3]/p[4]")).Text.Replace("Street Address:", "").Replace("\r\n"," ").Trim();
+                        taxAuth = driver.FindElement(By.XPath("//*[@id='content-bg']/div/div[1]/div[2]/div[1]/div[3]/p[4]")).Text.Replace("Street Address:", "").Replace("\r\n", " ").Trim();
                     }
                     catch { }
-                        driver.Navigate().GoToUrl("https://dotcwsprodweb01.dotcomm.org/TreasTax/");
+                    driver.Navigate().GoToUrl("https://dotcwsprodweb01.dotcomm.org/TreasTax/");
                     Thread.Sleep(5000);
 
                     driver.FindElement(By.Id("parcelNum")).SendKeys(parcelNumber);
@@ -375,8 +412,8 @@ namespace ScrapMaricopa.Scrapsource
                     driver.FindElement(By.Id("btnSearch2")).Click();
                     Thread.Sleep(4000);
                     gc.CreatePdf(orderNumber, parcelNumber, "Tax Search Result", driver, "NE", "Douglas");
-                    
-                    string TaxpayerMailAdd = "", TaxpayerMailAdd1="", TaxpayerMailAdd2="", Tax_keyno = "", strProAdd = "", strLegal = "", Taxyear = "", Taxable_Value="", TaxLevy="", TaxAmount="";
+
+                    string TaxpayerMailAdd = "", TaxpayerMailAdd1 = "", TaxpayerMailAdd2 = "", Tax_keyno = "", strProAdd = "", strLegal = "", Taxyear = "", Taxable_Value = "", TaxLevy = "", TaxAmount = "";
 
                     TaxpayerMailAdd1 = driver.FindElement(By.XPath("//*[@id='content-bg']/div/div[1]/div[2]/div[1]/table/tbody/tr/td/table[1]/tbody/tr/td[2]/table[1]/tbody/tr/td/span")).Text;
                     TaxpayerMailAdd2 = driver.FindElement(By.XPath("//*[@id='content-bg']/div/div[1]/div[2]/div[1]/table/tbody/tr/td/table[1]/tbody/tr/td[2]/table[3]/tbody/tr/td/span")).Text;
@@ -389,7 +426,7 @@ namespace ScrapMaricopa.Scrapsource
                     TaxLevy = driver.FindElement(By.XPath("//*[@id='content-bg']/div/div[1]/div[2]/div[1]/table/tbody/tr/td/table[3]/tbody/tr[2]/td[2]/span")).Text;
                     TaxAmount = driver.FindElement(By.XPath("//*[@id='content-bg']/div/div[1]/div[2]/div[1]/table/tbody/tr/td/table[3]/tbody/tr[3]/td[2]/span")).Text;
 
-                   
+
                     try
                     {
                         string TaxInfodetails = TaxpayerMailAdd + "~" + Tax_keyno + "~" + strProAdd + "~" + strLegal + "~" + Taxyear + "~" + Taxable_Value + "~" + TaxLevy + "~" + TaxAmount + "~" + taxAuth;
@@ -420,7 +457,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     // Tax Payment Worksheet Details
 
-                   
+
                     try
                     {
                         driver.FindElement(By.LinkText("Make a Payment")).Click();
@@ -446,6 +483,8 @@ namespace ScrapMaricopa.Scrapsource
                                 gc.insert_date(orderNumber, parcelNumber, 1724, Taxpayworkdetails, 1, DateTime.Now);
                             }
                         }
+
+
                     }
                     catch { }
                     try
@@ -457,15 +496,23 @@ namespace ScrapMaricopa.Scrapsource
 
                     try
                     {
+                        driver.FindElement(By.Id("btnSearch2")).Click();
+                        Thread.Sleep(4000);
+                    }
+                    catch { }
+
+                    try
+                    {
                         driver.FindElement(By.LinkText("Levy Info")).Click();
                         Thread.Sleep(4000);
-                        gc.CreatePdf(orderNumber, parcelNumber, "Property Levy Information", driver, "NE", "Douglas");
+                        // gc.CreatePdf(orderNumber, parcelNumber, "Property Levy Information", driver, "NE", "Douglas");
                     }
                     catch { }
                     try
                     {
                         driver.SwitchTo().Window(driver.WindowHandles.Last());
                         Thread.Sleep(2000);
+                        gc.CreatePdf(orderNumber, parcelNumber, "Property Levy Information", driver, "NE", "Douglas");
                     }
                     catch { }
                     // Tax Payer Information
@@ -486,9 +533,9 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
-                 
 
-                   
+
+
 
 
 

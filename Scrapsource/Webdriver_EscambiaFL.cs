@@ -73,13 +73,19 @@ namespace ScrapMaricopa.Scrapsource
                             Adderess = streetno.Trim() + " " + streetname.Trim() + " " + streettype.Trim();
                         }
                         gc.TitleFlexSearch(orderNumber, "", "", Adderess, "FL", "Escambia");
-                        parcelNumber = GlobalClass.global_parcelNo;
+                        
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
                         }
-
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_EscambiaFL"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -152,7 +158,17 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("ctl00_MasterPlaceHolder_lblErr"));
+                        if(Inodata.Text.Contains("No records met search criteria") || Inodata.Text.Contains("Reference number does not match required format"))
+                        {
+                            HttpContext.Current.Session["Nodata_EscambiaFL"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //propetry
                     IWebElement propertytable = driver.FindElement(By.XPath("//*[@id='ctl00_MasterPlaceHolder_GenCell']/table/tbody"));
@@ -1396,7 +1412,7 @@ namespace ScrapMaricopa.Scrapsource
         {
             string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -1468,7 +1484,7 @@ namespace ScrapMaricopa.Scrapsource
         }
         public string latestfilename()
         {
-            var downloadDirectory1 = "F:\\AutoPdf\\";
+            var downloadDirectory1 = ConfigurationManager.AppSettings["AutoPdf"];
             var files = new DirectoryInfo(downloadDirectory1).GetFiles("*.*");
             string latestfile = "";
             DateTime lastupdated = DateTime.MinValue;

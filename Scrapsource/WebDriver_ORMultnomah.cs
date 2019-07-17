@@ -381,7 +381,14 @@ namespace ScrapMaricopa.Scrapsource
                         gc.TitleFlexSearch(orderNumber, "", ownername, address, "OR", "Multnomah");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ORMultnomah"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -440,9 +447,9 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.Quit();
                                 return "Maximum";
                             }
-                            if (Max == 0)
+                            if (Max == 0 && add_search.Text.Contains("No properties found"))
                             {
-                                HttpContext.Current.Session["Zero_Multnomah"] = "Zero";
+                                HttpContext.Current.Session["Nodata_ORMultnomah"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -450,7 +457,17 @@ namespace ScrapMaricopa.Scrapsource
 
                         }
                         catch { }
-
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.XPath("//*[@id='grid']"));
+                            if (INodata.Text.Contains("No properties found"))
+                            {
+                                HttpContext.Current.Session["Nodata_ORMultnomah"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
 
 
                     }
@@ -544,7 +561,7 @@ namespace ScrapMaricopa.Scrapsource
 
                             if (stradd_search.Contains("No properties found"))
                             {
-                                HttpContext.Current.Session["Zero_Multnomah"] = "Zero";
+                                HttpContext.Current.Session["Nodata_ORMultnomah"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -759,7 +776,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = "F:\\AutoPdf\\";
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                         chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                         chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                         chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

@@ -46,21 +46,38 @@ namespace ScrapMaricopa.Scrapsource
             string TaxAuthority1 = "";
             List<string> listurl = new List<string>();
             TaxAuthority1 = "301 West Jefferson Ste 100 Phoenix, Arizona 85003 (602) 506-8511";
+            string newaddr = "";
+            if (Address.ToUpper().Contains("UNIT") || Address.ToUpper().Contains("APT"))
+            {
+              newaddr =  Address.ToUpper().Replace("UNIT ", "#").Replace("APT ", "#");
+            }
+            else
+            {
+                newaddr = Address.ToUpper();
+            }
+
             using (driver = new PhantomJSDriver())
 
             {
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-
+                    
                     if (searchType == "titleflex")
                     {
 
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", Address, "AZ", "Maricopa");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Maricopa"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -72,11 +89,10 @@ namespace ScrapMaricopa.Scrapsource
                         driver.Navigate().GoToUrl("https://mcassessor.maricopa.gov/");
                         Thread.Sleep(2000);
 
-                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div[2]/input")).SendKeys(Address.ToUpper());
+                        driver.FindElement(By.Id("searchBar")).SendKeys(newaddr.ToUpper());
 
-                        gc.CreatePdf_WOP(orderNumber, "Address search", driver, "AZ", "Maricopa");
-                      //  /html/body/div[1]/div[3]/div/form/div[2]/button
-                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div[2]/button")).Click();
+                        gc.CreatePdf_WOP(orderNumber, "Address search", driver, "AZ", "Maricopa");                       
+                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div/button")).SendKeys(Keys.Enter);
 
                         //IWebElement TaxSewer = driver.FindElement(By.Id("/html/body/div[1]/div[3]/div/form/div[2]/button"));
                         //IJavaScriptExecutor js = driver as IJavaScriptExecutor;
@@ -91,13 +107,14 @@ namespace ScrapMaricopa.Scrapsource
                             if (Convert.ToInt32(multiCount) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Maricopa_Count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                         }
                         catch { }
                         try
                         {
-                            string Nodata = driver.FindElement(By.Id("//*[@id='search-results-output']/div")).Text;
+                            string Nodata = driver.FindElement(By.XPath("//*[@id='search-results-output']/div")).Text;
                             if (Nodata.Contains("We found 0 results"))
                             {
                                 HttpContext.Current.Session["Zero_Maricopa"] = "Zero";
@@ -124,7 +141,7 @@ namespace ScrapMaricopa.Scrapsource
                                     MultiOwnerTD = row1.FindElements(By.TagName("td"));
                                     if (MultiOwnerTD.Count != 0 && MultiOwnerTD.Count != 2 && MultiOwnerTD.Count != 1)
                                     {
-                                        if (MultiOwnerTD[2].Text.Contains(Address.ToUpper()))
+                                        if (MultiOwnerTD[2].Text.Contains(newaddr.ToUpper()))
                                         {
                                             A++;
 
@@ -167,11 +184,12 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.Navigate().GoToUrl("https://mcassessor.maricopa.gov/");
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div[2]/input")).SendKeys(parcelNumber);
+                        ////*[@id="searchBar"]
+                        driver.FindElement(By.Id("searchBar")).SendKeys(parcelNumber);
 
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search", driver, "AZ", "Maricopa");
 
-                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div[2]/button")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div/button")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Result", driver, "AZ", "Maricopa");
 
@@ -182,11 +200,11 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.Navigate().GoToUrl("https://mcassessor.maricopa.gov/");
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div[2]/input")).SendKeys(ownername);
+                        driver.FindElement(By.Id("searchBar")).SendKeys(ownername);
 
                         gc.CreatePdf_WOP(orderNumber, "Owner search", driver, "AZ", "Maricopa");
 
-                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div[2]/button")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div/button")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf_WOP(orderNumber, "Owner search Result", driver, "AZ", "Maricopa");
 
@@ -197,6 +215,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (Convert.ToInt32(multiCount) > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_Maricopa_Count"] = "Maximum";
+                                driver.Quit();
                                 return "Maximum";
                             }
                         }
@@ -238,8 +257,19 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+                    try
+                    {
+                        string Nodata = driver.FindElement(By.XPath("//*[@id='search-results-output']/div")).Text;
+                        if (Nodata.Contains("We found 0 results"))
+                        {
+                            HttpContext.Current.Session["Zero_Maricopa"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
-                    
+
                     string MCR = "", Description = "", HighSchoolDistrict = "", ElementarySchoolDistrict = "", LocalJurisdiction = "", STR = "", Subdivision = "", ConstructionYear = "";
 
                     parcelNumber = driver.FindElement(By.XPath("//*[@id='header']/div[1]/table/tbody/tr/td[1]/h3")).Text;
@@ -429,7 +459,7 @@ namespace ScrapMaricopa.Scrapsource
                     IWebElement click = driver.FindElement(By.XPath("//*[@id='btnGo']"));
                     IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                     js1.ExecuteScript("arguments[0].click();", click);
-                    Thread.Sleep(20000);
+                    Thread.Sleep(23000);
                     string strTParcel = driver.FindElement(By.XPath("//*[@id='cphMainContent_cphRightColumn_headerSummary']")).Text;
                     string strTaxParcel = GlobalClass.After(strTParcel, "Tax Summary ");
                     string MaillingName = "", AssessedTax = "", Taxpaid = "", TotalDue = "", Activity = "", Amount = "", ActivityDate = "", PaymentDate = "", Transaction = "";
@@ -471,7 +501,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             driver.FindElement(By.XPath("//*[@id='siteInnerContentContainer']/div/div[2]/div[2]/div[2]/div[3]/div[1]/div[2]/p/a")).Click();
-                            Thread.Sleep(5000);
+                            Thread.Sleep(9000);
                             gc.CreatePdf(orderNumber, parcelNumber, " Tax Percentage", driver, "AZ", "Maricopa");
                         }
                         catch { }
@@ -530,12 +560,14 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             driver.FindElement(By.XPath("//*[@id='cphMainContent_cphRightColumn_taxDue1']/tbody/tr/td[6]/a")).Click();
+                            Thread.Sleep(3000);
                         }
                         catch { }
 
                         try
                         {
                             driver.FindElement(By.XPath("//*[@id='cphMainContent_cphRightColumn_taxDue2']/li[6]/a")).Click();
+                            Thread.Sleep(3000);
                         }
                         catch { }
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax Due", driver, "AZ", "Maricopa");
@@ -759,6 +791,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.XPath("//*[@id='linkTaxBill']")).Click();
+                        Thread.Sleep(5000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax Bill", driver, "AZ", "Maricopa");
                     }
                     catch { }

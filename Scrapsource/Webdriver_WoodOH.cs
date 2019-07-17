@@ -111,10 +111,18 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "ownername")
                     {
                         string[] Ownarsplit = ownernm.Split(' ');
-                        string lastname = Ownarsplit[1];
-                        string firstname = Ownarsplit[0];
-                        driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(firstname.Trim());
-                        driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerFirstName")).SendKeys(lastname.Trim());
+                        if(Ownarsplit.Length == 2)
+                        {
+                            string lastname = Ownarsplit[1];
+                            string firstname = Ownarsplit[0];
+                            driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(firstname.Trim());
+                            driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerFirstName")).SendKeys(lastname.Trim());
+                        }
+                        else
+                        {
+                            driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(ownernm.Trim());
+                        }
+                        
                         gc.CreatePdf_WOP(orderNumber, "Search Before", driver, "OH", "Wood");
                         driver.FindElement(By.Id("ContentPlaceHolder1_Owner_btnSearchOwner")).Click();
                         Thread.Sleep(2000);
@@ -238,6 +246,20 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                     }
+
+                    try
+                    {
+                        //No Data Found
+                        string nodata = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text;
+                        if (nodata.Contains("No results"))
+                        {
+                            HttpContext.Current.Session["Zero_WoodOH"] = "Zero";
+                            driver.Quit();
+                            return "Zero";
+                        }
+                    }
+                    catch { }
+
                     Parcel_number = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataProfile_ParcelLabel")).Text;
                     string Ownar = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataProfile_OwnerLabel")).Text;
                     string address = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataProfile_AddressLabel")).Text;

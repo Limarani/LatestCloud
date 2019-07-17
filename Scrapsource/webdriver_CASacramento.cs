@@ -66,20 +66,18 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderno, parcelNumber, ownername, Address, "CA", "Sacramento");
-                        if (HttpContext.Current.Session["titleparcel"].ToString() != null)
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
-                            parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
+                            driver.Quit();
+                            return "MultiParcel";
                         }
-
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null)
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
                         {
-                            if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
-                            {
-                                driver.Quit();
-                                return "MultiParcel";
-                            }
+                            HttpContext.Current.Session["Nodata_CASacramento"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
 
                         searchType = "parcel";
                     }
@@ -139,15 +137,25 @@ namespace ScrapMaricopa.Scrapsource
                     }
 
 
+                    //AMROCK Mapping
+                    Amrock amc = new Amrock();
 
                     // assessment details
                     string PropertyAddress = "", City_Zip = "", Jurisdiction = "", CountySupervisorDistrict = "", TaxRateAreaCode = "", ApproxParcelArea = "", Yearbuilt = "";
                     parcelNumber = parcelNumber.Replace("-", "");
-                    gc.CreatePdf(orderno, parcelNumber, "Property", driver, "CA", "Sacramento");
-                    ByVisibleElement(driver.FindElement(By.XPath("//*[@id='AssessorRollPortlet']/h3/a")));
+                    try
+                    {
+                        gc.CreatePdf(orderno, parcelNumber, "Property", driver, "CA", "Sacramento");
+                        ByVisibleElement(driver.FindElement(By.XPath("//*[@id='AssessorRollPortlet']/h3/a")));
+                    }
+                    catch { }
+                    try
+                    {
+                        gc.CreatePdf(orderno, parcelNumber, "Assessment1", driver, "CA", "Sacramento");
+                        ByVisibleElement(driver.FindElement(By.XPath("//*[@id='AssessorPortlet']/h3/a")));
+                    }
+                    catch { }
 
-                    gc.CreatePdf(orderno, parcelNumber, "Assessment1", driver, "CA", "Sacramento");
-                    ByVisibleElement(driver.FindElement(By.XPath("//*[@id='AssessorPortlet']/h3/a")));
 
                     gc.CreatePdf(orderno, parcelNumber, "Assessment2", driver, "CA", "Sacramento");
                     //  gc.CreatePdf(orderno, parcelNumber, "Assessment Details", driver, "CA", "El Dorado");
@@ -157,10 +165,14 @@ namespace ScrapMaricopa.Scrapsource
                     Jurisdiction = driver.FindElement(By.XPath("//*[@id='Jurisdiction']")).Text;
                     TaxRateAreaCode = driver.FindElement(By.XPath("//*[@id='TaxRateAreaCodeLink']")).Text;
                     CountySupervisorDistrict = driver.FindElement(By.XPath("//*[@id='SupervisorDistrictLink']")).Text;
-                    ByVisibleElement(driver.FindElement(By.XPath("//*[@id='EffectiveYearBuiltRow']/td[1]")));
+                    try
+                    {
+                        ByVisibleElement(driver.FindElement(By.XPath("//*[@id='EffectiveYearBuiltRow']/td[1]")));
+                    }
+                    catch { }
                     Thread.Sleep(1000);
                     Yearbuilt = driver.FindElement(By.Id("YearBuilt")).Text;
-                   
+
                     gc.CreatePdf(orderno, parcelNumber, "Year built", driver, "CA", "Sacramento");
                     driver.FindElement(By.XPath("//*[@id='AssessorPortlet']/h3")).Click();
                     //gc.CreatePdf(orderno, parcelNumber, "Input Passed Tax Search", driver, "CA", "El Dorado");
@@ -198,7 +210,11 @@ namespace ScrapMaricopa.Scrapsource
 
                     driver.Navigate().GoToUrl("https://eproptax.saccounty.net/");
                     Thread.Sleep(5000);
-
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='parcelLookup']/div[1]/a")).Click();
+                    }
+                    catch { }
                     string Pa1 = "", Pa2 = "", Pa3 = "", Pa4 = "";
 
                     Pa1 = parcelNumber.Substring(0, 3);
@@ -224,6 +240,9 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(3000);
                     int I = 0;
                     gc.CreatePdf(orderno, parcelNumber, "Tax Detail", driver, "CA", "Sacramento");
+                    string TaxID = driver.FindElement(By.Id("parcelGlobal")).Text.Replace("Parcel Number ", "").Trim();
+                    amc.TaxId = TaxID;
+                    string FirstAmount = "", SecondAmount = "", FirstDelinquent = "", SecondDelinquent = "", FirstPenalty = "", SecondPenalty = "", FirstStatus = "", SecondStatus = "";
                     IWebElement CurrentTaxHistoryTB1 = driver.FindElement(By.XPath("//*[@id='billDetailGrid']/table/tbody[1]"));
                     IList<IWebElement> CurrentTaxHistoryTR1 = CurrentTaxHistoryTB1.FindElements(By.TagName("tr"));
                     IList<IWebElement> CurrentTaxHistoryTD1;
@@ -245,7 +264,10 @@ namespace ScrapMaricopa.Scrapsource
                                 BillNumber = CurrentTaxHistoryTD1[0].Text;
                                 Roll.Add(BillNumber);
 
-
+                                if (row1.Text.Contains("Secured Supplemental") || row1.Text.Contains("Cancelled") || row1.Text.Contains("Secured Additional"))
+                                {
+                                    amc.IsDelinquent = "Yes";
+                                }
                                 ////driver.FindElement(By.XPath("//*[@id='navIcons']/li[3]/a")).Click();
                                 ////Thread.Sleep(2000);
 
@@ -254,10 +276,22 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
+
+                    try
+                    {
+                        IWebElement IPirorYear = driver.FindElement(By.XPath("//*[@id='parcelMessages ']"));
+                        if (IPirorYear.Text.Contains("Prior Years Taxes Are Outstanding"))
+                        {
+                            amc.IsDelinquent = "Yes";
+                        }
+                    }
+                    catch { }
+
                     foreach (string Go in Roll)
                     {
 
-                        driver.Navigate().GoToUrl("https://eproptax.saccounty.net/#BillDetail/" + Go + "");
+                        //driver.Navigate().GoToUrl("https://eproptax.saccounty.net/#BillDetail/" + Go + "");
+                        driver.Navigate().GoToUrl("https://eproptax.saccounty.net/#secured/BillDetail/" + Go + "");
                         Thread.Sleep(5000);
                         string SecuredAnnual = "", FirstInstallment = "", SecondInstallment = "", TaxRate = "";
                         CreatePdf(orderno, parcelNumber, "Tax Detail" + I, driver, "CA", "Sacramento");
@@ -268,7 +302,7 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement row in CurrentTaxHistoryTR)
                         {
                             CurrentTaxHistoryTD = row.FindElements(By.TagName("td"));
-                            if (CurrentTaxHistoryTD.Count != 0)
+                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Trim() != "" && !row.Text.Contains("There is a fee") && CurrentTaxHistoryTD.Count > 2)
                             {
                                 TaxRate = driver.FindElement(By.XPath("//*[@id='taxRateGlobal']/a/span")).Text;
                                 SecuredAnnual = CurrentTaxHistoryTD[0].Text;
@@ -279,6 +313,26 @@ namespace ScrapMaricopa.Scrapsource
 
                                 gc.insert_date(orderno, parcelNumber, 371, Deliquent, 1, DateTime.Now);
 
+                            }
+                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Amount:"))
+                            {
+                                amc.Instamount1 = CurrentTaxHistoryTD[1].Text.Trim();
+                                amc.Instamount2 = CurrentTaxHistoryTD[2].Text.Trim();
+                            }
+                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Delinquent Date:"))
+                            {
+                                FirstDelinquent = CurrentTaxHistoryTD[1].Text.Trim();
+                                SecondDelinquent = CurrentTaxHistoryTD[2].Text.Trim();
+                            }
+                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Penalty:"))
+                            {
+                                FirstPenalty = CurrentTaxHistoryTD[1].Text.Trim();
+                                SecondPenalty = CurrentTaxHistoryTD[2].Text.Trim();
+                            }
+                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Status:"))
+                            {
+                                FirstStatus = CurrentTaxHistoryTD[1].Text.Trim();
+                                SecondStatus = CurrentTaxHistoryTD[2].Text.Trim();
                             }
                         }
 
@@ -321,6 +375,53 @@ namespace ScrapMaricopa.Scrapsource
                     //    }
                     //}
                     //catch { I++; }
+
+                    //Amrock Installment
+                    if (amc.IsDelinquent != "Yes" || amc.IsDelinquent == "No")
+                    {
+                        if (FirstPenalty.Contains("$0.00") && FirstPenalty != "")
+                        {
+                            if (FirstStatus.Contains("Paid"))
+                            {
+                                amc.InstPaidDue1 = "Paid";
+                                amc.IsDelinquent = "No";
+                            }
+                            if (FirstStatus.Contains("Unpaid"))
+                            {
+                                amc.InstPaidDue1 = "Due";
+                                amc.IsDelinquent = "No";
+                            }
+                        }
+                        else if (!FirstPenalty.Contains("$0.00") && FirstPenalty != "")
+                        {
+                            if (FirstStatus.Contains("Paid") || FirstStatus.Contains("Unpaid"))
+                            {
+                                amc.IsDelinquent = "Yes";
+                            }
+                        }
+                        if (SecondPenalty.Contains("$0.00") && SecondPenalty != "")
+                        {
+                            if (SecondStatus.Contains("Paid"))
+                            {
+                                amc.InstPaidDue2 = "Paid";
+                                amc.IsDelinquent = "No";
+                            }
+                            if (SecondStatus.Contains("Unpaid"))
+                            {
+                                amc.InstPaidDue2 = "Due";
+                                amc.IsDelinquent = "No";
+                            }
+                        }
+                        else if (!SecondPenalty.Contains("$0.00") && SecondPenalty != "")
+                        {
+                            if (SecondStatus.Contains("Paid") || SecondStatus.Contains("Unpaid"))
+                            {
+                                amc.IsDelinquent = "Yes";
+                            }
+                        }
+                    }
+
+
                     driver.FindElement(By.XPath("//*[@id='navIcons']/li[3]/a")).Click();
                     Thread.Sleep(2000);
                     try
@@ -335,13 +436,9 @@ namespace ScrapMaricopa.Scrapsource
                         {
 
                             CurrentTaxHistoryTD1 = row1.FindElements(By.TagName("td"));
-                            if (CurrentTaxHistoryTD1.Count != 0)
+                            if (CurrentTaxHistoryTD1.Count != 0 && CurrentTaxHistoryTD1.Count != 1 && row1.Text.Trim() != "" && !row1.Text.Contains("There is a fee"))
                             {
                                 listurl.Add(CurrentTaxHistoryTD1[0].Text);
-
-
-
-
 
                             }
 
@@ -361,7 +458,7 @@ namespace ScrapMaricopa.Scrapsource
                             foreach (IWebElement row2 in CurrentPayHistoryTR)
                             {
                                 CurrentPayHistoryTD = row2.FindElements(By.TagName("td"));
-                                if (CurrentPayHistoryTD.Count != 0)
+                                if (CurrentPayHistoryTD.Count != 0 && row2.Text.Trim() != "" && !row2.Text.Contains("There is a fee"))
                                 {
 
                                     // string TaxRate1 = driver.FindElement(By.XPath("//*[@id='taxRateGlobal']/a/span")).Text;
@@ -396,7 +493,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
 
                             CurrentTaxHistoryTD1 = row1.FindElements(By.TagName("td"));
-                            if (CurrentTaxHistoryTD1.Count != 0 && CurrentTaxHistoryTD1.Count != 1)
+                            if (CurrentTaxHistoryTD1.Count != 0 && CurrentTaxHistoryTD1.Count != 1 && row1.Text.Trim() != "" && !row1.Text.Contains("There is a fee"))
                             {
                                 BillNumber = CurrentTaxHistoryTD1[0].Text;
                                 Billtype = CurrentTaxHistoryTD1[1].Text;
@@ -416,12 +513,19 @@ namespace ScrapMaricopa.Scrapsource
 
                     gc.CreatePdf(orderno, parcelNumber, "Tax History", driver, "CA", "Sacramento");
 
+                    try
+                    {
+                        ByVisibleElement(driver.FindElement(By.XPath("//*[@id='navIcons']/li[6]/a")));
+                        gc.CreatePdf(orderno, parcelNumber, "Tax History1", driver, "CA", "Sacramento");
+                    }
+                    catch { }
 
-                    ByVisibleElement(driver.FindElement(By.XPath("//*[@id='navIcons']/li[6]/a")));
-                    gc.CreatePdf(orderno, parcelNumber, "Tax History1", driver, "CA", "Sacramento");
-
-                    ByVisibleElement(driver.FindElement(By.XPath("//*[@id='applicationHost']/div/div/div/div[2]/h3")));
-                    gc.CreatePdf(orderno, parcelNumber, "Tax History2", driver, "CA", "Sacramento");
+                    try
+                    {
+                        ByVisibleElement(driver.FindElement(By.XPath("//*[@id='applicationHost']/div/div/div/div[2]/h3")));
+                        gc.CreatePdf(orderno, parcelNumber, "Tax History2", driver, "CA", "Sacramento");
+                    }
+                    catch { }
                     string BillYear = "", TaxBillNumber = "", BillType = "", PayByDate = "", Amount = "", PaidDate = "";
 
 
@@ -447,6 +551,33 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderno, parcelNumber, 373, TaxHistory, 1, DateTime.Now);
 
                         }
+
+                        try
+                        {
+                            if (amc.IsDelinquent != "Yes" || amc.IsDelinquent == "No")
+                            {
+                                if (FirstDelinquent == PayHistoryTD[3].Text.Trim())
+                                {
+                                    amc.TaxYear = PayHistoryTD[0].Text;
+                                    amc.Instamountpaid1 = PayHistoryTD[3].Text.Trim();
+                                }
+                                if (SecondDelinquent == PayHistoryTD[3].Text.Trim())
+                                {
+                                    amc.TaxYear = PayHistoryTD[0].Text;
+                                    amc.Instamountpaid2 = PayHistoryTD[3].Text.Trim();
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
+                    if (amc.IsDelinquent == "Yes")
+                    {
+                        gc.InsertAmrockTax(orderno, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                    }
+                    if(amc.IsDelinquent == "No")
+                    {
+                        gc.InsertAmrockTax(orderno, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
                     }
 
                     // gc.CreatePdf(orderno, parcelNumber, "Tax History Detail", driver, "CA", "El Dorado");

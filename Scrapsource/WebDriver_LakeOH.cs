@@ -60,6 +60,12 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_LakeOH"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
@@ -75,7 +81,7 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Address_tbAddressStreet']")).SendKeys(streetname.Trim());
                         gc.CreatePdf_WOP(orderNumber, "Address search Result ", driver, "OH", "Lake");
                         driver.FindElement(By.Id("ContentPlaceHolder1_Address_btnSearchAddress")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(5000);
                         try
                         {
 
@@ -144,6 +150,19 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "Parcel search Result ", driver, "OH", "Lake");
                         driver.FindElement(By.Id("ContentPlaceHolder1_Parcel_btnSearchParcel")).Click();
                         Thread.Sleep(2000);
+
+                        try
+                        {
+                            //No Data Found
+                            string nodata = driver.FindElement(By.Id("ContentPlaceHolder1_lblNumberOfResults")).Text;
+                            if (nodata.Contains("No results"))
+                            {
+                                HttpContext.Current.Session["Nodata_LakeOH"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     if (searchType == "ownername")
                     {
@@ -152,7 +171,7 @@ namespace ScrapMaricopa.Scrapsource
                         string firstname = Ownarsplit[1];
                         driver.FindElement(By.Id("ContentPlaceHolder1_btnDisclaimerAccept")).Click();
                         Thread.Sleep(2000);
-                        driver.FindElement(By.Id("Owner")).Click();
+                        driver.FindElement(By.LinkText("Owner")).Click();
                         Thread.Sleep(2000);
                         driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerLastName")).SendKeys(lastname.Trim());
                         driver.FindElement(By.Id("ContentPlaceHolder1_Owner_tbOwnerFirstName")).SendKeys(firstname.Trim());
@@ -220,12 +239,10 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_gvSearchResults']/tbody/tr[2]/td[1]/a")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(5000);
                     }
                     catch { }
-
                     Parcel_number = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataProfile_ParcelLabel")).Text;
-
                     string Ownar = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataProfile_OwnerLabel")).Text;
                     string address = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataProfile_AddressLabel")).Text;
                     string mailaddress = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataMailingAddress_OwnerAddressLine2Label")).Text;
@@ -240,28 +257,23 @@ namespace ScrapMaricopa.Scrapsource
                     string LegalAcres = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataLegal_RangeLabel")).Text;
                     string LandUse = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataLegal_LandUseCodeLabel")).Text;
                     string HomesteadReduction = driver.FindElement(By.Id("ContentPlaceHolder1_Base_fvDataTaxCredits_HomesteadReductionLabel")).Text;
-
                     gc.CreatePdf(orderNumber, Parcel_number, "Base", driver, "OH", "Lake");
-                    driver.FindElement(By.LinkText("Residential")).Click();
+
+
+                    driver.FindElement(By.LinkText("Improvements")).Click();
                     Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, Parcel_number, "Residential", driver, "OH", "Lake");
+                    gc.CreatePdf(orderNumber, Parcel_number, "Improvements", driver, "OH", "Lake");
                     try
                     {
-                        yearbuilt = driver.FindElement(By.Id("ContentPlaceHolder1_Residential_fvDataResidential_YearBuiltLabel")).Text;
+                        yearbuilt = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Improvements_gvDataImprovements']/tbody/tr[2]/td[3]")).Text;
                     }
                     catch { }
                     string Propertyresult = Ownar + "~" + address + "~" + mailingaddress + "~" + city + "~" + Township + "~" + school + "~" + LegalDescription + "~" + LegalAcres + "~" + LandUse + "~" + yearbuilt;
                     gc.insert_date(orderNumber, Parcel_number, 1684, Propertyresult, 1, DateTime.Now);
-
-                    AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
-                    driver.FindElement(By.LinkText("Land")).Click();
+                    //Assessment Details
+                    driver.FindElement(By.LinkText("Base")).Click();
                     Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, Parcel_number, "Lane", driver, "OH", "Lake");
-                    //assessment
-                    driver.FindElement(By.LinkText("Valuation")).Click();
-                    Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, Parcel_number, "Valuation", driver, "OH", "Lake");
-                    IWebElement valuvationTable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Valuation_fvDataValuation']/tbody/tr/td/table/tbody"));
+                    IWebElement valuvationTable = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Base_fvDataValuation']/tbody/tr/td/table/tbody"));
                     IList<IWebElement> Valuvationrow = valuvationTable.FindElements(By.TagName("tr"));
                     IList<IWebElement> valuvationid;
                     IList<IWebElement> valuvationTh;
@@ -280,6 +292,32 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, Parcel_number, 1685, apprasiedresult, 1, DateTime.Now);
                         }
                     }
+                    //Tax credits
+                    string apprasiedresult1 = "";
+                    IWebElement valuvationTable1 = driver.FindElement(By.XPath("//*[@id='ContentPlaceHolder1_Base_fvDataTaxCredits']/tbody/tr/td/table/tbody"));
+                    IList<IWebElement> Valuvationrow1 = valuvationTable1.FindElements(By.TagName("tr"));
+                    IList<IWebElement> valuvationid1;
+                    IList<IWebElement> valuvationTh1;
+                    foreach (IWebElement valuvation1 in Valuvationrow1)
+                    {
+                        valuvationid1 = valuvation1.FindElements(By.TagName("td"));
+                        valuvationTh1 = valuvation1.FindElements(By.TagName("th"));
+                        if (valuvationid1.Count == 1)
+                        {
+                            apprasiedresult1 = valuvationTh1[0].Text.Replace(":", "").Trim() + "~" + " " + "~" + valuvationid1[0].Text;
+                            gc.insert_date(orderNumber, Parcel_number, 1685, apprasiedresult1, 1, DateTime.Now);
+                        }
+                    }
+
+                    AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
+                    driver.FindElement(By.LinkText("Land")).Click();
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcel_number, "Lane", driver, "OH", "Lake");
+                    //Valuation pdf
+                    driver.FindElement(By.LinkText("Valuation")).Click();
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Parcel_number, "Valuation", driver, "OH", "Lake");
+
                     //property detail
                     driver.FindElement(By.LinkText("Sales")).Click();
                     Thread.Sleep(2000);
@@ -296,7 +334,7 @@ namespace ScrapMaricopa.Scrapsource
                         properttaxid = propertytax.FindElements(By.TagName("td"));
                         propertytaxth = propertytax.FindElements(By.TagName("th"));
 
-                       
+
                         if (propertytaxth.Count == 2 && !propertytax.Text.Contains("Tax Year 2018 Payable 2019"))
                         {
                             db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + "Property Tax~" + properttaxid[0].Text + "~" + properttaxid[1].Text + "' where Id = '" + 1686 + "'");
@@ -318,7 +356,7 @@ namespace ScrapMaricopa.Scrapsource
                         if (properttaxid.Count == 1)
                         {
                             db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + "Property Tax~" + propertytaxth[0].Text + "' where Id = '" + 1687 + "'");
-                            string Netresult1 = propertytaxth[0].Text.Replace(":", "").Trim() + "~" + properttaxid[0].Text.Replace("Pay This Amount","").Trim();
+                            string Netresult1 = propertytaxth[0].Text.Replace(":", "").Trim() + "~" + properttaxid[0].Text.Replace("Pay This Amount", "").Trim();
                             gc.insert_date(orderNumber, Parcel_number, 1687, Netresult1, 1, DateTime.Now);
                         }
                     }
@@ -350,7 +388,7 @@ namespace ScrapMaricopa.Scrapsource
                                 Splialassessmenid = Splialassessmen.FindElements(By.TagName("td"));
                                 if (Splialassessmenid.Count == 4)
                                 {
-                                    string taxpaymentresult = Splialassessmenid[1].Text + "~" + Splialassessmenid[2].Text + "~" + Splialassessmenid[3].Text;
+                                    string taxpaymentresult = Splialassessmenid[1].Text + "~" + Splialassessmenid[2].Text.Replace("\r", " ") + "~" + Splialassessmenid[3].Text;
                                     gc.insert_date(orderNumber, Parcel_number, 1688, taxpaymentresult, 1, DateTime.Now);
                                 }
                             }
@@ -370,6 +408,16 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, Parcel_number, 1691, taxpaymentresult, 1, DateTime.Now);
                         }
                     }
+                    //Tax Bill Download                    
+                    driver.FindElement(By.LinkText("Tax")).Click();
+                    Thread.Sleep(2000);
+                    IWebElement test = driver.FindElement(By.Id("ContentPlaceHolder1_Tax_hlinkTaxBill"));
+                    string downurl = test.GetAttribute("href");
+                    driver.Navigate().GoToUrl(downurl);
+                    Thread.Sleep(15000);
+                    gc.downloadfile(downurl, orderNumber, Parcel_number, "ViewTaxBill", "OH", "Lake");
+                                      
+                    
                     //Improvements
                     driver.FindElement(By.LinkText("Improvements")).Click();
                     Thread.Sleep(2000);

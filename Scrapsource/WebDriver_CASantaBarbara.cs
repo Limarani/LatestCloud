@@ -66,9 +66,16 @@ namespace ScrapMaricopa.Scrapsource
                             string[] strowner = ownername.Split(' ');
                             gc.TitleFlexSearch(orderNumber, parcelNumber, strowner[0], "", "CA", "Santa Barbara");
                         }
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CASantaBarbara"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         searchType = "parcel";
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
@@ -129,7 +136,17 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("SearchButton")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
                     }
-
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("ErrorLabel"));
+                        if(Inodata.Text.Contains("There were no properties matching your query"))
+                        {
+                            HttpContext.Current.Session["Nodata_CASantaBarbara"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //Scrapped Data 
 
                     //Property Deatails 

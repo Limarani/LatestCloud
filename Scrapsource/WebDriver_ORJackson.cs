@@ -61,10 +61,16 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "titleflex")
                     {
                         gc.TitleFlexSearch(orderNumber, "", ownernm, "", "OR", "Jackson");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ORJackson"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -120,10 +126,14 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("/html/body/form/table[5]/tbody/tr[6]/td/input[1]")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
 
-                        //MultiParcel
-                        IList<IWebElement> HiddenElements = driver.FindElements(By.CssSelector("#headerTable"));
-                        ChkMulti = HiddenElements[1].GetAttribute("textContent").Replace("\r\n\t\t\t\r\n\t\t\t\t\r\n\t\t\t\t\t", "");
-                        ChkMulti = WebDriverTest.Before(ChkMulti, " found for ");
+                        try
+                        {
+                            //MultiParcel
+                            IList<IWebElement> HiddenElements = driver.FindElements(By.CssSelector("#headerTable"));
+                            ChkMulti = HiddenElements[1].GetAttribute("textContent").Replace("\r\n\t\t\t\r\n\t\t\t\t\r\n\t\t\t\t\t", "");
+                            ChkMulti = WebDriverTest.Before(ChkMulti, " found for ");
+                        }
+                        catch { }
 
                         if (ChkMulti == "1 Record")
                         {
@@ -150,55 +160,61 @@ namespace ScrapMaricopa.Scrapsource
 
                         else
                         {
-                            IWebElement MultiTable = driver.FindElement(By.XPath("//*[@id='tblLargeAccount']/tbody"));
-                            gc.CreatePdf_Chrome(orderNumber, parcelNumber, "Multi Address Search", driver, "OR", "Jackson");
-                            IList<IWebElement> MultiTR = MultiTable.FindElements(By.TagName("tr"));
-                            IList<IWebElement> MultiTD;
-
-                            foreach (IWebElement row2 in MultiTR)
+                            try
                             {
-                                MultiTD = row2.FindElements(By.TagName("td"));
+                                IWebElement MultiTable = driver.FindElement(By.XPath("//*[@id='tblLargeAccount']/tbody"));
+                                gc.CreatePdf_Chrome(orderNumber, parcelNumber, "Multi Address Search", driver, "OR", "Jackson");
+                                IList<IWebElement> MultiTR = MultiTable.FindElements(By.TagName("tr"));
+                                IList<IWebElement> MultiTD;
 
-                                if (MultiTD.Count != 0 && row2.Text.Contains("Owner") || row2.Text.Contains("Account #") || row2.Text.Contains("Situs Address"))
+                                foreach (IWebElement row2 in MultiTR)
                                 {
-                                    Curnt_Own = MultiTD[0].Text;
-                                    if (Curnt_Own.Contains("Owner"))
+                                    MultiTD = row2.FindElements(By.TagName("td"));
+
+                                    if (MultiTD.Count != 0 && row2.Text.Contains("Owner") || row2.Text.Contains("Account #") || row2.Text.Contains("Situs Address"))
                                     {
-                                        Currentowner = MultiTD[1].Text;
+                                        Curnt_Own = MultiTD[0].Text;
+                                        if (Curnt_Own.Contains("Owner"))
+                                        {
+                                            Currentowner = MultiTD[1].Text;
+                                        }
+
+                                        Curnt_Accn = MultiTD[0].Text;
+                                        if (Curnt_Accn.Contains("Account #"))
+                                        {
+                                            Account = MultiTD[1].Text;
+                                        }
+
+                                        Curnt_Situs = MultiTD[0].Text;
+                                        if (Curnt_Situs.Contains("Situs Address"))
+                                        {
+                                            Situs_Address = MultiTD[1].Text;
+                                        }
+                                    }
+                                    if (Currentowner != "" && Account != "" && Situs_Address != "")
+                                    {
+                                        string MultiData = Currentowner + "~" + Situs_Address;
+                                        gc.insert_date(orderNumber, Account, 993, MultiData, 1, DateTime.Now);
+                                        Currentowner = ""; Situs_Address = ""; Account = "";
                                     }
 
-                                    Curnt_Accn = MultiTD[0].Text;
-                                    if (Curnt_Accn.Contains("Account #"))
-                                    {
-                                        Account = MultiTD[1].Text;
-                                    }
-
-                                    Curnt_Situs = MultiTD[0].Text;
-                                    if (Curnt_Situs.Contains("Situs Address"))
-                                    {
-                                        Situs_Address = MultiTD[1].Text;
-                                    }
                                 }
-                                if (Currentowner != "" && Account != "" && Situs_Address != "")
+
+                                if (MultiTR.Count > 25)
                                 {
-                                    string MultiData = Currentowner + "~" + Situs_Address;
-                                    gc.insert_date(orderNumber, Account, 993, MultiData, 1, DateTime.Now);
-                                    Currentowner = ""; Situs_Address = ""; Account = "";
+                                    HttpContext.Current.Session["multiParcel_ORjackson_Multicount"] = "Maximum";
+                                    driver.Quit();
+                                    return "Maximum";
+                                }
+                                else if (MultiTR.Count <= 25)
+                                {
+                                    HttpContext.Current.Session["multiParcel_ORjackson"] = "Yes";
+                                    driver.Quit();
+                                    return "MultiParcel";
                                 }
 
                             }
-
-                            if (MultiTR.Count > 25)
-                            {
-                                HttpContext.Current.Session["multiParcel_ORjackson_Multicount"] = "Maximum";
-                            }
-                            else
-                            {
-                                HttpContext.Current.Session["multiParcel_ORjackson"] = "Yes";
-                            }
-                            driver.Quit();
-
-                            return "MultiParcel";
+                            catch { }
                         }
                     }
 
@@ -274,6 +290,17 @@ namespace ScrapMaricopa.Scrapsource
 
                     }
 
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("tblBottomResults"));
+                        if (INodata.Text.Contains("0 records found"))
+                        {
+                            HttpContext.Current.Session["Nodata_ORJackson"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     Thread.Sleep(2000);
                     driver.SwitchTo().Window(driver.WindowHandles.Last());
                     Thread.Sleep(2000);
@@ -474,114 +501,197 @@ namespace ScrapMaricopa.Scrapsource
                         { }
                         AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
 
+
+                        //try
+                        //{
+                        //    try
+                        //    {                               
+                        //        driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[7]/td[2]/a")).Click();
+                        //        Thread.Sleep(2000);
+                        //    }
+                        //    catch
+                        //    { }
+
+                        //    try
+                        //    {
+                        //        driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[3]/td[2]/a")).Click();
+                        //        Thread.Sleep(2000);
+
+                        //        driver.SwitchTo().Window(driver.WindowHandles.Last());
+                        //        Thread.Sleep(2000);
+
+                        //        driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr/td/form/input[1]")).Click();
+                        //        Thread.Sleep(3000);
+                        //    }
+                        //    catch
+                        //    { }
+
+                        //    try
+                        //    {
+                        //        driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[16]/td[2]/a")).Click();
+                        //        Thread.Sleep(4000);
+                        //    }
+                        //    catch
+                        //    { }
+                        //    try
+                        //    {
+                        //        driver.SwitchTo().Window(driver.WindowHandles.Last());
+                        //        Thread.Sleep(2000);
+
+                        //        driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[13]/td[2]/a")).Click();
+                        //        Thread.Sleep(4000);
+                        //    }
+                        //    catch
+                        //    { }
+                        //    driver.SwitchTo().Window(driver.WindowHandles.Last());
+                        //    Thread.Sleep(2000);
+
+                        //    try
+                        //    {
+                        //        IWebElement TaxdistributionTB = driver.FindElement(By.XPath("/html/body/table/tbody/tr[1]/td/table[2]/tbody"));
+                        //        IList<IWebElement> TaxdistributionTR = TaxdistributionTB.FindElements(By.TagName("tr"));
+                        //        IList<IWebElement> TaxdistributionTD;
+
+                        //        foreach (IWebElement Taxdistribution in TaxdistributionTR)
+                        //        {
+                        //            TaxdistributionTD = Taxdistribution.FindElements(By.TagName("td"));
+                        //            if (TaxdistributionTD.Count != 0 && !Taxdistribution.Text.Contains("Account") && !Taxdistribution.Text.Contains("DISTRICT ID") && TaxdistributionTD[0].Text != "" && !Taxdistribution.Text.Contains("TOTALS"))
+                        //            {
+                        //                District_id = TaxdistributionTD[0].Text;
+                        //                M5_Type = TaxdistributionTD[1].Text;
+                        //                District = TaxdistributionTD[2].Text;
+                        //                Tax_Rate = TaxdistributionTD[3].Text;
+                        //                Value = TaxdistributionTD[4].Text;
+                        //                Limited = TaxdistributionTD[5].Text;
+                        //                Non_Limited = TaxdistributionTD[6].Text;
+                        //                Dis_Total = TaxdistributionTD[7].Text;
+
+                        //                Taxdistribution_details = Tax_Year + "~" + District_id + "~" + M5_Type + "~" + District + "~" + Tax_Rate + "~" + Value + "~" + Limited + "~" + Non_Limited + "~" + Dis_Total;
+                        //                gc.insert_date(orderNumber, Parcel_ID, 967, Taxdistribution_details, 1, DateTime.Now);
+                        //            }
+
+                        //            if (Taxdistribution.Text.Contains("TOTALS"))
+                        //            {
+                        //                District_id1 = TaxdistributionTD[0].Text;
+                        //                Limited1 = TaxdistributionTD[1].Text;
+                        //                Non_Limited1 = TaxdistributionTD[2].Text;
+                        //                Dis_Total1 = TaxdistributionTD[3].Text;
+
+                        //                Taxdistribution_details1 = Tax_Year + "~" + District_id1 + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + Limited1 + "~" + Non_Limited1 + "~" + Dis_Total1;
+                        //                gc.CreatePdf(orderNumber, Parcel_ID, "Tax Distribution Details" + Tax_Year, driver, "OR", "Jackson");
+                        //                gc.insert_date(orderNumber, Parcel_ID, 967, Taxdistribution_details1, 1, DateTime.Now);
+                        //            }
+                        //        }
+
+
+                        //    }
+                        //    catch
+                        //    { }
+                        //}
+                        //catch
+                        //{ }
+
+                        //try
+                        //{
+                        //    driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/form/input[1]")).Click();
+                        //    Thread.Sleep(2000);
+                        //}
+                        //catch
+                        //{ }
+
+                        //try
+                        //{
+                        //    driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr/td/form/input[1]")).Click();
+                        //    Thread.Sleep(2000);
+                        //}
+                        //catch
+                        //{ }
+
                         //Tax Distribution Details
                         try
                         {
-                            try
+                            IWebElement ITaxDistribution = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[6]/td[2]/a"));
+                            string strTaxDistribution = ITaxDistribution.GetAttribute("href");
+                            gc.downloadfile(strTaxDistribution, orderNumber, Parcel_ID, "ViewTaxBill", "OR", "Jackson");
+                            Thread.Sleep(2000);
+
+                            FilePathCurrentTaxInfo22 = gc.filePath(orderNumber, Parcel_ID) + "ViewTaxBill.pdf";
+                            PdfReader reader22;
+                            reader22 = new PdfReader(FilePathCurrentTaxInfo22);
+                            String textFromPage22 = PdfTextExtractor.GetTextFromPage(reader22, 1);
+                            System.Diagnostics.Debug.WriteLine("" + textFromPage22);
+
+                            pdftext22 = textFromPage22;
+
+                            tableassess123 = gc.Between(pdftext22, "Bonds", "Page").Trim();
+                            string TaxYear = gc.Between(pdftext22, "Year", "Code Area").Trim();
+                            string Exemption = gc.Between(pdftext22, "Exemption", "Dist").Trim();
+                            if(Exemption !="")
                             {
-                                driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[7]/td[2]/a")).Click();
-                                Thread.Sleep(2000);
+                                newrow123 = TaxYear + "~" + Exemption + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "";
+                                gc.insert_date(orderNumber, Parcel_ID, 967, newrow123, 1, DateTime.Now);
                             }
-                            catch
-                            { }
-
-                            try
+                           
+                            string[] tableArray123 = tableassess123.Split('\n');
+                            List<string> rowarray123 = new List<string>();
+                            int m = 0, n = 0, o = 0, p = 0, q = 0;
+                            int count123 = tableArray123.Length;
+                            for (m = 0; m < count123; m++)
                             {
-                                driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[12]/td[2]/a")).Click();
-                                Thread.Sleep(2000);
-
-                                driver.SwitchTo().Window(driver.WindowHandles.Last());
-                                Thread.Sleep(2000);
-
-                                driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr/td/form/input[1]")).Click();
-                                Thread.Sleep(3000);
+                                a123 = tableArray123[m].Replace(" ", "~");
+                                string[] rowarray213 = a123.Split('~');
+                                rowarray123.AddRange(rowarray213);
+                                if (rowarray123.Count() > 5)
+                                {
+                                    string strDistCode = "", strDistNme = "", strRate = "", strGovt = "", strEducation = "", strBonds = "";
+                                    for (int i = 0; i < rowarray123.Count(); i++)
+                                    {
+                                        if (i == 0)
+                                        {
+                                            strDistCode = rowarray123[i];
+                                        }
+                                        else if (i == rowarray123.Count() - 1)
+                                        {
+                                            strBonds = rowarray123[i];
+                                        }
+                                        else if (i == rowarray123.Count() - 2)
+                                        {
+                                            strEducation = rowarray123[i];
+                                        }
+                                        else if (i == rowarray123.Count() - 3)
+                                        {
+                                            strGovt = rowarray123[i];
+                                        }
+                                        else if (i == rowarray123.Count() - 4)
+                                        {
+                                            strRate = rowarray123[i];
+                                        }
+                                        else if (i > 0 && i < rowarray123.Count() - 4)
+                                        {
+                                            strDistNme += rowarray123[i] + " ";
+                                        }
+                                    }
+                                    newrow123 = TaxYear + "~" + "" + "~" + strDistCode + "~" + strDistNme + "~" + strRate + "~" + strGovt + "~" + strEducation + "~" + strBonds;
+                                    gc.insert_date(orderNumber, Parcel_ID, 967, newrow123, 1, DateTime.Now);
+                                }
+                                if (rowarray123.Count() == 5 && rowarray123[0].Contains("Totals"))
+                                {
+                                    newrow123 = TaxYear + "~" + "~" + "~" + rowarray123[0] + "~" + rowarray123[1] + "~" + rowarray123[2] + "~" + rowarray123[3] + "~" + rowarray123[4];
+                                    gc.insert_date(orderNumber, Parcel_ID, 967, newrow123, 1, DateTime.Now);
+                                }
+                                rowarray123.Clear();
                             }
-                            catch
-                            { }
 
-                            try
-                            {
-                                driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[16]/td[2]/a")).Click();
-                                Thread.Sleep(4000);
-                            }
-                            catch
-                            { }
-                            try
-                            {
-                                driver.SwitchTo().Window(driver.WindowHandles.Last());
-                                Thread.Sleep(2000);
-
-                                driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table/tbody/tr[13]/td[2]/a")).Click();
-                                Thread.Sleep(4000);
-                            }
-                            catch
-                            { }
+                        }
+                        catch
+                        { }
+                        try
+                        {
                             driver.SwitchTo().Window(driver.WindowHandles.Last());
                             Thread.Sleep(2000);
-
-                            try
-                            {
-                                IWebElement TaxdistributionTB = driver.FindElement(By.XPath("/html/body/table/tbody/tr[1]/td/table[2]/tbody"));
-                                IList<IWebElement> TaxdistributionTR = TaxdistributionTB.FindElements(By.TagName("tr"));
-                                IList<IWebElement> TaxdistributionTD;
-
-                                foreach (IWebElement Taxdistribution in TaxdistributionTR)
-                                {
-                                    TaxdistributionTD = Taxdistribution.FindElements(By.TagName("td"));
-                                    if (TaxdistributionTD.Count != 0 && !Taxdistribution.Text.Contains("Account") && !Taxdistribution.Text.Contains("DISTRICT ID") && TaxdistributionTD[0].Text != "" && !Taxdistribution.Text.Contains("TOTALS"))
-                                    {
-                                        District_id = TaxdistributionTD[0].Text;
-                                        M5_Type = TaxdistributionTD[1].Text;
-                                        District = TaxdistributionTD[2].Text;
-                                        Tax_Rate = TaxdistributionTD[3].Text;
-                                        Value = TaxdistributionTD[4].Text;
-                                        Limited = TaxdistributionTD[5].Text;
-                                        Non_Limited = TaxdistributionTD[6].Text;
-                                        Dis_Total = TaxdistributionTD[7].Text;
-
-                                        Taxdistribution_details = Tax_Year + "~" + District_id + "~" + M5_Type + "~" + District + "~" + Tax_Rate + "~" + Value + "~" + Limited + "~" + Non_Limited + "~" + Dis_Total;
-                                        gc.insert_date(orderNumber, Parcel_ID, 967, Taxdistribution_details, 1, DateTime.Now);
-                                    }
-
-                                    if (Taxdistribution.Text.Contains("TOTALS"))
-                                    {
-                                        District_id1 = TaxdistributionTD[0].Text;
-                                        Limited1 = TaxdistributionTD[1].Text;
-                                        Non_Limited1 = TaxdistributionTD[2].Text;
-                                        Dis_Total1 = TaxdistributionTD[3].Text;
-
-                                        Taxdistribution_details1 = Tax_Year + "~" + District_id1 + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + Limited1 + "~" + Non_Limited1 + "~" + Dis_Total1;
-                                        gc.CreatePdf(orderNumber, Parcel_ID, "Tax Distribution Details" + Tax_Year, driver, "OR", "Jackson");
-                                        gc.insert_date(orderNumber, Parcel_ID, 967, Taxdistribution_details1, 1, DateTime.Now);
-                                    }
-                                }
-
-
-                            }
-                            catch
-                            { }
                         }
                         catch
                         { }
-
-                        try
-                        {
-                            driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/form/input[1]")).Click();
-                            Thread.Sleep(2000);
-                        }
-                        catch
-                        { }
-
-                        try
-                        {
-                            driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr/td/form/input[1]")).Click();
-                            Thread.Sleep(2000);
-                        }
-                        catch
-                        { }
-                        driver.SwitchTo().Window(driver.WindowHandles.Last());
-                        Thread.Sleep(2000);
-
                         //Tax Info2 Details
                         try
                         {

@@ -60,10 +60,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "GA", "Walton");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_WaltonGA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -98,7 +104,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 if (multiTD.Count != 0 && multiRow.Count > 25)
                                 {
-                                    HttpContext.Current.Session["multiparcel_WayneOH_Maximum"] = "Maximum";
+                                    HttpContext.Current.Session["multiparcel_WaltonGA_Maximum"] = "Maximum";
                                     driver.Quit();
                                     return "Maximum";
                                 }
@@ -114,13 +120,13 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max > 1 && Max < 26)
                             {
-                                HttpContext.Current.Session["multiparcel_WayneOH"] = "Yes";
+                                HttpContext.Current.Session["multiparcel_WaltonGA"] = "Yes";
                                 driver.Quit();
                                 return "MultiParcel";
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Wayne"] = "Zero";
+                                HttpContext.Current.Session["Nodata_WaltonGA"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }
@@ -220,6 +226,17 @@ namespace ScrapMaricopa.Scrapsource
                         // Thread.Sleep(3000);
                     }
 
+                    try
+                    {
+                        IWebElement Inodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults"));
+                        if (Inodata.Text.Contains("No results match"))
+                        {
+                            HttpContext.Current.Session["Nodata_WaltonGA"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     //property details
                     gc.CreatePdf(orderNumber, parcelNumber, "Property Details", driver, "GA", "Walton");
                     int i = 0, j = 0;

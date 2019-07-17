@@ -57,10 +57,18 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + sname + " " + unitno;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "OH", "Hamilton");
-                        if (GlobalClass.TitleFlex_Search == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_OHHamilton"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
                     if (searchType == "address")
@@ -168,6 +176,18 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
 
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("search-results"));
+                        if(INodata.Text.Contains("No data available in table"))
+                        {
+                            HttpContext.Current.Session["Nodata_OHHamilton"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //Assessment Details
                     Thread.Sleep(6000);

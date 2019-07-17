@@ -67,9 +67,16 @@ namespace ScrapMaricopa.Scrapsource
                         titleOwner = ownername;
                         gc.TitleFlexSearch(orderNumber, "", ownername, titleaddress, "FL", "Marion");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_FLMarion"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -188,7 +195,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.XPath("//*[@id='srch']/text()")).Text;
+                            string nodata = driver.FindElement(By.Id("srch'")).Text;
                             if (nodata.Contains("0 records found. End of search reached."))
                             {
                                 HttpContext.Current.Session["Nodata_FLMarion"] = "Yes";
@@ -863,8 +870,11 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(2000);
                     Deliquent_Comments = "";
                     CER_Comments = "";
-                    Taxing_Authority = driver.FindElement(By.XPath("//*[@id='footer']/div/div[1]/p")).Text;
-                    Taxing_Authority = WebDriverTest.After(Taxing_Authority, "Main Office, McPherson Complex");
+                    try
+                    {
+                        Taxing_Authority = driver.FindElement(By.XPath("//*[@id='ss-block-container-1']/div/address[2]")).Text.Replace("\r\n", " ");
+                    }
+                    catch { }
 
                     if (Deliquent == "DELINQUENT TAXES DUE          ")
                     {

@@ -60,10 +60,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string titleaddress = streetno + " " + streetname + " " + streettype + " " + unitnumber;
                         gc.TitleFlexSearch(orderNumber, "", "", titleaddress, "TX", "Hays");
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_TXHays"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -218,12 +224,12 @@ namespace ScrapMaricopa.Scrapsource
                                     parcel = Multiaddressid[1].Text;
                                 }
                             }
-                            gc.CreatePdf_WOP(orderNumber, "Owner Address search1", driver, "TX", "Hays");
+                            gc.CreatePdf_WOP(orderNumber, "Owner search1", driver, "TX", "Hays");
                             //ByVisibleElement(chDriver.FindElement(By.Id("DownloadResults")));
-                            gc.CreatePdf_WOP(orderNumber, "Owner Address search2", driver, "TX", "Hays");
+                            gc.CreatePdf_WOP(orderNumber, "Owner Search2", driver, "TX", "Hays");
                             driver.Navigate().GoToUrl("http://esearch.hayscad.com/Property/View/" + parcel + "");
                             Thread.Sleep(2000);
-                            gc.CreatePdf_WOP(orderNumber, "Owner Address search1", driver, "TX", "Hays");
+                            gc.CreatePdf_WOP(orderNumber, "Owner search3", driver, "TX", "Hays");
                             chDriver.Quit();
                         }
 
@@ -273,6 +279,18 @@ namespace ScrapMaricopa.Scrapsource
                             { }
                         }
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("results-page"));
+                        if (INodata.Text.Contains("Page 1 of 0 - Total: 0"))
+                        {
+                            HttpContext.Current.Session["Nodata_TXHays"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
 
                     //Property Details
                     try
@@ -544,7 +562,20 @@ namespace ScrapMaricopa.Scrapsource
                     //TaxPayment Details
                     try
                     {
-                        IWebElement TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        IWebElement TaxPaymentTB = null;
+                        try
+                        {
+                            TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                        }
+                        catch { }
+                        try
+                        {
+                            if (TaxPaymentTB == null)
+                            {
+                                TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                            }
+                        }
+                        catch { }
                         IList<IWebElement> TaxPaymentTR = TaxPaymentTB.FindElements(By.TagName("tr"));
                         IList<IWebElement> TaxPaymentTD;
 
@@ -572,7 +603,20 @@ namespace ScrapMaricopa.Scrapsource
                     int p1 = 0, p2 = 0, p3 = 0;
                     List<string> strTaxRealestate = new List<string>();
                     List<IWebElement> strTaxRealestate1 = new List<IWebElement>();
-                    IWebElement ITaxReal1 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    IWebElement ITaxReal1 = null;
+                    try
+                    {
+                        ITaxReal1 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody"));
+                    }
+                    catch { }
+                    try
+                    {
+                        if (ITaxReal1 == null)
+                        {
+                            ITaxReal1 = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                        }
+                    }
+                    catch { }
                     IList<IWebElement> ITaxRealRow1 = ITaxReal1.FindElements(By.TagName("tr"));
                     IList<IWebElement> ITaxRealTd1;
 
@@ -597,7 +641,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         try
                         {
-                            driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p5 + "]/td[7]/button")).Click();
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/table/tbody/tr[" + p5 + "]/td[7]/button")).Click();
+                            }
+                            catch { }
+                            try
+                            {
+                                driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody/tr[" + p5 + "]/td[7]/button")).Click();
+                            }
+                            catch { }
                             Thread.Sleep(6000);
 
                             IWebElement TaxTB = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[1]/div[1]/table/tbody"));

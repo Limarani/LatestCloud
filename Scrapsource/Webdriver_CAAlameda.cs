@@ -41,7 +41,7 @@ namespace ScrapMaricopa.Scrapsource
             driverService.HideCommandPromptWindow = true;
             //driver = new ChromeDriver();
             // driver = new PhantomJSDriver();
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver()) //PhantomJSDriver
             {
                 driver.Manage().Window.Size = new Size(1920, 1080);
                 string[] stringSeparators1 = new string[] { "\r\n" };
@@ -85,6 +85,7 @@ namespace ScrapMaricopa.Scrapsource
                         string pa4 = "";
                         if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
                         else
@@ -147,10 +148,16 @@ namespace ScrapMaricopa.Scrapsource
 
                         }
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_Alameda"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         searchType = "parcel";
                     }
@@ -356,7 +363,7 @@ namespace ScrapMaricopa.Scrapsource
                     //IWebDriver chDriver = new ChromeDriver();
                     List<string> strTaxRealestate = new List<string>();
                     var chromeOptions = new ChromeOptions();
-                    var downloadDirectory = "F:\\AutoPdf\\";
+                    var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
 
                     chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                     chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
@@ -388,7 +395,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         chDriver.Quit();
                     }
-                    gc.downloadfile(DownloadURL, orderNumber, parcelNumber, " tax bill", "CA", "Alameda");
+                    //gc.downloadfile(DownloadURL, orderNumber, parcelNumber, "tax bill", "CA", "Alameda");
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");
                     gc.insert_TakenTime(orderNumber, "CA", "Alameda", StartTime, AssessmentTime, TaxTime, CityTaxtakentime, LastEndTime);
                     driver.Quit();

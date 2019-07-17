@@ -66,15 +66,16 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         gc.TitleFlexSearch(orderNumber, "", ownername, titleaddress, "MD", "Charles");
 
-                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
-
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null)
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
-                            if (HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
-                            {
-                                driver.Quit();
-                                return "MultiParcel";
-                            }
+                            driver.Quit();
+                            return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_CharlesMD"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -174,6 +175,19 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.XPath("//*[@id='MainContent_MainContent_cphMainContentArea_ucSearchType_wzrdRealPropertySearch_StepNavigationTemplateContainerID_btnStepNextButton']")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                     }
+
+                    try
+                    {
+                        IWebElement INodata = driver.FindElement(By.Id("MainContent_MainContent_cphMainContentArea_ucSearchType_lblErr"));
+                        if(INodata.Text.Contains("There are no records that match your criteria for county"))
+                        {
+                            HttpContext.Current.Session["Nodata_CharlesMD"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
+
                     string LegalDescription = "", MailingAddress = "", PremisesAddress = "", Account_Identifier = "", Parcel = "", Use = "", PrincipalResidence = "", Map = "", Grid = "", SubDistrict = "", Subdivision = "", Section = "", Block = "", Lot = "", AssessmentYear = "", Town = "";
                     string District = "", PrimaryStructureBuilt = "", PropertyLandArea = "", Parcelno = "";
                     parcelNumber = driver.FindElement(By.XPath("//*[@id='MainContent_MainContent_cphMainContentArea_ucSearchType_wzrdRealPropertySearch_ucDetailsSearch_dlstDetaisSearch_lblDetailsStreetHeader_0']")).Text.Replace("Folio:", "");

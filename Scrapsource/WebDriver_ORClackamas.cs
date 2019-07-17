@@ -58,9 +58,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
 
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "OR", "Clackamas");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_ORClackmas"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -94,49 +101,64 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch
                         { }
-                        //MultiParcel
-
-                        ChkMultiParcel = driver.FindElement(By.XPath("//*[@id='Table2']/tbody/tr/td[2]")).Text;
-
-                        if (ChkMultiParcel == "1 records returned from your search input.")
+                        try
                         {
-                            driver.FindElement(By.XPath("/html/body/form/table/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[3]/td/div/table/tbody/tr[2]/td[1]/a")).Click();
-                            Thread.Sleep(3000);
-                            //Screen-Shot                        
-                            gc.CreatePdf_WOP(orderNumber, "Single Address Search", driver, "OR", "Clackamas");
-                        }
+                            //MultiParcel
 
-                        else
-                        {
-                            IWebElement MultiParcelTable = driver.FindElement(By.XPath("/html/body/form/table/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[3]/td/div/table/tbody"));
-                            IList<IWebElement> MultiParcelTR = MultiParcelTable.FindElements(By.TagName("tr"));
-                            IList<IWebElement> MultiParcelTD;
+                            ChkMultiParcel = driver.FindElement(By.XPath("//*[@id='Table2']/tbody/tr/td[2]")).Text;
 
-                            int maxCheck = 0;
-
-                            foreach (IWebElement multi in MultiParcelTR)
+                            if (ChkMultiParcel == "1 records returned from your search input.")
                             {
-                                if (maxCheck <= 10)
+                                driver.FindElement(By.XPath("/html/body/form/table/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[3]/td/div/table/tbody/tr[2]/td[1]/a")).Click();
+                                Thread.Sleep(3000);
+                                //Screen-Shot                        
+                                gc.CreatePdf_WOP(orderNumber, "Single Address Search", driver, "OR", "Clackamas");
+                            }
+
+                            else
+                            {
+                                IWebElement MultiParcelTable = driver.FindElement(By.XPath("/html/body/form/table/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[3]/td/div/table/tbody"));
+                                IList<IWebElement> MultiParcelTR = MultiParcelTable.FindElements(By.TagName("tr"));
+                                IList<IWebElement> MultiParcelTD;
+
+                                int maxCheck = 0;
+
+                                foreach (IWebElement multi in MultiParcelTR)
                                 {
-                                    MultiParcelTD = multi.FindElements(By.TagName("td"));
-                                    if (MultiParcelTD.Count != 0)
+                                    if (maxCheck <= 10)
                                     {
-                                        parcelNumber = MultiParcelTD[0].Text;
-                                        LocationAddress = MultiParcelTD[1].Text;
-                                        MultiParcelData = LocationAddress;
-                                        gc.insert_date(orderNumber, parcelNumber, 151, MultiParcelData, 1, DateTime.Now);
+                                        MultiParcelTD = multi.FindElements(By.TagName("td"));
+                                        if (MultiParcelTD.Count != 0)
+                                        {
+                                            parcelNumber = MultiParcelTD[0].Text;
+                                            LocationAddress = MultiParcelTD[1].Text;
+                                            MultiParcelData = LocationAddress;
+                                            gc.insert_date(orderNumber, parcelNumber, 151, MultiParcelData, 1, DateTime.Now);
+                                        }
+                                        maxCheck++;
                                     }
-                                    maxCheck++;
                                 }
+                                HttpContext.Current.Session["multiparcel_ORClackamas"] = "Yes";
+                                if (MultiParcelTR.Count > 10)
+                                {
+                                    HttpContext.Current.Session["multiParcel_ORClackamas_count"] = "Maximum";
+                                }
+                                driver.Quit();
+                                return "MultiParcel";
                             }
-                            HttpContext.Current.Session["multiparcel_ORClackamas"] = "Yes";
-                            if (MultiParcelTR.Count > 10)
-                            {
-                                HttpContext.Current.Session["multiParcel_ORClackamas_count"] = "Maximum";
-                            }
-                            driver.Quit();
-                            return "MultiParcel";
                         }
+                        catch { }
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.Id("Table2"));
+                            if (INodata.Text.Contains("0 records returned"))
+                            {
+                                HttpContext.Current.Session["Nodata_ORClackmas"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
 
                     else if (searchType == "parcel")
@@ -148,7 +170,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "OR", "Clackamas");
                         driver.FindElement(By.Id("mSubmit")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.Id("Table1"));
+                            if(INodata.Text.Contains("does not exist"))
+                            {
+                                HttpContext.Current.Session["Nodata_ORClackmas"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     else if (searchType == "block")
                     {
@@ -160,7 +192,17 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, account, "AccountSearch", driver, "OR", "Clackamas");
                         driver.FindElement(By.Id("mSubmit")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
-
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.Id("Table1"));
+                            if (INodata.Text.Contains("does not exist"))
+                            {
+                                HttpContext.Current.Session["Nodata_ORClackmas"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     //Scrapped Data 
 
@@ -482,16 +524,22 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(2000);
 
                     //Tax Authority
+                    try
+                    { 
                     driver.Navigate().GoToUrl("https://clackamas.us/at");
                     Thread.Sleep(2000);
                     gc.CreatePdf(orderNumber, outparcelno, "Authority Search", driver, "OR", "Clackamas");
-                    authority_Address = driver.FindElement(By.XPath("/html/body/div/div[2]/div/aside[2]/div/section[1]/div/div/div/div/div[3]/div/a")).Text.Replace("\r\n", " ");
-                    authority_Phone = driver.FindElement(By.XPath("/html/body/div/div[2]/div/aside[2]/div/section[1]/div/div/div/div/div[5]/div")).Text;
+                    authority_Address = driver.FindElement(By.XPath("//*[@id='block-views-block-ccts-locations-ccts-locations-view']/div/div/div/div/div/span/div[2]/p[2]/a")).Text.Replace("\r\n", " ");
+                    authority_Phone = driver.FindElement(By.XPath("//*[@id='block-views-block-ccts-locations-ccts-locations-view']/div/div/div/div/div/span/div[2]/p[1]/a[1]")).Text;
                     Authority_Address = authority_Address + " " + authority_Phone;
-                    authority_Mail = driver.FindElement(By.XPath("/html/body/div/div[2]/div/aside[2]/div/section[1]/div/div/div/div/div[6]/div/a")).Text;
+                    authority_Mail = driver.FindElement(By.XPath("//*[@id='block-views-block-ccts-locations-ccts-locations-view']/div/div/div/div/div/span/div[2]/p[1]/a[2]")).Text;
                     authority_Details = Authority_Address + "~" + authority_Mail;
                     gc.insert_date(orderNumber, outparcelno, 163, authority_Details, 1, DateTime.Now);
+                    }
+                    catch
+                    {
 
+                    }
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
 
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");

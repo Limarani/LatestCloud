@@ -59,12 +59,19 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + sname;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, ownername, address, "CA", "Fresno");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].Equals("Yes"))
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
                         }
                         else
-                        {
+                        {                            
+                            if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                            {
+                                HttpContext.Current.Session["Nodata_CAFresno"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
                             //string strTitleAssess = HttpContext.Current.Session["TitleFlexAssess"].ToString();
                             parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                             //gc.insert_date(orderNumber, parcelNumber, 311, strTitleAssess, 1, DateTime.Now);

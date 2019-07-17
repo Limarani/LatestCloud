@@ -75,9 +75,16 @@ namespace ScrapMaricopa.Scrapsource
                         //string titleaddress = address;
                         gc.TitleFlexSearch(orderNumber, "", "", address, "OH", "Cuyahoga");
 
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Zero_cuyahoga"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -140,13 +147,24 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["multiParcel_cuyahoga"] = "Yes";
                                 driver.Quit();
-                                return "Multi Parcel";
+                                return "MultiParcel";
                             }
                             if (A > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_cuyahoga_Multicount"] = "Maximum";
                                 driver.Quit();
-                                return "Multi Parcel";
+                                return "Maximum";
+                            }
+                        }
+                        catch { }
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.Id("AddressInfo"));
+                            if(INodata.Text.Contains("No results found"))
+                            {
+                                HttpContext.Current.Session["Zero_cuyahoga"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
                         catch { }
@@ -208,13 +226,13 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 HttpContext.Current.Session["multiParcel_cuyahoga"] = "Yes";
                                 driver.Quit();
-                                return "";
+                                return "MultiParcel";
                             }
                             if (A > 25)
                             {
                                 HttpContext.Current.Session["multiParcel_cuyahoga_Multicount"] = "Maximum";
                                 driver.Quit();
-                                return "";
+                                return "Maximum";
                             }
                         }
                         catch { }
@@ -236,6 +254,17 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "No Data Found";
                         }
+                        try
+                        {
+                            IWebElement INodata = driver.FindElement(By.Id("AddressInfo"));
+                            if (INodata.Text.Contains("No results found"))
+                            {
+                                HttpContext.Current.Session["Zero_cuyahoga"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                     }
                     Thread.Sleep(6000);
                     driver.FindElement(By.Id("btnPropertyCardInfo")).SendKeys(Keys.Enter);
@@ -270,7 +299,7 @@ namespace ScrapMaricopa.Scrapsource
                     //var driver1 = new ChromeDriver(chromeOptions);
                     //try
                     //{
-                    //    var downloadDirectory = "F:\\AutoPdf\\";
+                    //    var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
                     //    chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
                     //    chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
                     //    chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");

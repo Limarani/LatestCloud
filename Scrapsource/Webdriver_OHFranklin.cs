@@ -66,7 +66,7 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_parcelNo = parcelNumber;
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver())//
             {
                 try
                 {
@@ -75,9 +75,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         string address = houseno + " " + sname + " " + sttype + " " + directParcel;
                         gc.TitleFlexSearch(orderNumber, parcelNumber, "", address, "OH", "Franklin");
-                        if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                        if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
+                            driver.Quit();
                             return "MultiParcel";
+                        }
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_OHFranklin"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
@@ -95,6 +102,17 @@ namespace ScrapMaricopa.Scrapsource
                             strmultiaddress = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td[1]/table/tbody/tr[3]/td/center/table[1]/tbody/tr/td[3]")).Text;
                         }
                         catch { }
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]"));
+                            if (Inodata.Text.Contains("did not find any records"))
+                            {
+                                HttpContext.Current.Session["Nodata_OHFranklin"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         if (!strmultiaddress.Contains("Displaying 1 - 1 of 1") && strmultiaddress != "")
                         {
                             gc.CreatePdf_WOP(orderNumber, "OHFranklinMultiAddress", driver, "OH", "Franklin");
@@ -110,7 +128,7 @@ namespace ScrapMaricopa.Scrapsource
                     else if (searchType == "parcel")
                     {
                         driver.Navigate().GoToUrl("http://property.franklincountyauditor.com/_web/search/commonsearch.aspx?mode=parid");
-                        if (HttpContext.Current.Session["titleparcel"].ToString() != null)
+                        if (HttpContext.Current.Session["titleparcel"] != null && HttpContext.Current.Session["titleparcel"].ToString() != "")
                         {
                             Outparcelno = HttpContext.Current.Session["titleparcel"].ToString();
                         }
@@ -126,6 +144,17 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("btSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinParcelSearch", driver, "OH", "Franklin");
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]"));
+                            if (Inodata.Text.Contains("did not find any records"))
+                            {
+                                HttpContext.Current.Session["Nodata_OHFranklin"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         FraklinSearch(orderNumber, Outparcelno);
 
                     }
@@ -139,6 +168,17 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             strmultiaddress = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]/tbody/tr/td[1]/table/tbody/tr[3]/td/center/table[1]/tbody/tr/td[3]")).Text;
+                        }
+                        catch { }
+                        try
+                        {
+                            IWebElement Inodata = driver.FindElement(By.XPath("//*[@id='frmMain']/table/tbody/tr/td/div/div/table[2]"));
+                            if (Inodata.Text.Contains("did not find any records"))
+                            {
+                                HttpContext.Current.Session["Nodata_OHFranklin"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
                         }
                         catch { }
                         if (!strmultiaddress.Contains("Displaying 1 - 1 of 1") && strmultiaddress != "")
@@ -216,23 +256,24 @@ namespace ScrapMaricopa.Scrapsource
             strLegalDescription = gc.Between(fulltext, "Legal Description", "Calculated Acres").Trim();
 
             //Year Built
-            try { 
-            IWebElement inst1table = driver.FindElement(By.XPath("//*[@id='Dwelling Data']/tbody"));
-            IList<IWebElement> inst1tableRow = inst1table.FindElements(By.TagName("tr"));
-            int inst1tableRowcount = inst1tableRow.Count;
-            IList<IWebElement> inst1rowTD;
-            int z = 0;
-            foreach (IWebElement rowid in inst1tableRow)
+            try
             {
-
-                inst1rowTD = rowid.FindElements(By.TagName("td"));
-                if (inst1rowTD.Count != 0 && !rowid.Text.Contains("Yr Built") && z==0)
+                IWebElement inst1table = driver.FindElement(By.XPath("//*[@id='Dwelling Data']/tbody"));
+                IList<IWebElement> inst1tableRow = inst1table.FindElements(By.TagName("tr"));
+                int inst1tableRowcount = inst1tableRow.Count;
+                IList<IWebElement> inst1rowTD;
+                int z = 0;
+                foreach (IWebElement rowid in inst1tableRow)
                 {
-                    strYearBuild = inst1rowTD[0].Text;
-                    z++;
+
+                    inst1rowTD = rowid.FindElements(By.TagName("td"));
+                    if (inst1rowTD.Count != 0 && !rowid.Text.Contains("Yr Built") && z == 0)
+                    {
+                        strYearBuild = inst1rowTD[0].Text;
+                        z++;
+                    }
+
                 }
-                
-            }
             }
             catch { }
             //strYearBuild = driver.FindElement(By.XPath("//*[@id='Dwelling Data']/tbody/tr[2]/td[1]")).Text;
@@ -284,18 +325,18 @@ namespace ScrapMaricopa.Scrapsource
             strLandUse = gc.Between(fulltaxstatus, "Land Use", "Tax District").Trim();
             strTaxDistrict = gc.Between(fulltaxstatus, "Tax District", "School District").Trim();
             strSchoolDistrict = gc.Between(fulltaxstatus, "School District", "City/Village").Trim();
-            strCityVillage = gc.Between(fulltaxstatus,"City/Village", "Township").Trim();
+            strCityVillage = gc.Between(fulltaxstatus, "City/Village", "Township").Trim();
             strTownship = gc.Between(fulltaxstatus, "Township", "Appraisal Neighborhood").Trim();
-            strTaxLien =gc.Between(fulltaxstatus, "Tax Lien", "CAUV Property").Trim();
+            strTaxLien = gc.Between(fulltaxstatus, "Tax Lien", "CAUV Property").Trim();
             strCAUV = gc.Between(fulltaxstatus, "CAUV Property", "Owner Occ. Credit").Trim();
             strOwnerCredit = gc.Between(fulltaxstatus, "Owner Occ. Credit", "Homestead Credit").Trim();
-            strHomesteadCredit = gc.Between(fulltaxstatus, "Homestead Credit", "Rental Registration").Trim();            
+            strHomesteadCredit = gc.Between(fulltaxstatus, "Homestead Credit", "Rental Registration").Trim();
 
             string strTaxStatus = strOwnerName + "~" + strSitusAddress + "~" + strLegalDescription + "~" + strYearBuild + "~" + strPropertyClass + "~" + strLandUse + "~" + strTaxDistrict + "~" + strSchoolDistrict + "~" + strCityVillage + "~" + strTownship + "~" + strTaxLien + "~" + strCAUV + "~" + strOwnerCredit + "~" + strHomesteadCredit;
             gc.insert_date(orderNumber, Outparcelno, 62, strTaxStatus, 1, DateTime.Now);
 
             //Assessment Market Value
-            strMYear = driver.FindElement(By.XPath("//*[@id='datalet_div_5']/table[1]/tbody/tr/td")).Text;           
+            strMYear = driver.FindElement(By.XPath("//*[@id='datalet_div_5']/table[1]/tbody/tr/td")).Text;
             strMarketYear = strMYear.Substring(0, 4);
             //h4/a[contains(text(),'SAP M')]
             //Xpath =//*[contains(text(),'Current Market Value')]
@@ -308,36 +349,36 @@ namespace ScrapMaricopa.Scrapsource
             {
 
                 asstableRowTD = rowid.FindElements(By.TagName("td"));
-                if (asstableRowTD.Count != 0 && !rowid.Text.Contains("Land") )
+                if (asstableRowTD.Count != 0 && !rowid.Text.Contains("Land"))
                 {
                     if (y == 1)
-                    { 
-                    strMarketBase = asstableRowTD[1].Text;
-                    strMarketImproveBase = asstableRowTD[2].Text;
-                    strMarketTotalBase= asstableRowTD[3].Text;
+                    {
+                        strMarketBase = asstableRowTD[1].Text;
+                        strMarketImproveBase = asstableRowTD[2].Text;
+                        strMarketTotalBase = asstableRowTD[3].Text;
                     }
-                    if (y==2)
+                    if (y == 2)
                     {
                         strMarketTIF = asstableRowTD[1].Text;
                         strMarketImproveTIF = asstableRowTD[2].Text;
-                        strMarketTotalTIF= asstableRowTD[3].Text;
+                        strMarketTotalTIF = asstableRowTD[3].Text;
                     }
-                    if (y==3)
+                    if (y == 3)
                     {
                         strMarketExempt = asstableRowTD[1].Text;
                         strMarketImproveExempt = asstableRowTD[2].Text;
                         strMarketTotalExempt = asstableRowTD[3].Text;
 
                     }
-                    if(y==4)
+                    if (y == 4)
                     {
                         strMarketTotal = asstableRowTD[1].Text;
                         strMarketImproveTotal = asstableRowTD[2].Text;
                         strMarketTTotal = asstableRowTD[3].Text;
                     }
-                    if(y==5)
+                    if (y == 5)
                     {
-                        strMarketCAUV= asstableRowTD[1].Text;
+                        strMarketCAUV = asstableRowTD[1].Text;
                         strMarketImproveCAUV = asstableRowTD[2].Text;
                         strMarketTotalCAUV = asstableRowTD[3].Text;
                     }
@@ -347,10 +388,10 @@ namespace ScrapMaricopa.Scrapsource
                 y++;
 
             }
-            
+
 
             //Taxable Value
-            strTYear = driver.FindElement(By.XPath("//*[@id='datalet_div_6']/table[1]/tbody/tr/td")).Text;         
+            strTYear = driver.FindElement(By.XPath("//*[@id='datalet_div_6']/table[1]/tbody/tr/td")).Text;
             strTaxableYear = strTYear.Substring(0, 4);
             //*[@id="2018 Taxable Value"]/tbody
             IWebElement asstable1 = driver.FindElement(By.XPath("//*[@id='" + strTaxableYear + " Taxable Value']"));
@@ -388,14 +429,14 @@ namespace ScrapMaricopa.Scrapsource
                         strTaxableTotal = asstableRowTD1[1].Text;
                         strTaxableImproveTotal = asstableRowTD1[2].Text;
                         strTaxableTTotal = asstableRowTD1[3].Text;
-                    }                   
+                    }
 
                 }
 
                 x++;
 
             }
-            
+
 
             //strTaxYear = driver.FindElement(By.XPath("//*[@id='datalet_div_6']/table[1]/tbody/tr/td")).Text;
             ////*[@id="2018 Taxes"]         
@@ -415,8 +456,8 @@ namespace ScrapMaricopa.Scrapsource
                     if (t == 1)
                     {
                         strTotalNetAnnualTax = asstableRowTD2[0].Text;
-                        strTaxPaid = asstableRowTD2[1].Text;                        
-                    }                    
+                        strTaxPaid = asstableRowTD2[1].Text;
+                    }
                 }
 
                 t++;
@@ -501,9 +542,19 @@ namespace ScrapMaricopa.Scrapsource
 
             driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[2]/a")).SendKeys(Keys.Enter);
             Thread.Sleep(2000);
-            for (int i = 2; i < 5; i++)
+            for (int i = 2; i <= 5; i++)
             {
-                IWebElement Itaxinstall = driver.FindElement(By.XPath("/html/body/div/form/div[3]/div[3]/div/div/div[3]/div[2]/div[2]/div[1]/ul/li[" + i + "]/a"));
+                IWebElement Iaccount = driver.FindElement(By.XPath("//*[@id='tabs-1']/div[2]/div[1]/ul"));
+                IList<IWebElement> IaccountRow = Iaccount.FindElements(By.TagName("li"));
+                if (IaccountRow.Count != 0 && IaccountRow.Count == 5 && i == 2)
+                {
+                    i++;
+                }
+                if (IaccountRow.Count != 0 && IaccountRow.Count == 4 && i == 5)
+                {
+                    break;
+                }
+                IWebElement Itaxinstall = driver.FindElement(By.XPath("//*[@id='tabs-1']/div[2]/div[1]/ul/li[" + i + "]/a"));
                 strTaxInstall = Itaxinstall.Text;
                 js1.ExecuteScript("arguments[0].click();", Itaxinstall);
                 Thread.Sleep(2000);
@@ -516,33 +567,41 @@ namespace ScrapMaricopa.Scrapsource
                 strTaxInstallYear = strTaxInstall + "~" + strInstallType;
                 //Tax First Half
                 IWebElement IFirstHalfTable = driver.FindElement(By.XPath("//*[@id='firstHalf']/table"));
-                IList<IWebElement> IFirstHalfBody = IFirstHalfTable.FindElements(By.TagName("tbody"));
-                IList<IWebElement> IFirstHalfRow;
+                IList<IWebElement> IFirstHalfRow = IFirstHalfTable.FindElements(By.TagName("tr"));
                 IList<IWebElement> IFirstHalfTD;
-                foreach (IWebElement Half in IFirstHalfBody)
+                IList<IWebElement> IFirstHalfTH;
+                foreach (IWebElement first in IFirstHalfRow)
                 {
-                    IFirstHalfRow = Half.FindElements(By.TagName("tr"));
-                    if (IFirstHalfRow.Count != 0)
+                    IFirstHalfTD = first.FindElements(By.TagName("td"));
+                    if (IFirstHalfTD.Count != 0 && first.Text.Trim() != "" && !first.Text.Contains("Prior Taxes") && !first.Text.Contains("1st Half Taxes") && !first.Text.Contains("Special Assessments"))
                     {
-                        foreach (IWebElement first in IFirstHalfRow)
+                        try
                         {
-                            IFirstHalfTD = first.FindElements(By.TagName("td"));
-                            if (IFirstHalfRow.Count != 0 && first.Text.Trim() != "")
-                            {
-                                try
-                                {
-                                    strFirstHalfType = IFirstHalfTD[0].Text;
-                                    strFirstHalfCharges = IFirstHalfTD[1].Text;
-                                    strFirstHalfCredits = IFirstHalfTD[2].Text;
-                                    strFirstHalfBalance = IFirstHalfTD[3].Text;
-                                }
-                                catch { }
-
-                                string strFirstHalfDetails = strTaxInstallYear + "~" + strFirstHalfType + "~" + strFirstHalfCharges + "~" + strFirstHalfCredits + "~" + strFirstHalfBalance;
-                                gc.insert_date(orderNumber, Outparcelno, 68, strFirstHalfDetails, 1, DateTime.Now);
-
-                            }
+                            strFirstHalfType = IFirstHalfTD[0].Text;
+                            strFirstHalfCharges = IFirstHalfTD[1].Text;
+                            strFirstHalfCredits = IFirstHalfTD[2].Text;
+                            strFirstHalfBalance = IFirstHalfTD[3].Text;
                         }
+                        catch { }
+
+                        string strFirstHalfDetails = strTaxInstallYear + "~" + strFirstHalfType + "~" + strFirstHalfCharges + "~" + strFirstHalfCredits + "~" + strFirstHalfBalance;
+                        gc.insert_date(orderNumber, Outparcelno, 68, strFirstHalfDetails, 1, DateTime.Now);
+
+                    }
+                    IFirstHalfTH = first.FindElements(By.TagName("th"));
+                    if (IFirstHalfTH.Count != 0 && first.Text.Trim() != "" && first.Text.Contains("1st Half Total"))
+                    {
+                        try
+                        {
+                            strSecondHalfType = IFirstHalfTH[0].Text;
+                            strSecondHalfCharges = IFirstHalfTH[1].Text;
+                            strSecondHalfCredits = IFirstHalfTH[2].Text;
+                            strSecondHalfBalance = IFirstHalfTH[3].Text;
+                        }
+                        catch { }
+
+                        string strFirstHalfDetails = strTaxInstallYear + "~" + strFirstHalfType + "~" + strFirstHalfCharges + "~" + strFirstHalfCredits + "~" + strFirstHalfBalance;
+                        gc.insert_date(orderNumber, Outparcelno, 68, strFirstHalfDetails, 1, DateTime.Now);
                     }
                 }
 
@@ -554,44 +613,65 @@ namespace ScrapMaricopa.Scrapsource
                 }
                 strTaxSecondYear = strTaxInstall + "~" + strSecondInstall;
                 //Tax Second Half
-                IWebElement ISecondHalfTable = driver.FindElement(By.XPath("//*[@id='firstHalf']/table"));
-                IList<IWebElement> ISecondHalfBody = ISecondHalfTable.FindElements(By.TagName("tbody"));
-                IList<IWebElement> ISecondHalfRow;
+                IWebElement ISecondHalfTable = driver.FindElement(By.XPath("//*[@id='secondHalf']/table"));
+                IList<IWebElement> ISecondHalfRow = ISecondHalfTable.FindElements(By.TagName("tr"));
                 IList<IWebElement> ISecondHalfTD;
-                foreach (IWebElement Half in ISecondHalfBody)
+                IList<IWebElement> ISecondHalfTH;
+                foreach (IWebElement second in ISecondHalfRow)
                 {
-                    ISecondHalfRow = Half.FindElements(By.TagName("tr"));
-                    if (ISecondHalfRow.Count != 0)
+                    ISecondHalfTD = second.FindElements(By.TagName("td"));
+                    if (ISecondHalfTD.Count != 0 && second.Text.Trim() != "" && !second.Text.Contains("Future Charges") && !second.Text.Contains("2nd Half Taxes") && !second.Text.Contains("Special Assessments"))
                     {
-                        foreach (IWebElement second in ISecondHalfRow)
+                        try
                         {
-                            ISecondHalfTD = second.FindElements(By.TagName("td"));
-                            if (ISecondHalfRow.Count != 0 && second.Text.Trim() != "")
-                            {
-                                try
-                                {
-                                    strSecondHalfType = ISecondHalfTD[0].Text;
-                                    strSecondHalfCharges = ISecondHalfTD[1].Text;
-                                    strSecondHalfCredits = ISecondHalfTD[2].Text;
-                                    strSecondHalfBalance = ISecondHalfTD[3].Text;
-                                }
-                                catch { }
-
-                                string strSecondHalfDetails = strTaxSecondYear + "~" + strSecondHalfType + "~" + strSecondHalfCharges + "~" + strSecondHalfCredits + "~" + strSecondHalfBalance;
-                                gc.insert_date(orderNumber, Outparcelno, 68, strSecondHalfDetails, 1, DateTime.Now);
-
-                            }
-
+                            strSecondHalfType = ISecondHalfTD[0].Text;
+                            strSecondHalfCharges = ISecondHalfTD[1].Text;
+                            strSecondHalfCredits = ISecondHalfTD[2].Text;
+                            strSecondHalfBalance = ISecondHalfTD[3].Text;
                         }
+                        catch { }
+
+                        string strSecondHalfDetails = strTaxSecondYear + "~" + strSecondHalfType + "~" + strSecondHalfCharges + "~" + strSecondHalfCredits + "~" + strSecondHalfBalance;
+                        gc.insert_date(orderNumber, Outparcelno, 68, strSecondHalfDetails, 1, DateTime.Now);
+                    }
+                    ISecondHalfTH = second.FindElements(By.TagName("th"));
+                    if (ISecondHalfTH.Count != 0 && second.Text.Trim() != "" && (second.Text.Contains("Scheduled to Apply") || second.Text.Contains("Full Year")))
+                    {
+                        try
+                        {
+                            strSecondHalfType = ISecondHalfTH[0].Text;
+                            strSecondHalfCharges = ISecondHalfTH[1].Text;
+                            strSecondHalfCredits = ISecondHalfTH[2].Text;
+                            strSecondHalfBalance = ISecondHalfTH[3].Text;
+                        }
+                        catch { }
+
+                        string strSecondHalfDetails = strTaxSecondYear + "~" + strSecondHalfType + "~" + strSecondHalfCharges + "~" + strSecondHalfCredits + "~" + strSecondHalfBalance;
+                        gc.insert_date(orderNumber, Outparcelno, 68, strSecondHalfDetails, 1, DateTime.Now);
                     }
                 }
             }
 
             //Valuation Details
             driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[3]/a")).SendKeys(Keys.Enter);
-            driver.FindElement(By.XPath("//*[@id='tabs-2']/div[2]/div[1]/ul/li[4]/a")).SendKeys(Keys.Enter);
-            Thread.Sleep(2000);
-            gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinValuationDetails", driver, "OH", "Franklin");
+            for (int v = 2; v < 6; v++)
+            {
+                IWebElement Ivaluation = driver.FindElement(By.XPath("//*[@id='tabs-2']/div[2]/div[1]/ul"));
+                IList<IWebElement> IvaluationRow = Ivaluation.FindElements(By.TagName("li"));
+                if (IvaluationRow.Count != 0 && IvaluationRow.Count == 5 && v == 2)
+                {
+                    v++;
+                }
+                if (IvaluationRow.Count != 0 && IvaluationRow.Count == 4 && v == 5)
+                {
+                    break;
+                }
+                IWebElement Iyear = driver.FindElement(By.XPath("//*[@id='tabs-4']/div[2]/div[1]/ul/li[" + v + "]/a"));
+                strPayYear = Iyear.Text;
+                js1.ExecuteScript("arguments[0].click();", Iyear);
+                Thread.Sleep(2000);
+                gc.CreatePdf(orderNumber, Outparcelno, "OHFranklin" + strPayYear + "ValuationDetails", driver, "OH", "Franklin");
+            }
 
             //Payments Details
             driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[4]/a")).SendKeys(Keys.Enter);
@@ -599,20 +679,30 @@ namespace ScrapMaricopa.Scrapsource
             gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinPaymentDetails", driver, "OH", "Franklin");
             try
             {
-                for (int p = 3; p < 6; p++)
+                for (int p = 2; p < 6; p++)
                 {
+                    IWebElement Ipayment = driver.FindElement(By.XPath("//*[@id='tabs-3']/div[2]/div[1]/ul"));
+                    IList<IWebElement> IpaymentRow = Ipayment.FindElements(By.TagName("li"));
+                    if (IpaymentRow.Count != 0 && IpaymentRow.Count == 5 && p == 2)
+                    {
+                        p++;
+                    }
+                    if (IpaymentRow.Count != 0 && IpaymentRow.Count == 4 && p == 5)
+                    {
+                        break;
+                    }
                     IWebElement Iyear = driver.FindElement(By.XPath("//*[@id='tabs-3']/div[2]/div[1]/ul/li[" + p + "]/a"));
                     strPayYear = Iyear.Text;
                     js1.ExecuteScript("arguments[0].click();", Iyear);
                     Thread.Sleep(2000);
                     gc.CreatePdf(orderNumber, Outparcelno, "OHFranklin" + strPayYear + "PaymentDetails", driver, "OH", "Franklin");
-                    IWebElement Itable = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcPaymentContainer_ctl12_PaymentPanel']/table/tbody"));
+                    IWebElement Itable = driver.FindElement(By.XPath("//*[@id='tabs-3']/div[2]"));
                     IList<IWebElement> Itrow = Itable.FindElements(By.TagName("tr"));
                     IList<IWebElement> ItableTd;
-                    foreach (IWebElement taxrows in Itrow)
+                    foreach (IWebElement taxrows in Itrow)//*[@id="current"]/div/table
                     {
                         ItableTd = taxrows.FindElements(By.TagName("td"));
-                        if (ItableTd.Count != 0 && !ItableTd[0].Text.Contains("Sorry, no Special Assessment data available for " + strPayYear + "."))
+                        if (ItableTd.Count != 0 && !ItableTd[0].Text.Contains("Sorry, no Special Assessment data available for " + strPayYear + ".") && taxrows.Text.Trim() != "")
                         {
                             strPaymentDate = ItableTd[0].Text;
                             strPaymentTrans = ItableTd[1].Text;
@@ -623,28 +713,42 @@ namespace ScrapMaricopa.Scrapsource
                 }
             }
             catch { }
-            try { 
-            //Distribution Details//*[@id="ctl00_cphBodyContent_fcTaxDistributionContainer_ctl12_TaxDistributionPanel"]/table
-            driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[5]/a")).SendKeys(Keys.Enter);
-            IWebElement IDisYear = driver.FindElement(By.XPath("//*[@id='tabs-4']/div[2]/div[1]/ul/li[4]/a"));
-            strDisYear = IDisYear.Text;
-            js1.ExecuteScript("arguments[0].click();", IDisYear);
-            Thread.Sleep(2000);
-            gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinDistributionDetails", driver, "OH", "Franklin");
-            IWebElement TbDistribuiton = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcTaxDistributionContainer_ctl12_TaxDistributionPanel']/table/tbody"));
-            IList<IWebElement> TrDistribuiton = TbDistribuiton.FindElements(By.TagName("tr"));
-            IList<IWebElement> TdDistribuiton;
-            foreach (IWebElement rows in TrDistribuiton)
+            try
             {
-                TdDistribuiton = rows.FindElements(By.TagName("td"));
-                if (TdDistribuiton.Count != 0 && !rows.Text.Contains("Political Subdivision"))
+                //Distribution Details//*[@id="ctl00_cphBodyContent_fcTaxDistributionContainer_ctl12_TaxDistributionPanel"]/table
+                driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[5]/a")).SendKeys(Keys.Enter);
+                for (int d = 2; d < 6; d++)
                 {
-                    political_subDivision = TdDistribuiton[0].Text;
-                    amount = TdDistribuiton[1].Text;
-                    string strDistribution = strDisYear + "~" + political_subDivision + "~" + amount;
-                    gc.insert_date(orderNumber, Outparcelno, 70, strDistribution, 1, DateTime.Now);
+                    IWebElement Idistribution = driver.FindElement(By.XPath("//*[@id='tabs-4']/div[2]/div[1]/ul"));
+                    IList<IWebElement> IdistributionRow = Idistribution.FindElements(By.TagName("li"));
+                    if (IdistributionRow.Count != 0 && IdistributionRow.Count == 5 && d == 2)
+                    {
+                        d++;
+                    }
+                    if (IdistributionRow.Count != 0 && IdistributionRow.Count == 4 && d == 5)
+                    {
+                        break;
+                    }
+                    IWebElement IDisYear = driver.FindElement(By.XPath("//*[@id='tabs-4']/div[2]/div[1]/ul/li[" + d + "]/a"));
+                    strDisYear = IDisYear.Text;
+                    js1.ExecuteScript("arguments[0].click();", IDisYear);
+                    Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinDistributionDetails" + d, driver, "OH", "Franklin");
+                    IWebElement TbDistribuiton = driver.FindElement(By.XPath("//*[@id='tabs-4']"));
+                    IList <IWebElement> TrDistribuiton = TbDistribuiton.FindElements(By.TagName("tr"));
+                    IList<IWebElement> TdDistribuiton;
+                    foreach (IWebElement rows in TrDistribuiton)
+                    {
+                        TdDistribuiton = rows.FindElements(By.TagName("td"));
+                        if (TdDistribuiton.Count != 0 && !rows.Text.Contains("Political Subdivision"))
+                        {
+                            political_subDivision = TdDistribuiton[0].Text;
+                            amount = TdDistribuiton[1].Text;
+                            string strDistribution = strDisYear + "~" + political_subDivision + "~" + amount;
+                            gc.insert_date(orderNumber, Outparcelno, 70, strDistribution, 1, DateTime.Now);
+                        }
+                    }
                 }
-            }
             }
             catch { }
             //Special Assessment
@@ -654,8 +758,18 @@ namespace ScrapMaricopa.Scrapsource
             {
                 string strtaxYear = DateTime.Now.Year.ToString();
                 int taxYear = 0;
-                for (int s = 3; s < 6; s++)
+                for (int s = 2; s < 6; s++)
                 {
+                    IWebElement ISpecial = driver.FindElement(By.XPath("//*[@id='tabs-5']/div[2]/div[1]/ul"));
+                    IList<IWebElement> ISpecialRow = ISpecial.FindElements(By.TagName("li"));
+                    if (ISpecialRow.Count != 0 && ISpecialRow.Count == 5 && s == 2)
+                    {
+                        s++;
+                    }
+                    if (ISpecialRow.Count != 0 && ISpecialRow.Count == 4 && s == 5)
+                    {
+                        break;
+                    }
                     IWebElement Iyear = driver.FindElement(By.XPath("//*[@id='tabs-5']/div[2]/div[1]/ul/li[" + s + "]/a"));
                     strSpecYear = Iyear.Text;
                     js1.ExecuteScript("arguments[0].click();", Iyear);
@@ -665,12 +779,17 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         try
                         {
-                            Itable = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcSpecialAssessmentContainer_ctl12_SpecialAssessmentDetailTable']/tbody"));
+                            Itable = driver.FindElement(By.XPath("//*[@id='current']/div/table/tbody"));
                         }
                         catch { }
                         try
                         {
                             Itable = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcSpecialAssessmentContainer_ctl12_SpecialAssessmentNoData']/tbody"));
+                        }
+                        catch { }
+                        try
+                        {
+                            Itable = driver.FindElement(By.XPath("//*[@id='tabs-5']"));
                         }
                         catch { }
                         IList<IWebElement> Itrow = Itable.FindElements(By.TagName("tr"));
@@ -699,3 +818,231 @@ namespace ScrapMaricopa.Scrapsource
         }
     }
 }
+
+////Tax Information
+//driver.Navigate().GoToUrl("http://treapropsearch.franklincountyohio.gov/Default.aspx");
+//IWebElement IradioSearch = driver.FindElement(By.Id("ctl00_cphBodyContent_sbPropertySearch_rbSearchByParcelID"));
+//IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+//js1.ExecuteScript("arguments[0].click();", IradioSearch);
+//            Thread.Sleep(2000);
+//            js1.ExecuteScript("document.getElementById('ctl00_cphBodyContent_sbPropertySearch_tbSearch').value='" + Outparcelno + "'");
+//            gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinTaxSearch", driver, "OH", "Franklin");
+//            driver.FindElement(By.Id("ctl00_cphBodyContent_sbPropertySearch_btnSearch")).SendKeys(Keys.Enter);
+//gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinTaxDetails", driver, "OH", "Franklin");
+//            strCurrentOwner = driver.FindElement(By.Id("ctl00_cphBodyContent_lblOwn1_1")).Text;
+//            strLocationAddress = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_LocationAddressLine1")).Text;
+//            strLandValue = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_lblLand")).Text;
+//            strImproveValue = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_lblImprovement")).Text;
+//            strTotalValue = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_lblTotal")).Text;
+//            strTaxes = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_Taxes")).Text;
+//            strSpeicalAssessment = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_SpecialAssessment")).Text;
+//            strBalanceDue = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_BalanceDue")).Text;
+//            strDescTax1 = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_lblLegal1")).Text;
+//            strDescTax2 = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_lblLegal2")).Text;
+//            strDescTax3 = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_lblLegal3")).Text;
+//            strLegalDesc = strDescTax1 + strDescTax2 + strDescTax3;
+
+//            string strTaxAssessment = strCurrentOwner + "~" + strLocationAddress + "~" + strLandValue + "~" + strImproveValue + "~" + strTotalValue + "~" + strTaxes + "~" + strSpeicalAssessment + "~" + strBalanceDue + "~" + strLegalDesc;
+//gc.insert_date(orderNumber, Outparcelno, 67, strTaxAssessment, 1, DateTime.Now);
+
+//            try
+//            {
+//                IWebElement Iurl = driver.FindElement(By.Id("ctl00_cphBodyContent_fcDetailsHeader_TaxBillLink1Half"));
+//string strURL = Iurl.GetAttribute("href");
+//gc.downloadfile(strURL, orderNumber, Outparcelno, "OHFranklinOriginalTaxBill.pdf", "OH", "Franklin");
+//            }
+//            catch { }
+
+//            driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[2]/a")).SendKeys(Keys.Enter);
+//Thread.Sleep(2000);
+//            for (int i = 2; i< 5; i++)
+//            {
+//                IWebElement Itaxinstall = driver.FindElement(By.XPath("//*[@id='tabs-2']/div[2]/div[1]/ul/li[" + i + "]/a"));
+//strTaxInstall = Itaxinstall.Text;
+//                js1.ExecuteScript("arguments[0].click();", Itaxinstall);
+//                Thread.Sleep(2000);
+//                gc.CreatePdf(orderNumber, Outparcelno, "OHFranklin" + strTaxInstall + "TaxDetails", driver, "OH", "Franklin");
+//                strInstallType = driver.FindElement(By.XPath("//*[@id='firstHalf']/table/thead/tr/th[1]")).Text;
+//                if (strInstallType == "")
+//                {
+//                    strInstallType = "-";
+//                }
+//                strTaxInstallYear = strTaxInstall + "~" + strInstallType;
+//                //Tax First Half
+//                IWebElement IFirstHalfTable = driver.FindElement(By.XPath("//*[@id='firstHalf']/table"));
+//IList<IWebElement> IFirstHalfBody = IFirstHalfTable.FindElements(By.TagName("tbody"));
+//IList<IWebElement> IFirstHalfRow;
+//IList<IWebElement> IFirstHalfTD;
+//                foreach (IWebElement Half in IFirstHalfBody)
+//                {
+//                    IFirstHalfRow = Half.FindElements(By.TagName("tr"));
+//                    if (IFirstHalfRow.Count != 0)
+//                    {
+//                        foreach (IWebElement first in IFirstHalfRow)
+//                        {
+//                            IFirstHalfTD = first.FindElements(By.TagName("td"));
+//                            if (IFirstHalfRow.Count != 0 && first.Text.Trim() != "")
+//                            {
+//                                try
+//                                {
+//                                    strFirstHalfType = IFirstHalfTD[0].Text;
+//                                    strFirstHalfCharges = IFirstHalfTD[1].Text;
+//                                    strFirstHalfCredits = IFirstHalfTD[2].Text;
+//                                    strFirstHalfBalance = IFirstHalfTD[3].Text;
+//                                }
+//                                catch { }
+
+//                                string strFirstHalfDetails = strTaxInstallYear + "~" + strFirstHalfType + "~" + strFirstHalfCharges + "~" + strFirstHalfCredits + "~" + strFirstHalfBalance;
+//gc.insert_date(orderNumber, Outparcelno, 68, strFirstHalfDetails, 1, DateTime.Now);
+
+//                            }
+//                        }
+//                    }
+//                }
+
+
+//                strSecondInstall = driver.FindElement(By.XPath("//*[@id='secondHalf']/table/thead/tr/th[1]")).Text;
+//                if (strSecondInstall == "")
+//                {
+//                    strSecondInstall = "-";
+//                }
+//                strTaxSecondYear = strTaxInstall + "~" + strSecondInstall;
+//                //Tax Second Half
+//                IWebElement ISecondHalfTable = driver.FindElement(By.XPath("//*[@id='firstHalf']/table"));
+//IList<IWebElement> ISecondHalfBody = ISecondHalfTable.FindElements(By.TagName("tbody"));
+//IList<IWebElement> ISecondHalfRow;
+//IList<IWebElement> ISecondHalfTD;
+//                foreach (IWebElement Half in ISecondHalfBody)
+//                {
+//                    ISecondHalfRow = Half.FindElements(By.TagName("tr"));
+//                    if (ISecondHalfRow.Count != 0)
+//                    {
+//                        foreach (IWebElement second in ISecondHalfRow)
+//                        {
+//                            ISecondHalfTD = second.FindElements(By.TagName("td"));
+//                            if (ISecondHalfRow.Count != 0 && second.Text.Trim() != "")
+//                            {
+//                                try
+//                                {
+//                                    strSecondHalfType = ISecondHalfTD[0].Text;
+//                                    strSecondHalfCharges = ISecondHalfTD[1].Text;
+//                                    strSecondHalfCredits = ISecondHalfTD[2].Text;
+//                                    strSecondHalfBalance = ISecondHalfTD[3].Text;
+//                                }
+//                                catch { }
+
+//                                string strSecondHalfDetails = strTaxSecondYear + "~" + strSecondHalfType + "~" + strSecondHalfCharges + "~" + strSecondHalfCredits + "~" + strSecondHalfBalance;
+//gc.insert_date(orderNumber, Outparcelno, 68, strSecondHalfDetails, 1, DateTime.Now);
+
+//                            }
+
+//                        }
+//                    }
+//                }
+//            }
+
+//            //Valuation Details
+//            driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[3]/a")).SendKeys(Keys.Enter);
+//driver.FindElement(By.XPath("//*[@id='tabs-2']/div[2]/div[1]/ul/li[4]/a")).SendKeys(Keys.Enter);
+//Thread.Sleep(2000);
+//            gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinValuationDetails", driver, "OH", "Franklin");
+
+//            //Payments Details
+//            driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[4]/a")).SendKeys(Keys.Enter);
+//Thread.Sleep(2000);
+//            gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinPaymentDetails", driver, "OH", "Franklin");
+//            try
+//            {
+//                for (int p = 3; p< 6; p++)
+//                {
+//                    IWebElement Iyear = driver.FindElement(By.XPath("//*[@id='tabs-3']/div[2]/div[1]/ul/li[" + p + "]/a"));
+//strPayYear = Iyear.Text;
+//                    js1.ExecuteScript("arguments[0].click();", Iyear);
+//                    Thread.Sleep(2000);
+//                    gc.CreatePdf(orderNumber, Outparcelno, "OHFranklin" + strPayYear + "PaymentDetails", driver, "OH", "Franklin");
+//                    IWebElement Itable = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcPaymentContainer_ctl12_PaymentPanel']/table/tbody"));
+//IList<IWebElement> Itrow = Itable.FindElements(By.TagName("tr"));
+//IList<IWebElement> ItableTd;
+//                    foreach (IWebElement taxrows in Itrow)
+//                    {
+//                        ItableTd = taxrows.FindElements(By.TagName("td"));
+//                        if (ItableTd.Count != 0 && !ItableTd[0].Text.Contains("Sorry, no Special Assessment data available for " + strPayYear + "."))
+//                        {
+//                            strPaymentDate = ItableTd[0].Text;
+//                            strPaymentTrans = ItableTd[1].Text;
+//                            strPayment = strPaymentDate + "~" + strPaymentTrans;
+//                            gc.insert_date(orderNumber, Outparcelno, 69, strPayment, 1, DateTime.Now);
+//                        }
+//                    }
+//                }
+//            }
+//            catch { }
+//            try
+//            {
+//                //Distribution Details//*[@id="ctl00_cphBodyContent_fcTaxDistributionContainer_ctl12_TaxDistributionPanel"]/table
+//                driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[5]/a")).SendKeys(Keys.Enter);
+//IWebElement IDisYear = driver.FindElement(By.XPath("//*[@id='tabs-4']/div[2]/div[1]/ul/li[4]/a"));
+//strDisYear = IDisYear.Text;
+//                js1.ExecuteScript("arguments[0].click();", IDisYear);
+//                Thread.Sleep(2000);
+//                gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinDistributionDetails", driver, "OH", "Franklin");
+//                IWebElement TbDistribuiton = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcTaxDistributionContainer_ctl12_TaxDistributionPanel']/table/tbody"));
+//IList<IWebElement> TrDistribuiton = TbDistribuiton.FindElements(By.TagName("tr"));
+//IList<IWebElement> TdDistribuiton;
+//                foreach (IWebElement rows in TrDistribuiton)
+//                {
+//                    TdDistribuiton = rows.FindElements(By.TagName("td"));
+//                    if (TdDistribuiton.Count != 0 && !rows.Text.Contains("Political Subdivision"))
+//                    {
+//                        political_subDivision = TdDistribuiton[0].Text;
+//                        amount = TdDistribuiton[1].Text;
+//                        string strDistribution = strDisYear + "~" + political_subDivision + "~" + amount;
+//gc.insert_date(orderNumber, Outparcelno, 70, strDistribution, 1, DateTime.Now);
+//                    }
+//                }
+//            }
+//            catch { }
+//            //Special Assessment
+//            driver.FindElement(By.XPath("//*[@id='propertyHeaderList']/ul/li[6]/a")).SendKeys(Keys.Enter);
+//gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinSpecialAssessmentDetails", driver, "OH", "Franklin");
+//            try
+//            {
+//                string strtaxYear = DateTime.Now.Year.ToString();
+//int taxYear = 0;
+//                for (int s = 3; s< 6; s++)
+//                {
+//                    IWebElement Iyear = driver.FindElement(By.XPath("//*[@id='tabs-5']/div[2]/div[1]/ul/li[" + s + "]/a"));
+//strSpecYear = Iyear.Text;
+//                    js1.ExecuteScript("arguments[0].click();", Iyear);
+//                    Thread.Sleep(2000);
+//                    gc.CreatePdf(orderNumber, Outparcelno, "OHFranklin" + strSpecYear + "SpecialAssessmentDetails", driver, "OH", "Franklin");
+//                    if (strSpecYear.Contains(strtaxYear) || strSpecYear.Contains(strtaxYear) || strSpecYear.Contains(strtaxYear))
+//                    {
+//                        try
+//                        {
+//                            Itable = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcSpecialAssessmentContainer_ctl12_SpecialAssessmentDetailTable']/tbody"));
+//                        }
+//                        catch { }
+//                        try
+//                        {
+//                            Itable = driver.FindElement(By.XPath("//*[@id='ctl00_cphBodyContent_fcSpecialAssessmentContainer_ctl12_SpecialAssessmentNoData']/tbody"));
+//                        }
+//                        catch { }
+//                        IList<IWebElement> Itrow = Itable.FindElements(By.TagName("tr"));
+//IList<IWebElement> ItableTd;
+//                        foreach (IWebElement taxrows in Itrow)
+//                        {
+//                            ItableTd = taxrows.FindElements(By.TagName("td"));
+//                            if (ItableTd.Count != 0 && !ItableTd[0].Text.Contains("Sorry, no Special Assessment data available for " + strSpecYear + "."))
+//                            {
+//                                strspecialDesc = ItableTd[0].Text;
+//                                strspecialAmount = ItableTd[1].Text;
+//                                strspecial = strSpecYear + "~" + strspecialDesc + "~" + strspecialAmount;
+//                                gc.insert_date(orderNumber, Outparcelno, 71, strspecial, 1, DateTime.Now);
+//                            }
+//                        }
+//                    }
+//                    taxYear = Convert.ToInt32(strtaxYear);
+//                    taxYear--;
+//                    strtaxYear = Convert.ToString(taxYear);
+//                }

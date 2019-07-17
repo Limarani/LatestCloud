@@ -47,7 +47,7 @@ namespace ScrapMaricopa.Scrapsource
             string address = "", Total_Due = "", MillLevy = "", Class = "", Built = "";
             string Parcel_number = "", Tax_Authority = "", yearbuild = "", AddressCombain = "", Addresshrf = "", Valuvationresult = "", Multiaddressadd = "", MailingAddress = "";
             string outparcelno = "", taxparcel = "", mailingaddress = "", tax_district = "", siteaddr = "", legal_desc = "", year_built = "", propuse = "", par1 = "", par2 = "";
-            string Building_Value = "", LandValue = "", JustValue = "", cctaxyear = "", Cap = "", AssessedValue = "", Exemption = "", TaxableValue = "";
+            string BuildingValue = "", LandValue = "", JustValue = "", cctaxyear = "", Cap = "", AssessedValue = "", Exemption = "", TaxableValue = "";
             string strBill = "-", strBalance = "-", strBillDate = "-", strBillPaid = "-";
             string taxowner = "", tax_addr = "", accno = "", alterkey = "", millagecode = "", milagerate = "", ctax_year = "", cpaiddate = "", strbillyear = "", cpaidamount = "", creceipt = "", combinedtaxamount = "", ceffdate = "", grosstax = "", ifpaidby = "", pleasepay = "";
             List<string> strissuecertificate = new List<string>();
@@ -61,13 +61,35 @@ namespace ScrapMaricopa.Scrapsource
             //RDP
             using (driver = new PhantomJSDriver())
             {
+
+                if (searchType == "titleflex")
+                {
+                    string address1 = Streetno + " " + direction + " " + sname + " " + streettype + " " + unitnumber;
+                    gc.TitleFlexSearch(orderNumber, parcelNumber, "", address1, "FL", "Lake");
+
+                    if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
+                    {
+                        driver.Quit();
+                        return "MultiParcel";
+                    }
+                    parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
+                    //parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace(".", "").Replace("-", "");
+                    searchType = "parcel";
+                    if (parcelNumber.Trim() == "")
+                    {
+                        HttpContext.Current.Session["Zero_LakeFL"] = "Zero";
+                        driver.Quit();
+                        return "No Data Found";
+                    }
+                }
                 try
                 {
+
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
                     driver.Navigate().GoToUrl("http://www.lakecopropappr.com/property-search.aspx");
                     gc.CreatePdf_WOP(orderNumber, "Agree", driver, "FL", "Lake");
                     driver.FindElement(By.Id("ctl00_cphMain_imgBtnSubmit")).Click();
-                    Thread.Sleep(2000);
+                    Thread.Sleep(4000);
                     gc.CreatePdf_WOP(orderNumber, "Agree Click", driver, "FL", "Lake");
                     if (searchType == "address")
                     {
@@ -88,7 +110,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             string Nodata = driver.FindElement(By.XPath("//*[@id='ctl00_cphMain_gvParcels']/tbody/tr/td")).Text;
-                            if(Nodata.Contains("There are no results found"))
+                            if (Nodata.Contains("There are no results found"))
                             {
                                 HttpContext.Current.Session["Zero_LakeFL"] = "Zero";
                                 driver.Quit();
@@ -108,8 +130,8 @@ namespace ScrapMaricopa.Scrapsource
                                 Addresshrf = Parcellink.GetAttribute("href");
                                 string parcelno = AddressTD[2].Text;
                                 string OwnerName = AddressTD[1].Text;
-                                //string Address = AddressTD[2].Text;                            
-                                gc.insert_date(orderNumber, parcelno, 1652, OwnerName, 1, DateTime.Now);
+                                string AlterKey = AddressTD[3].Text;                            
+                                gc.insert_date(orderNumber, parcelno, 1652, OwnerName+"~"+ AlterKey, 1, DateTime.Now);
                                 Max++;
                             }
                         }
@@ -140,45 +162,62 @@ namespace ScrapMaricopa.Scrapsource
                         driver.FindElement(By.Id("ctl00_cphMain_txtSubdivisionNum")).SendKeys(parcelspliy[3].Trim());
                         driver.FindElement(By.Id("ctl00_cphMain_txtBlock")).SendKeys(parcelspliy[4].Trim());
                         driver.FindElement(By.Id("ctl00_cphMain_txtLot")).SendKeys(parcelspliy[5].Trim());
-                        gc.CreatePdf_WOP(orderNumber, "Address search", driver, "FL", "Lake");
+                        gc.CreatePdf_WOP(orderNumber, "parcel search", driver, "FL", "Lake");
                         driver.FindElement(By.Id("ctl00_cphMain_btnSearch")).Click();
-                        Thread.Sleep(2000);
-                        gc.CreatePdf_WOP(orderNumber, "Address After", driver, "FL", "Lake");
+                        Thread.Sleep(4000);
+                        gc.CreatePdf_WOP(orderNumber, "parcel After", driver, "FL", "Lake");
                         IWebElement Parcellink = driver.FindElement(By.Id("ctl00_cphMain_gvParcels_ctl02_lView"));
                         string parcelhref = Parcellink.GetAttribute("href");
                         driver.Navigate().GoToUrl(parcelhref);
-                        Thread.Sleep(2000);
+                        Thread.Sleep(4000);
                     }
                     if (searchType == "unitnumber")
                     {
                         driver.FindElement(By.Id("ctl00_cphMain_txtAltKey")).SendKeys(unitnumber);
+                        gc.CreatePdf_WOP(orderNumber, "unitnumber search", driver, "FL", "Lake");
                         driver.FindElement(By.Id("ctl00_cphMain_btnSearch")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(4000);
+                        gc.CreatePdf_WOP(orderNumber, "unitnumber search After", driver, "FL", "Lake");
                         IWebElement Parcellink = driver.FindElement(By.Id("ctl00_cphMain_gvParcels_ctl02_lView"));
                         string parcelhref = Parcellink.GetAttribute("href");
                         driver.Navigate().GoToUrl(parcelhref);
-                        Thread.Sleep(2000);
+                        Thread.Sleep(4000);
                     }
                     if (searchType == "ownername")
                     {
                         driver.FindElement(By.Id("ctl00_cphMain_txtOwnerName")).SendKeys(ownername);
+                        gc.CreatePdf_WOP(orderNumber, "Owner search", driver, "FL", "Lake");
                         driver.FindElement(By.Id("ctl00_cphMain_btnSearch")).Click();
-                        Thread.Sleep(2000);
+                        Thread.Sleep(5000);
+                       
+                        try
+                        {                                                  //*[@id="ctl00_cphMain_gvParcels"]/tbody/tr/td
+                            string Nodata = driver.FindElement(By.XPath("//*[@id='ctl00_cphMain_gvParcels']/tbody/tr/td")).Text;
+                            gc.CreatePdf_WOP(orderNumber, "Owner search After", driver, "FL", "Lake");
+                            if (Nodata.Contains("There are no results found"))
+                            {
+                                HttpContext.Current.Session["Zero_LakeFL"] = "Zero";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         int Max = 0;
                         IWebElement Addresstable = driver.FindElement(By.XPath("//*[@id='ctl00_cphMain_gvParcels']/tbody"));
                         IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
                         IList<IWebElement> AddressTD;
+                        gc.CreatePdf_WOP(orderNumber, "Owner search After", driver, "FL", "Lake");
                         foreach (IWebElement AddressT in Addresrow)
                         {
                             AddressTD = AddressT.FindElements(By.TagName("td"));
-                            if (AddressTD.Count != 0 && !AddressT.Text.Contains("Parcel Number"))
+                            if (AddressTD.Count != 0 && !AddressT.Text.Contains("Parcel Number") && !AddressT.Text.Contains("« Previous"))
                             {
                                 IWebElement Parcellink = AddressTD[0].FindElement(By.TagName("a"));
                                 Addresshrf = Parcellink.GetAttribute("href");
                                 string parcelno = AddressTD[2].Text;
                                 string OwnerName = AddressTD[1].Text;
-                                //string Address = AddressTD[2].Text;                            
-                                gc.insert_date(orderNumber, parcelno, 1652, OwnerName, 1, DateTime.Now);
+                                string AlterKey = AddressTD[3].Text;                            
+                                gc.insert_date(orderNumber, parcelno, 1652, OwnerName+"~"+ AlterKey, 1, DateTime.Now);
                                 Max++;
                             }
                         }
@@ -198,6 +237,12 @@ namespace ScrapMaricopa.Scrapsource
                             HttpContext.Current.Session["multiParcel_LakeFL"] = "Yes";
                             driver.Quit();
                             return "Multi Parcel";
+                        }
+                        if (Max == 0)
+                        {
+                            HttpContext.Current.Session["Zero_LakeFL"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
                         }
                     }
                     string Propertydetail = driver.FindElement(By.XPath("//*[@id='content']/div[3]/table/tbody")).Text;
@@ -219,22 +264,39 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderNumber, Parcel_number, "Property Details", driver, "FL", "Lake");
                     //Assessment
                     string LandValues = driver.FindElement(By.XPath("//*[@id='ctl00_cphMain_gvLandData']/tbody/tr[2]/td[9]")).Text;
-                    string BuildingValue1 = driver.FindElement(By.XPath("//*[@id='resBldgs']/div[2]/table/tbody/tr/td/div/table[1]/tbody/tr[1]/td[3]")).Text;
-                    string BuildingValue = GlobalClass.After(BuildingValue1, "Building Value: ");
-                    string Assessmentresult = "";
+                    try
+                    {
+                        string BuildingValue1 = driver.FindElement(By.XPath("//*[@id='resBldgs']/div[2]/table/tbody/tr/td/div/table[1]/tbody/tr[1]/td[3]")).Text;
+                        BuildingValue = GlobalClass.After(BuildingValue1, "Building Value: ");
+                    }
+                    catch { }
+                    string Assessmentresult = "", Assessmenthead = "";
+
                     IWebElement Assessmenttable = driver.FindElement(By.XPath("//*[@id='ctl00_cphMain_gvImprovements']/tbody"));
                     IList<IWebElement> Assessmentrow = Assessmenttable.FindElements(By.TagName("tr"));
                     IList<IWebElement> Assessmentid;
                     foreach (IWebElement assessment in Assessmentrow)
                     {
                         Assessmentid = assessment.FindElements(By.TagName("td"));
-                        if (Assessmentid.Count>1 && !assessment.Text.Contains("Year"))
+                        if (Assessmentid.Count > 1 && !assessment.Text.Contains("Year"))
                         {
+                            Assessmenthead += Assessmentid[1].Text + "~";
                             Assessmentresult += Assessmentid[5].Text + "~";
                         }
                     }
+                    string Assessmenthead1 = Assessmenthead + "Land Values "+"~"+ "Building Value";
+                    db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Assessmenthead1 + "' where Id = '" + 1654 + "'");
                     string Assessmentre = Assessmentresult + LandValues + "~" + BuildingValue;
                     gc.insert_date(orderNumber, Parcel_number, 1654, Assessmentre, 1, DateTime.Now);
+                    //Tax_Authority
+                    driver.Navigate().GoToUrl("http://www.laketax.com/office_locations.php");
+                    gc.CreatePdf(orderNumber, Parcel_number, "Overnight Deliveries", driver, "FL", "Lake");
+                    Thread.Sleep(2000);
+                    string overnite = driver.FindElement(By.XPath("//*[@id='maincontent']/table/tbody/tr[3]/td/strong[1]")).Text;
+                    Tax_Authority = GlobalClass.After(overnite, "Overnight Deliveries:");
+                    string mailaddress = driver.FindElement(By.XPath("//*[@id='maincontent']/table/tbody/tr[3]/td/strong[2]")).Text;
+                    string Tax_mailaddress = GlobalClass.After(mailaddress, "Mailing Address:");
+
                     //Tax Site
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
                     driver.Navigate().GoToUrl("https://lake.county-taxes.com/public");
@@ -690,7 +752,7 @@ namespace ScrapMaricopa.Scrapsource
                                         else if (d == valoremtablerowcount - 1)
                                         {
                                             milagerate = valoremtablerowTD[0].Text;
-                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[1].Text;
+                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[2].Text;
                                             gc.insert_date(orderNumber, Parcel_number, 1656, valoremtax, 1, DateTime.Now);
                                         }
                                     }
@@ -830,12 +892,11 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 milagerate = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[3]/div[2]/dl[2]/dd[4]")).Text;
                             }
-                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority;
+                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority + "~" + Tax_mailaddress;
                             gc.insert_date(orderNumber, Parcel_number, 1658, curtax, 1, DateTime.Now);
                             q++;
 
                         }
-
                         catch
                         {
 
@@ -882,7 +943,7 @@ namespace ScrapMaricopa.Scrapsource
                                         else if (d == valoremtablerowcount - 1)
                                         {
                                             milagerate = valoremtablerowTD[0].Text;
-                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[1].Text;
+                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[2].Text;
                                             gc.insert_date(orderNumber, Parcel_number, 1656, valoremtax, 1, DateTime.Now);
                                         }
                                     }
@@ -1020,7 +1081,7 @@ namespace ScrapMaricopa.Scrapsource
 
 
                             //Account Number~Alternate Key~Owner Name & Mailing Address~Property Address~Millage Code~Millage rate~Tax Year~Tax Amount~Gross Tax~Paid Amount~Paid Date~Effective Date~Receipt Number
-                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority;
+                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority + "~" + Tax_mailaddress;
                             gc.insert_date(orderNumber, Parcel_number, 1658, curtax, 1, DateTime.Now);
                             q++;
 
@@ -1074,7 +1135,7 @@ namespace ScrapMaricopa.Scrapsource
                                         else if (d == valoremtablerowcount - 1)
                                         {
                                             milagerate = valoremtablerowTD[0].Text;
-                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[1].Text;
+                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[2].Text;
                                             gc.insert_date(orderNumber, Parcel_number, 1656, valoremtax, 1, DateTime.Now);
                                         }
                                     }
@@ -1212,7 +1273,7 @@ namespace ScrapMaricopa.Scrapsource
 
 
                             //Account Number~Alternate Key~Owner Name & Mailing Address~Property Address~Millage Code~Millage rate~Tax Year~Tax Amount~Gross Tax~Paid Amount~Paid Date~Effective Date~Receipt Number
-                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority;
+                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority + "~" + Tax_mailaddress;
                             gc.insert_date(orderNumber, Parcel_number, 1658, curtax, 1, DateTime.Now);
                             q++;
                         }
@@ -1263,7 +1324,7 @@ namespace ScrapMaricopa.Scrapsource
                                         else if (d == valoremtablerowcount - 1)
                                         {
                                             milagerate = valoremtablerowTD[0].Text;
-                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[1].Text;
+                                            valoremtax = "Total" + "~" + "Ad Valorem Taxes" + "~" + valoremtablerowTD[0].Text + "~" + "" + "~" + "" + "~" + "" + "~" + valoremtablerowTD[2].Text;
                                             gc.insert_date(orderNumber, Parcel_number, 1656, valoremtax, 1, DateTime.Now);
                                         }
                                     }
@@ -1399,7 +1460,7 @@ namespace ScrapMaricopa.Scrapsource
 
 
                             //Account Number~Alternate Key~Owner Name & Mailing Address~Property Address~Millage Code~Millage rate~Tax Year~Tax Amount~Gross Tax~Paid Amount~Paid Date~Effective Date~Receipt Number
-                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority;
+                            string curtax = alterkey + "~" + taxowner + "~" + tax_addr + "~" + millagecode + "~" + milagerate + "~" + cctaxyear + "~" + combinedtaxamount + "~" + grosstax + "~" + cpaidamount + "~" + cpaiddate + "~" + ceffdate + "~" + creceipt + "~" + Tax_Authority + "~" + Tax_mailaddress;
                             gc.insert_date(orderNumber, Parcel_number, 1658, curtax, 1, DateTime.Now);
                             q++;
                         }
@@ -1454,7 +1515,7 @@ namespace ScrapMaricopa.Scrapsource
         {
             string fileName = "";
             var chromeOptions = new ChromeOptions();
-            var downloadDirectory = "F:\\AutoPdf\\";
+            var downloadDirectory = "D:\\AutoPdf\\";
             chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
@@ -1472,7 +1533,7 @@ namespace ScrapMaricopa.Scrapsource
                     fileName = latestfilename();
                     Thread.Sleep(5000);
                     gc.AutoDownloadFile(orderNumber, Parcel_number, "Lake", "FL", fileName);
-
+               
                 }
                 catch { }
 

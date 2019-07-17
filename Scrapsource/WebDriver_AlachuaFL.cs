@@ -57,9 +57,7 @@ namespace ScrapMaricopa.Scrapsource
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-                    driver.Navigate().GoToUrl("http://www.acpafl.org/search.html");
-
-                    Thread.Sleep(2000);
+                   
                     if (searchType == "titleflex")
                     {
                         if (direction != "")
@@ -77,17 +75,33 @@ namespace ScrapMaricopa.Scrapsource
                             driver.Quit();
                             return "MultiParcel";
                         }
-
+                        else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
+                        {
+                            HttpContext.Current.Session["Nodata_AlachuaFL"] = "Yes";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
                         searchType = "parcel";
+                        parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                     }
                     if (searchType == "address")
                     {
-                        driver.FindElement(By.XPath("/html/body/div/div/div[5]/div[1]/div/ul/li[5]/a")).Click();
-                        driver.FindElement(By.XPath("/html/body/div/div/div[6]/div[1]/div/form/p[4]/input")).SendKeys(streetno);
-                        driver.FindElement(By.XPath("/html/body/div/div/div[6]/div[1]/div/form/p[5]/select")).SendKeys(direction);
-                        driver.FindElement(By.XPath("/html/body/div/div/div[6]/div[1]/div/form/p[6]/input")).SendKeys(streetname);
+                        driver.Navigate().GoToUrl("http://www.acpafl.org/searches/property-search/property-address-search/");
+                        Thread.Sleep(1000);
+
+                        // driver.FindElement(By.Id("menu-item-213")).Click();
+                        // Thread.Sleep(1000);
+                        //IWebElement IAddressSearch1 = driver.FindElement(By.Id("menu-item-213"));
+                        //IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                        //js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                        //Thread.Sleep(3000);
+                        IWebElement Multyaddresstable1 = driver.FindElement(By.XPath("//*[@id='advanced_iframe']"));
+                        driver.SwitchTo().Frame(Multyaddresstable1);
+                        driver.FindElement(By.XPath("/html/body/form/p[1]/input")).SendKeys(streetno);
+                        driver.FindElement(By.XPath("/html/body/form/p[2]/select")).SendKeys(direction);
+                        driver.FindElement(By.XPath("/html/body/form/p[3]/input")).SendKeys(streetname);
                         gc.CreatePdf_WOP(orderNumber, "Parcel Search Before", driver, "FL", "Alachua");
-                        driver.FindElement(By.XPath("/html/body/div/div/div[6]/div[1]/div/form/p[10]/input[2]")).Click();
+                        driver.FindElement(By.XPath("/html/body/form/p[7]/input[2]")).Click();
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "Parcel Search After", driver, "FL", "Alachua");
 
@@ -176,11 +190,19 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "parcel")
                     {
-                        driver.FindElement(By.XPath("/html/body/div/div/div[5]/div[1]/div/ul/li[7]/a")).Click();
-                        Thread.Sleep(2000);
+                        //driver.FindElement(By.Id("et_mobile_nav_menu")).Click();
+                        //Thread.Sleep(1000);
+                        driver.Navigate().GoToUrl("http://www.acpafl.org/searches/property-search/parcel-number-search/");
+                        Thread.Sleep(1000);
+                        //IWebElement IAddressSearch1 = driver.FindElement(By.LinkText("Parcel Number Search"));
+                        //IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                        //js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                        //Thread.Sleep(3000);
+                        IWebElement Multyaddresstable1 = driver.FindElement(By.TagName("iframe"));
+                        driver.SwitchTo().Frame(Multyaddresstable1);
                         driver.FindElement(By.Id("parcel")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search Before", driver, "FL", "Alachua");
-                        driver.FindElement(By.XPath("/html/body/div/div/div[5]/div[1]/div/form/p[2]/input[2]")).Click();
+                        driver.FindElement(By.XPath("/html/body/form/p/input[2]")).Click();
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search After", driver, "FL", "Alachua");
                         try
                         {
@@ -198,12 +220,20 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "ownername")
                     {
-                        driver.FindElement(By.XPath("/html/body/div/div/div[5]/div[1]/div/ul/li[4]/a")).Click();
-                        Thread.Sleep(2000);
+                        //driver.FindElement(By.Id("et_mobile_nav_menu")).Click();
+                        //Thread.Sleep(1000);
+                        driver.Navigate().GoToUrl("http://www.acpafl.org/searches/name-search/");
+                        Thread.Sleep(1000);
+                        //IWebElement IAddressSearch1 = driver.FindElement(By.LinkText("Name Search"));
+                        //IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                        //js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                        //Thread.Sleep(3000);
+                        IWebElement Multyaddresstable1 = driver.FindElement(By.TagName("iframe"));
+                        driver.SwitchTo().Frame(Multyaddresstable1);
                         gc.CreatePdf_WOP(orderNumber, "Parcel Search Before", driver, "FL", "Alachua");
                         driver.FindElement(By.Id("OwnerName1")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "Parcel Search Before", driver, "FL", "Alachua");
-                        driver.FindElement(By.XPath("/html/body/div/div/div[5]/div[1]/div/form/p[2]/input[2]")).Click();
+                        driver.FindElement(By.XPath("/html/body/form/p/input[2]")).Click();
                         Thread.Sleep(2000);
                         gc.CreatePdf_WOP(orderNumber, "Parcel Search After", driver, "FL", "Alachua");
 
@@ -306,6 +336,10 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
                     //Property Details
                     string OwnerName = "", MailingAddress = "", PropertyAddress = "", SecTwnRng = "", PropertyUse = "", TaxJurisdiction = "", Area = "", Subdivision = "", LegalDescription = "", YearBuilt1 = "";
+
+                    ///html/body/table[2]/tbody/tr/td[1]/b
+                    ////html/body/table[2]/tbody/tr/td[1]/b
+                    
                     Parcel_number = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td[1]/b")).Text.Replace("Parcel:", " ");
                     try
                     {
@@ -350,7 +384,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         TDBigdata2 = row2.FindElements(By.TagName("td"));
 
-                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 14 && !row2.Text.Contains("Property Land") && !row2.Text.Contains("Year Use"))
+                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 13 && !row2.Text.Contains("Property Land") && !row2.Text.Contains("Year Use"))
                         {
                             Year1 = TDBigdata2[0].Text;
                             Propertyuse = TDBigdata2[1].Text;
@@ -365,8 +399,8 @@ namespace ScrapMaricopa.Scrapsource
                             CountyExempt = TDBigdata2[10].Text;
                             SchoolExempt = TDBigdata2[11].Text;
                             CountyTaxable = TDBigdata2[12].Text;
-                            SchoolTaxable = TDBigdata2[13].Text;
-                            string Propertydetails = Year1.Trim() + "~" + Propertyuse.Trim() + "~" + Landvalue.Trim() + "~" + LandJustvalue.Trim() + "~" + BuildingValue.Trim() + "~" + MiscValue.Trim() + "~" + TotalJustValue.Trim() + "~" + DefferredValue.Trim() + "~" + CountyAssessed.Trim() + "~" + SchoolAssessed.Trim() + "~" + CountyExempt.Trim() + "~" + SchoolExempt.Trim() + "~" + CountyTaxable.Trim() + "~" + SchoolTaxable.Trim();
+                            //SchoolTaxable = TDBigdata2[13].Text;
+                            string Propertydetails = Year1.Trim() + "~" + Propertyuse.Trim() + "~" + Landvalue.Trim() + "~" + LandJustvalue.Trim() + "~" + BuildingValue.Trim() + "~" + MiscValue.Trim() + "~" + TotalJustValue.Trim() + "~" + DefferredValue.Trim() + "~" + CountyAssessed.Trim() + "~" + SchoolAssessed.Trim() + "~" + CountyExempt.Trim() + "~" + SchoolExempt.Trim() + "~" + CountyTaxable.Trim();
                             gc.insert_date(orderNumber, Parcel_number, 1360, Propertydetails, 1, DateTime.Now);
                         }
                     }
@@ -1706,7 +1740,7 @@ namespace ScrapMaricopa.Scrapsource
             }
             return latestfile;
         }
-    
+
     }
 
 }
