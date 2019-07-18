@@ -240,45 +240,60 @@ namespace ScrapMaricopa.Scrapsource
                     //Tax Status
 
                     driver.Navigate().GoToUrl("https://www.bernco.gov/treasurer/property-tax-search.aspx");
-                    Thread.Sleep(3000);
+                    Thread.Sleep(5000);
                     //Screenshot
                     gc.CreatePdf(orderNumber, outparcelno, "Address Search Result", driver, "NM", "Bernalillo");
 
                     //Tax Authority
                     Tax_Authority = "One Civic Plaza NW Albuquerque, NM 87102";
-                    
-                    IWebElement Multyaddresstable1 = driver.FindElement(By.Id("iFrameResizer1"));
-                    driver.SwitchTo().Frame(Multyaddresstable1);
-                    Thread.Sleep(3000);
-                    try { 
-                    IWebElement LinkSearch = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel"));
-                    IJavaScriptExecutor js = driver as IJavaScriptExecutor;
-                    js.ExecuteScript("arguments[0].click();", LinkSearch);
-                    Thread.Sleep(5000);
-                    gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result1", driver, "NM", "Bernalillo");
-                    }
-                    catch { }
+
+                    //IWebElement Multyaddresstable1 = driver.FindElement(By.Id("iFrameResizer1"));
+                    //driver.SwitchTo().Frame(Multyaddresstable1);
+                    //Thread.Sleep(7000);
+                    //try { 
+                    //IWebElement LinkSearch = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel"));
+                    //IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+                    //js.ExecuteScript("arguments[0].click();", LinkSearch);
+                    //Thread.Sleep(7000);
+                    //gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result1", driver, "NM", "Bernalillo");
+                    //}
+                    //catch { }
+                    //try
+                    //{
+                    //    driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel")).Click();
+                    //    Thread.Sleep(5000);
+                    //    gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result2", driver, "NM", "Bernalillo");
+                    //}
+                    //catch { }
+                    //try
+                    //{
+                    //    driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel")).SendKeys(Keys.Enter);
+                    //    Thread.Sleep(5000);
+                    //    gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result3", driver, "NM", "Bernalillo");
+                    //}
+                    //catch { }
+
+                    driver.Navigate().GoToUrl("https://wwp.bernco.gov/property-tax-search/");
                     try
                     {
-                        driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel")).Click();
+                        IWebElement LinkSearch = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel"));
+                        IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+                        js.ExecuteScript("arguments[0].click();", LinkSearch);
                         Thread.Sleep(5000);
-                        gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result2", driver, "NM", "Bernalillo");
+                        gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result1", driver, "NM", "Bernalillo");
                     }
                     catch { }
+
                     try
                     {
-                        driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_searchByParcel")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_parcelId")).Click();
                         Thread.Sleep(5000);
-                        gc.CreatePdf(orderNumber, outparcelno, "Parcel Search Result3", driver, "NM", "Bernalillo");
+                        driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_parcelId")).SendKeys(outparcelno);
+                        gc.CreatePdf(orderNumber, outparcelno, "Parcel Click Result", driver, "NM", "Bernalillo");
+                        driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_submit")).Click();
+                        Thread.Sleep(7000);
                     }
                     catch { }
-                    driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_parcelId")).Click();
-                    Thread.Sleep(5000);
-                    driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_parcelId")).SendKeys(outparcelno);
-                    gc.CreatePdf(orderNumber, outparcelno, "Parcel Click Result", driver, "NM", "Bernalillo");
-                    driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_ctl00_submit")).Click();
-                    Thread.Sleep(7000); 
-                                      
                     IWebElement ButtonLinkSearch = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_Placeholder5_ctl00_placeHolder_ctl00_resultList_ctl00_ctl04_parcel"));
                     IJavaScriptExecutor js3 = driver as IJavaScriptExecutor;
                     js3.ExecuteScript("arguments[0].click();", ButtonLinkSearch);
@@ -299,7 +314,7 @@ namespace ScrapMaricopa.Scrapsource
                     IWebElement IValue = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_noticeOfValues"));
                     //js1.ExecuteScript("arguments[0].click();", IValue);
                     IValue.Click();
-                    Thread.Sleep(7000);
+                    Thread.Sleep(9000);
                     gc.CreatePdf(orderNumber, outparcelno, "Notice of Values Search", driver, "NM", "Bernalillo");
 
                     //Screenshot
@@ -308,7 +323,7 @@ namespace ScrapMaricopa.Scrapsource
                     IWebElement ITaxbill = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_taxBill"));
                     //js1.ExecuteScript("arguments[0].click();", ITaxbill);
                     ITaxbill.Click();
-                    Thread.Sleep(7000);
+                    Thread.Sleep(9000);
                     gc.CreatePdf(orderNumber, outparcelno, "Tax Bill Search", driver, "NM", "Bernalillo");
                     //Screenshot
                     try

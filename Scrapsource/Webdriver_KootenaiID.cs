@@ -361,7 +361,7 @@ namespace ScrapMaricopa.Scrapsource
                     driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr[1]/td/table/tbody/tr/td/table/tbody/tr[2]/td/font/input")).SendKeys(Parcel_number);
                     gc.CreatePdf(orderNumber, Parcel_number, "Current TAx3", driver, "ID", "Kootenai");
                     driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr[3]/td/input")).SendKeys(Keys.Enter);
-                    Thread.Sleep(4000);
+                    Thread.Sleep(6000);
                     gc.CreatePdf(orderNumber, Parcel_number, "Current TAx4", driver, "ID", "Kootenai");
                     try
                     {
@@ -427,7 +427,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     //Assessment tax
                     driver.FindElement(By.LinkText("View Tax Assessment Values")).SendKeys(Keys.Enter);
-                    Thread.Sleep(2000);
+                    Thread.Sleep(5000);
                     gc.CreatePdf(orderNumber, Parcel_number, "Assessment Values", driver, "ID", "Kootenai");
                     try
                     {
@@ -462,7 +462,7 @@ namespace ScrapMaricopa.Scrapsource
                     string paymenthistoryresult = "";
                     //Paymenthistorytax
                     driver.FindElement(By.LinkText("View Payment History")).SendKeys(Keys.Enter);
-                    Thread.Sleep(2000);
+                    Thread.Sleep(5000);
                     gc.CreatePdf(orderNumber, Parcel_number, "Payment Hiistory", driver, "ID", "Kootenai");
                     IWebElement Paymenthistorytable = driver.FindElement(By.XPath("//*[@id='tab_pmt_data']/table/tbody"));
                     IList<IWebElement> Paymenthistoryrow = Paymenthistorytable.FindElements(By.TagName("tr"));

@@ -496,7 +496,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             catch { }
                         }
-                        if (IPastCurrentTD.Count != 0 && IPastCurrentTD.Count == 2 && !Past.Text.Contains(" Tax Year") && !Past.Text.Contains("PAST AND CURRENT CHARGES DUE TODAY") && !Past.Text.Contains("THERE IS NO PAST OR CURRENT AMOUNT DUE"))
+                        if (IPastCurrentTD.Count != 0 && IPastCurrentTD.Count == 3 && !Past.Text.Contains(" Tax Year") && !Past.Text.Contains("PAST AND CURRENT CHARGES DUE TODAY") && !Past.Text.Contains("THERE IS NO PAST OR CURRENT AMOUNT DUE"))
                         {
                             try
                             {
@@ -504,11 +504,11 @@ namespace ScrapMaricopa.Scrapsource
                                 strTaxPastCharge = IPastCurrentTD[1].Text.Trim();
                                 strTaxPastAmount = IPastCurrentTD[2].Text.Trim();
 
+                                string strTaxPastDetails = strPastType + "~" + strTaxPastYear + "~" + strTaxPastCharge + "~" + strTaxPastAmount + "~" + "-" + "~" + "-";
+                                gc.insert_date(orderNumber, strParcelNumber, 482, strTaxPastDetails, 1, DateTime.Now);
                             }
                             catch { }
-
-                            string strTaxPastDetails = strPastType + "~" + strTaxPastYear + "~" + strTaxPastCharge + "~" + strTaxPastAmount + "~" + "-" + "~" + "-";
-                            gc.insert_date(orderNumber, strParcelNumber, 482, strTaxPastDetails, 1, DateTime.Now);
+                            strTaxPastYear = ""; strTaxPastCharge = ""; strTaxPastAmount = "";
                         }
 
                         if (IPastCurrentTD.Count != 0 && IPastCurrentTD.Count == 2 && IPastCurrentRow.Count != 3)
@@ -522,11 +522,17 @@ namespace ScrapMaricopa.Scrapsource
                                 gc.insert_date(orderNumber, strParcelNumber, 482, strTaxPastDetails, 1, DateTime.Now);
                             }
                             catch { }
+                            strTaxPastYear = ""; strTaxPastCharge = ""; strTaxPastAmount = "";
                         }
 
                         if (IPastCurrentTD.Count == 2 && IPastCurrentRow.Count == 3)
                         {
+                            strTaxPastYear = IPastCurrentTD[0].Text.Trim();
                             strTaxPast = IPastCurrentTD[1].Text.Trim();
+
+                            string strTaxPastDetails = strPastType + "~" + "-" + "~" + strTaxPastYear + "~" + strTaxPast + "~" + "-" + "~" + "-";
+                            gc.insert_date(orderNumber, strParcelNumber, 482, strTaxPastDetails, 1, DateTime.Now);
+                            strTaxPastYear = ""; strTaxPastCharge = ""; strTaxPastAmount = "";
                         }
                     }
 
@@ -544,7 +550,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             catch { }
                         }
-                        if (INextTD.Count != 0 && INextTD.Count == 2 && !Next.Text.Contains(" Tax Year") && !Next.Text.Contains("NEXT INSTALLMENT AMOUNTS") && !Next.Text.Contains("THERE IS NO NEXT INSTALLMENT AMOUNT DUE"))
+                        if (INextTD.Count != 0 && INextTD.Count == 3 && !Next.Text.Contains(" Tax Year") && !Next.Text.Contains("NEXT INSTALLMENT AMOUNTS") && !Next.Text.Contains("THERE IS NO NEXT INSTALLMENT AMOUNT DUE"))
                         {
                             try
                             {
@@ -556,6 +562,7 @@ namespace ScrapMaricopa.Scrapsource
                                 gc.insert_date(orderNumber, strParcelNumber, 482, strTaxNextDetails, 1, DateTime.Now);
                             }
                             catch { }
+                            strTaxNextYear = ""; strTaxNextCharge = ""; strTaxNextAmount = "";
                         }
                         if (INextTD.Count != 0 && INextTD.Count == 2 && INextRow.Count != 3)
                         {
@@ -569,11 +576,18 @@ namespace ScrapMaricopa.Scrapsource
 
                             }
                             catch { }
+                            strTaxNextYear = ""; strTaxNextCharge = ""; strTaxNextAmount = "";
                         }
 
                         if (INextRow.Count == 3 && INextTD.Count == 2)
                         {
                             strTaxNext = INextTD[1].Text.Trim();
+                            strTaxNextYear = INextTD[0].Text.Trim();
+
+                            string strTaxNextDetails = strNextType + "~" + strTaxNextYear + "~" + "" + "~" + "" + "~" + strTaxNext + "~" + "-";
+                            gc.insert_date(orderNumber, strParcelNumber, 482, strTaxNextDetails, 1, DateTime.Now);
+
+                            strTaxNextYear = ""; strTaxNextCharge = ""; strTaxNextAmount = "";
                         }
                     }
 
@@ -600,11 +614,13 @@ namespace ScrapMaricopa.Scrapsource
                                     strTaxTotalYear = ITotalTD[0].Text.Trim();
                                     strTaxTotalCharge = ITotalTD[1].Text.Trim();
                                     strTaxTotalAmount = ITotalTD[2].Text.Trim();
+
+
+                                    string strTaxTotalDetails = strTotalType + "~" + strTaxTotalYear + "~" + strTaxTotalCharge + "~" + "-" + "~" + "-" + "~" + strTaxTotalAmount;
+                                    gc.insert_date(orderNumber, strParcelNumber, 482, strTaxTotalDetails, 1, DateTime.Now);
                                 }
                                 catch { }
-
-                                string strTaxTotalDetails = strTotalType + "~" + strTaxTotalYear + "~" + strTaxTotalCharge + "~" + "-" + "~" + "-" + "~" + strTaxTotalAmount;
-                                gc.insert_date(orderNumber, strParcelNumber, 482, strTaxTotalDetails, 1, DateTime.Now);
+                                strTaxTotalYear = ""; strTaxTotalCharge = ""; strTaxTotalAmount = "";
                             }
                             if (ITotalTD.Count != 0 && ITotalTD.Count == 2 && ITotalRow.Count != 3)
                             {
@@ -618,21 +634,28 @@ namespace ScrapMaricopa.Scrapsource
 
                                 }
                                 catch { }
+                                strTaxTotalYear = ""; strTaxTotalCharge = ""; strTaxTotalAmount = "";
                             }
 
                             if (ITotalRow.Count == 3 && ITotalTD.Count == 2)
                             {
                                 strTaxTotal = ITotalTD[1].Text.Trim();
+                                strTaxTotalYear = ITotalTD[0].Text.Trim();
+
+                                string strTaxTotalDetails = strTotalType + "~" + strTaxTotalYear + "~" + "" + "~" + "" + "~" + "-" + "~" + strTaxTotal;
+                                gc.insert_date(orderNumber, strParcelNumber, 482, strTaxTotalDetails, 1, DateTime.Now);
+                                strTaxTotalYear = ""; strTaxTotalCharge = ""; strTaxTotalAmount = "";
                             }
                         }
 
                     }
                     catch { }
-                    if (strTaxAmount.Trim() != "" || (strTaxPast.Trim() != "" && strTaxNext.Trim() != "" && strTaxTotal.Trim() != ""))
-                    {
-                        string strTaxsummaryDetails = strTaxAmount + strTaxPast.Trim() + "~" + strTaxNext.Trim() + "~" + strTaxTotal.Trim();
-                        gc.insert_date(orderNumber, strParcelNumber, 489, strTaxsummaryDetails, 1, DateTime.Now);
-                    }
+
+                    //if (strTaxAmount.Trim() != "" || (strTaxPast.Trim() != "" && strTaxNext.Trim() != "" && strTaxTotal.Trim() != ""))
+                    //{
+                    //    string strTaxsummaryDetails = strTaxAmount + strTaxPast.Trim() + "~" + strTaxNext.Trim() + "~" + strTaxTotal.Trim();
+                    //    gc.insert_date(orderNumber, strParcelNumber, 489, strTaxsummaryDetails, 1, DateTime.Now);
+                    //}
 
                     try { 
                     IWebElement IPaymentTable = driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[5]/td/table[7]/tbody"));
