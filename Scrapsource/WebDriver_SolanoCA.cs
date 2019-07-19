@@ -96,15 +96,39 @@ namespace ScrapMaricopa.Scrapsource
                             foreach (IWebElement Multiaddress in multiaddressrows)
                             {
                                 Multiaddressid = Multiaddress.FindElements(By.TagName("td"));
-                                if (Multiaddressid.Count == 4 && !Multiaddress.Text.Contains("Select") && Multiparcelnumber != Multiaddressid[0].Text)
+                                if (Multiaddressid.Count == 4 && !Multiaddress.Text.Contains("Select"))
                                 {
-                                    Multiparcelnumber = Multiaddressid[0].Text;
-                                    IWebElement Singleclick = Multiaddressid[0].FindElement(By.TagName("a"));
-                                    Singlerowclick = Singleclick.GetAttribute("href");
-                                    string Owneraddress = Multiaddressid[1].Text;
-                                    string multiaddressresult = Multiparcelnumber + "~" + Owneraddress;
-                                    gc.insert_date(orderNumber, Multiparcelnumber, 1296, multiaddressresult, 1, DateTime.Now);
-                                    count++;
+                                    if(count == 0)
+                                    {
+                                        Multiparcelnumber = Multiaddressid[1].Text;
+                                        IWebElement Singleclick = Multiaddressid[1].FindElement(By.TagName("a"));
+                                        Singlerowclick = Singleclick.GetAttribute("href");
+                                        string Owneraddress = Multiaddressid[2].Text;
+                                        //string multiaddressresult = Multiparcelnumber + "~" + Owneraddress;
+                                        gc.insert_date(orderNumber, Multiparcelnumber, 1296, Owneraddress, 1, DateTime.Now);
+                                        count++;
+                                    }
+                                    if (count != 0 && Multiparcelnumber != Multiaddressid[1].Text)
+                                    {
+                                        Multiparcelnumber = Multiaddressid[1].Text;
+                                        IWebElement Singleclick = Multiaddressid[1].FindElement(By.TagName("a"));
+                                        Singlerowclick = Singleclick.GetAttribute("href");
+                                        string Owneraddress = Multiaddressid[2].Text;
+                                        //string multiaddressresult = Multiparcelnumber + "~" + Owneraddress;
+                                        gc.insert_date(orderNumber, Multiparcelnumber, 1296, Owneraddress, 1, DateTime.Now);
+                                        count++;
+                                    }
+                                    if (count != 0 && Multiparcelnumber == Multiaddressid[1].Text)
+                                    {
+                                        Multiparcelnumber = Multiaddressid[1].Text;
+                                        IWebElement Singleclick = Multiaddressid[0].FindElement(By.TagName("a"));
+                                        Singlerowclick = Singleclick.GetAttribute("href");
+                                        string Owneraddress = Multiaddressid[2].Text;
+                                        //string multiaddressresult = Multiparcelnumber + "~" + Owneraddress;
+                                        gc.insert_date(orderNumber, Multiparcelnumber, 1296, Owneraddress, 1, DateTime.Now);
+                                        count = 0;
+                                    }
+
                                 }
                             }
 

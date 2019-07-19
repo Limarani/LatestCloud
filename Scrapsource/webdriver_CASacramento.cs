@@ -237,7 +237,7 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
                     driver.FindElement(By.XPath("//*[@id='btnSubmit']")).Click();
                     //gc.CreatePdf(orderno, parcelNumber, "Input Passed Tax Search", driver, "CA", "El Dorado");
-                    Thread.Sleep(3000);
+                    Thread.Sleep(6000);
                     int I = 0;
                     gc.CreatePdf(orderno, parcelNumber, "Tax Detail", driver, "CA", "Sacramento");
                     string TaxID = driver.FindElement(By.Id("parcelGlobal")).Text.Replace("Parcel Number ", "").Trim();
@@ -447,7 +447,8 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (string bill in listurl)
                         {
 
-                            driver.Navigate().GoToUrl("https://eproptax.saccounty.net/#DirectLevy/" + bill + "");
+                            //driver.Navigate().GoToUrl("https://eproptax.saccounty.net/#DirectLevy/" + bill + "");
+                            driver.Navigate().GoToUrl("https://eproptax.saccounty.net//#secured/DirectLevy/" + bill + "");
                             Thread.Sleep(6000);
                             CreatePdf(orderno, parcelNumber, "Tax Detail" + bill, driver, "CA", "Sacramento");
                             IWebElement CurrentPayHistoryTB = driver.FindElement(By.XPath("//*[@id='billDetailGrid']/table/tbody"));

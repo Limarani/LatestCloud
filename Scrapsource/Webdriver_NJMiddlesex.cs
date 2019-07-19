@@ -2038,12 +2038,15 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                     catch
                                     { }
-                                    drivertown.FindElement(By.Name("picklistGroup")).Click();
-                                    Thread.Sleep(7000);
-                                    gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details2", drivertown, "NJ", countynameNJ);
-                                    int towncount = drivertown.FindElements(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[1]/td/table/tbody/tr/td")).Count;
-                                    string towntax = "";
-
+                                    try
+                                    {
+                                        drivertown.FindElement(By.Name("picklistGroup")).Click();
+                                        Thread.Sleep(7000);
+                                        gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details2", drivertown, "NJ", countynameNJ);
+                                        int towncount = drivertown.FindElements(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[1]/td/table/tbody/tr/td")).Count;
+                                        string towntax = "";
+                                    }
+                                    catch { }
 
                                     int counttr = drivertown.FindElements(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr")).Count;
                                     IList<IWebElement> tablestr = drivertown.FindElements(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr"));
@@ -2067,7 +2070,7 @@ namespace ScrapMaricopa.Scrapsource
                                                 IJavaScriptExecutor js2 = drivertown as IJavaScriptExecutor;
                                                 js2.ExecuteScript("arguments[0].click();", IAddressSearch2);
                                             }
-                                            Thread.Sleep(5000);
+                                            Thread.Sleep(7000);
                                         }
                                     }
 

@@ -396,7 +396,7 @@ namespace ScrapMaricopa.Scrapsource
                 if (Districtcode == "13")
                 {
                     iA = "0";
-                    iT = "0";
+                    iT = "1";
                     urlAssessment = "http://gis.vgsi.com/milfordct/Search.aspx";
                     urlTax = "https://milford-webtax.gemsnt.com/search.php?agree=I+AGREE";
                     result = "Town of Milford 70 West River Street Milford, CT 06460 Phone:203-783-3217";

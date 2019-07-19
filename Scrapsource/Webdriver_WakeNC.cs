@@ -523,9 +523,19 @@ namespace ScrapMaricopa.Scrapsource
                 SecondMultiTD = SecondMulti.FindElements(By.TagName("td"));
 
                 if (!SecondMulti.Text.Contains("Street Name"))
-                {
-                    IWebElement Checkbok = SecondMultiTD[0];
-                    Checkbok.Click();
+                { 
+                    try
+                    {
+                        IWebElement CheckParcel = SecondMultiTD[1].FindElement(By.TagName("a"));
+                        CheckParcel.Click();
+                    }
+                    catch { }
+                    try
+                    {
+                        IWebElement Checkbok = SecondMultiTD[0].FindElement(By.TagName("a"));
+                        Checkbok.Click();
+                    }
+                    catch { }
                     break;
                 }
             }

@@ -3657,23 +3657,23 @@ namespace ScrapMaricopa.Scrapsource
                                 foreach (IWebElement due in IDueDetailsRow)
                                 {
                                     IDueDetailsTD = due.FindElements(By.TagName("td"));
-                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Tax/Princ/Bint Due"))
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Tax/Princ/Bint Due"))
                                     {
                                         TaxPrincBint = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Interest Due"))
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Interest Due"))
                                     {
                                         InterestDue = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Lien Due"))
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Lien Due"))
                                     {
                                         LienDue = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Fee Due"))
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Fee Due"))
                                     {
                                         FeeDue = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Tax/Princ/Bint Due"))
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Tax/Princ/Bint Due"))
                                     {
                                         TotalDue = IDueDetailsTD[1].Text;
                                     }

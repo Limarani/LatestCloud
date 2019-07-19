@@ -75,29 +75,178 @@ namespace ScrapMaricopa.Scrapsource
                         searchType = "parcel";
                     }
 
+                    driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
+                    Thread.Sleep(2000);
+                    IWebElement iframeElement = null;
+                    try
+                    {
+                        iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
+                    }
+                    catch { }
+                    try
+                    {
+                        if (iframeElement == null)
+                        {
+                            iframeElement = driver.FindElement(By.XPath("//*[@id='single-blocks']/div[2]/div[2]/div/div/div/div/div/iframe"));
+                        }
+                    }
+                    catch { }
+                    //if (searchType == "address")
+                    //{
+                    //    //driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
+                    //    //Thread.Sleep(2000);
 
+                    //    //IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
+                    //    //Thread.Sleep(2000);
+                    //    driver.SwitchTo().Frame(iframeElement);
+
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[3]")).Click();
+                    //    Thread.Sleep(2000);
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[2]/div/input[1]")).SendKeys(houseno);
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[2]/div/input[2]")).SendKeys(sname);
+
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[5]/button")).Click();
+                    //    Thread.Sleep(2000);
+                    //    //Screen-Shot
+                    //    gc.CreatePdf_WOP(orderNumber, "AddressSearch", driver, "LA", "East Baton Rouge");
+
+
+                    //    //MultiParcel
+                    //    IWebElement MultiParcelTable = driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table/tbody"));
+                    //    IList<IWebElement> MultiParcelTR = MultiParcelTable.FindElements(By.TagName("tr"));
+
+                    //    if (MultiParcelTR.Count == 1)
+                    //    {
+                    //        NavigateUrl(driver);
+                    //    }
+                    //    else
+                    //    {
+                    //        try
+                    //        {
+                    //            string no = driver.FindElement(By.XPath("//*[@id='ng-view']/div/div")).Text;
+                    //            if (no.Contains("No results found"))
+                    //            {
+                    //                HttpContext.Current.Session["EastbatonLA_NoRecord"] = "Yes";
+                    //                driver.Quit();
+                    //                return "No Data Found";
+                    //            }
+                    //        }
+                    //        catch
+                    //        {
+
+                    //        }
+
+                    //        IList<IWebElement> MultiParcelTD;
+                    //        foreach (IWebElement multi in MultiParcelTR)
+                    //        {
+                    //            MultiParcelTD = multi.FindElements(By.TagName("td"));
+                    //            if (MultiParcelTD.Count != 0)
+                    //            {
+                    //                parcelNumber = MultiParcelTD[0].Text;
+                    //                Ownername = MultiParcelTD[1].Text;
+                    //                Physicaladdrerss = MultiParcelTD[2].Text;
+                    //                Multidata = Ownername + "~" + Physicaladdrerss;
+                    //                gc.insert_date(orderNumber, parcelNumber, 177, Multidata, 1, DateTime.Now);
+                    //            }
+                    //            HttpContext.Current.Session["multiParcel_LAEastBatonRouge"] = "Yes";
+                    //        }
+
+                    //        if (MultiParcelTR.Count > 25)
+                    //        {
+                    //            HttpContext.Current.Session["multiParcel_LAEastBatonRouge_Multicount"] = "Maximum";
+                    //        }
+                    //        driver.Quit();
+                    //        return "MultiParcel";
+                    //    }
+                    //}
+
+                    //else if (searchType == "parcel")
+                    //{
+                    //    driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
+                    //    Thread.Sleep(2000);
+
+                    //    IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
+                    //    driver.SwitchTo().Frame(iframeElement);
+
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[1]")).Click();
+                    //    Thread.Sleep(2000);
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[7]")).SendKeys(parcelNumber);
+                    //    gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "LA", "East Baton Rouge");
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[5]/button")).Click();
+                    //    Thread.Sleep(2000);
+
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table/tbody/tr/td[4]/a")).Click();
+                    //    Thread.Sleep(3000);
+                    //    NavigateUrl(driver);
+                    //}
+
+                    //else if (searchType == "ownername")
+                    //{
+                    //    driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
+                    //    Thread.Sleep(2000);
+
+                    //    IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
+                    //    driver.SwitchTo().Frame(iframeElement);
+
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[2]")).Click();
+                    //    Thread.Sleep(2000);
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[7]")).SendKeys(ownername);
+                    //    gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "LA", "East Baton Rouge");
+                    //    driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[5]/button")).Click();
+                    //    Thread.Sleep(2000);
+                    //    gc.CreatePdf(orderNumber, outparcelno, "Property_Search", driver, "LA", "East Baton Rouge");
+                    //    //MultiParcel
+                    //    IWebElement MultiParcelTable = driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table/tbody"));
+                    //    IList<IWebElement> MultiParcelTR = MultiParcelTable.FindElements(By.TagName("tr"));
+
+                    //    if (MultiParcelTR.Count == 1)
+                    //    {
+                    //        NavigateUrl(driver);
+                    //    }
+                    //    else
+                    //    {
+                    //        IList<IWebElement> MultiParcelTD;
+                    //        foreach (IWebElement multi in MultiParcelTR)
+                    //        {
+                    //            MultiParcelTD = multi.FindElements(By.TagName("td"));
+                    //            if (MultiParcelTD.Count != 0)
+                    //            {
+                    //                parcelNumber = MultiParcelTD[0].Text;
+                    //                Ownername = MultiParcelTD[1].Text;
+                    //                Physicaladdrerss = MultiParcelTD[2].Text;
+                    //                Multidata = Ownername + "~" + Physicaladdrerss;
+                    //                gc.insert_date(orderNumber, parcelNumber, 177, Multidata, 1, DateTime.Now);
+                    //            }
+                    //        }
+
+                    //        HttpContext.Current.Session["multiParcel_LAEastBatonRouge"] = "Yes";
+                    //        if (MultiParcelTR.Count > 25)
+                    //        {
+                    //            HttpContext.Current.Session["multiParcel_LAEastBatonRouge_Multicount"] = "Maximum";
+                    //        }
+                    //        driver.Quit();
+                    //        return "MultiParcel";
+                    //    }
+
+                    //}
                     if (searchType == "address")
                     {
-                        driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
-                        Thread.Sleep(2000);
-
-                        IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
                         Thread.Sleep(2000);
                         driver.SwitchTo().Frame(iframeElement);
 
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[3]")).Click();
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/input[3]")).Click();
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[2]/div/input[1]")).SendKeys(houseno);
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[2]/div/input[2]")).SendKeys(sname);
-
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[5]/button")).Click();
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/div[2]/div/input[1]")).SendKeys(houseno);
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/div[2]/div/input[2]")).SendKeys(sname);
+                        gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "LA", "East Baton Rouge");
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/div[5]/button")).Click();
                         Thread.Sleep(2000);
                         //Screen-Shot
-                        gc.CreatePdf_WOP(orderNumber, "AddressSearch", driver, "LA", "East Baton Rouge");
+                        gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "LA", "East Baton Rouge");
 
 
                         //MultiParcel
-                        IWebElement MultiParcelTable = driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table/tbody"));
+                        IWebElement MultiParcelTable = driver.FindElement(By.XPath("//*[@id='ng-view']/div/table/tbody"));
                         IList<IWebElement> MultiParcelTR = MultiParcelTable.FindElements(By.TagName("tr"));
 
                         if (MultiParcelTR.Count == 1)
@@ -147,41 +296,41 @@ namespace ScrapMaricopa.Scrapsource
 
                     else if (searchType == "parcel")
                     {
-                        driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
-                        Thread.Sleep(2000);
+                        //driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
+                        //Thread.Sleep(2000);
 
-                        IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
-                        driver.SwitchTo().Frame(iframeElement);
+                        //IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
+                        //driver.SwitchTo().Frame(iframeElement);
 
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[1]")).Click();
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/input[1]")).Click();
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[7]")).SendKeys(parcelNumber);
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/input[7]")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "LA", "East Baton Rouge");
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[5]/button")).Click();
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/div[5]/button")).Click();
                         Thread.Sleep(2000);
 
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table/tbody/tr/td[4]/a")).Click();
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/table/tbody/tr/td[4]/a")).Click();
                         Thread.Sleep(3000);
                         NavigateUrl(driver);
                     }
 
                     else if (searchType == "ownername")
                     {
-                        driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
-                        Thread.Sleep(2000);
+                        //driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
+                        //Thread.Sleep(2000);
 
-                        IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
-                        driver.SwitchTo().Frame(iframeElement);
+                        //IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/center/div[2]/table/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/font/div[1]/iframe"));
+                        //driver.SwitchTo().Frame(iframeElement);
 
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[2]")).Click();
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/input[2]")).Click();
                         Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/input[7]")).SendKeys(ownername);
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/input[7]")).SendKeys(ownername);
                         gc.CreatePdf(orderNumber, parcelNumber, "ParcelSearch", driver, "LA", "East Baton Rouge");
-                        driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/form/div[5]/button")).Click();
+                        driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/div[5]/button")).Click();
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, outparcelno, "Property_Search", driver, "LA", "East Baton Rouge");
                         //MultiParcel
-                        IWebElement MultiParcelTable = driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table/tbody"));
+                        IWebElement MultiParcelTable = driver.FindElement(By.XPath("//*[@id='ng-view']/div/table/tbody"));
                         IList<IWebElement> MultiParcelTR = MultiParcelTable.FindElements(By.TagName("tr"));
 
                         if (MultiParcelTR.Count == 1)
@@ -238,8 +387,15 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderNumber, outparcelno, "Assement", driver, "LA", "East Baton Rouge");
 
                     //Assessment Details
-                    string year = driver.FindElement(By.XPath("/html/body/div[2]/div/span[1]")).Text;
-                    IWebElement TBAssess = driver.FindElement(By.XPath("/html/body/div[3]/div/div[8]/table/tbody"));
+                    //string year = driver.FindElement(By.XPath("/html/body/div[2]/div/span[1]")).Text;
+                    //IWebElement TBAssess = driver.FindElement(By.XPath("/html/body/div[3]/div/div[8]/table/tbody"));
+                    string year = "";
+                    try
+                    {
+                        year = driver.FindElement(By.XPath("/html/body/div[2]/div/span")).Text.Replace("Assessment Listing", "").Trim();
+                    }
+                    catch { }
+                    IWebElement TBAssess = driver.FindElement(By.XPath("//*[@id='parcelDetails']/div[8]/table/tbody"));
                     IList<IWebElement> TRAssess = TBAssess.FindElements(By.TagName("tr"));
                     IList<IWebElement> TDAssess;
                     foreach (IWebElement assess in TRAssess)
@@ -258,7 +414,8 @@ namespace ScrapMaricopa.Scrapsource
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
 
                     //TaxDistribution Details
-                    IWebElement TBTax = driver.FindElement(By.XPath("/html/body/div[3]/div/div[11]/table/tbody"));
+                    //IWebElement TBTax = driver.FindElement(By.XPath("/html/body/div[3]/div/div[11]/table/tbody"));
+                    IWebElement TBTax = driver.FindElement(By.XPath("//*[@id='parcelDetails']/div[11]/table/tbody"));
                     IList<IWebElement> TRTax = TBTax.FindElements(By.TagName("tr"));
                     IList<IWebElement> TDTax;
                     foreach (IWebElement tax in TRTax)
@@ -295,13 +452,11 @@ namespace ScrapMaricopa.Scrapsource
                     int Check = 0;
                     foreach (IWebElement Op in Select)
                     {
-
                         if (Check <= 2)
                         {
                             option.Add(Op.Text);
                             Check++;
                         }
-
                     }
                     foreach (string item in option)
                     {
@@ -480,7 +635,20 @@ namespace ScrapMaricopa.Scrapsource
         public void NavigateUrl(IWebDriver driver)
         {
             //Navigate URl
-            IWebElement MultiParcelTable1 = driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table"));
+            IWebElement MultiParcelTable1 = null;
+            try
+            {
+                MultiParcelTable1 = driver.FindElement(By.XPath("//*[@id='ng-view']/div/table/tbody"));
+            }
+            catch { }
+            try
+            {
+                if (MultiParcelTable1 == null)
+                {
+                    MultiParcelTable1 = driver.FindElement(By.XPath("/html/body/div[2]/div/div[3]/div/div/table"));
+                }
+            }
+            catch { }
             IList<IWebElement> MultiParcelTR1 = MultiParcelTable1.FindElements(By.TagName("a"));
 
             List<string> urlList = new List<string>();

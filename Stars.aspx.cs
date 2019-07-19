@@ -22039,7 +22039,6 @@ namespace ScrapMaricopa
 
                         }
 
-
                         if (countnoAssess == "6")
                         {
                             BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
@@ -22668,5 +22667,5 @@ namespace ScrapMaricopa
         public string Data_Field_Text_Id { get; set; }
         public string Data_Field_value { get; set; }
         public string Data_Fields_Text { get; set; }
-    }////testbind
+    }////testbind1
 }

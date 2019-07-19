@@ -323,239 +323,245 @@ namespace ScrapMaricopa.Scrapsource
                     string taxbill = "";
                     for (int l = 0; l < 5; l++)
                     {
-
-
                         try
                         {
-                            IWebElement TaxInfo = driver.FindElement(By.Id("G_dgResults"));
-                            IList<IWebElement> TRTaxInfo = TaxInfo.FindElements(By.TagName("tr"));
-                            IList<IWebElement> THTaxInfo = TaxInfo.FindElements(By.TagName("th"));
-                            IList<IWebElement> TDTaxInfo;
-                            foreach (IWebElement row in TRTaxInfo)
+                            try
                             {
-                                TDTaxInfo = row.FindElements(By.TagName("td"));
-                                if (TDTaxInfo.Count != 0 && !row.Text.Contains("Bill Flags") && !Taxlist.Contains(TDTaxInfo[0].Text.Trim()))
+                                IWebElement TaxInfo = driver.FindElement(By.Id("G_dgResults"));
+                                IList<IWebElement> TRTaxInfo = TaxInfo.FindElements(By.TagName("tr"));
+                                IList<IWebElement> THTaxInfo = TaxInfo.FindElements(By.TagName("th"));
+                                IList<IWebElement> TDTaxInfo;
+                                foreach (IWebElement row in TRTaxInfo)
                                 {
-                                    taxbill = TDTaxInfo[0].Text.Trim();
-                                    Taxlist.Add(taxbill);
-                                    IWebElement Iclick = TDTaxInfo[0].FindElement(By.TagName("a"));
-                                    Iclick.Click();
-                                    Thread.Sleep(4000);
-                                    k++;
-                                    break;
-                                }
-                                try
-                                {
-                                    if (TDTaxInfo.Count != 0 && !row.Text.Contains("Bill Flags") && Taxlist.Contains(TDTaxInfo[0].Text.Trim()) && k != 1 && k != 2)
+                                    TDTaxInfo = row.FindElements(By.TagName("td"));
+                                    if (TDTaxInfo.Count != 0 && !row.Text.Contains("Bill Flags") && !Taxlist.Contains(TDTaxInfo[0].Text.Trim()))
                                     {
                                         taxbill = TDTaxInfo[0].Text.Trim();
                                         Taxlist.Add(taxbill);
                                         IWebElement Iclick = TDTaxInfo[0].FindElement(By.TagName("a"));
                                         Iclick.Click();
                                         Thread.Sleep(4000);
-                                        // break;
-
+                                        k++;
+                                        break;
                                     }
+                                    try
+                                    {
+                                        if (TDTaxInfo.Count != 0 && !row.Text.Contains("Bill Flags") && Taxlist.Contains(TDTaxInfo[0].Text.Trim()) && k != 1 && k != 2)
+                                        {
+                                            taxbill = TDTaxInfo[0].Text.Trim();
+                                            Taxlist.Add(taxbill);
+                                            IWebElement Iclick = TDTaxInfo[0].FindElement(By.TagName("a"));
+                                            Iclick.Click();
+                                            Thread.Sleep(4000);
+                                            // break;
+
+                                        }
+                                    }
+                                    catch { }
                                 }
-                                catch { }
                             }
-                        }
-                        catch { }
+                            catch { }
 
 
-                        //driver.FindElement(By.XPath("//*[@id='dgResults_r_0']/td[1]/a")).SendKeys(Keys.Enter);
-                        gc.CreatePdf(orderNumber, Parcel_No, "Tax iformation Result" + l, driver, "NC", "Mecklenburg");
-                        try
-                        {
-                            owner_name = driver.FindElement(By.Id("txtName")).Text;
-                        }
-                        catch { }
-                        try
-                        {
-                            owner_name = driver.FindElement(By.Id("lblPriOwner")).Text;
-                        }
-                        catch { }
-                        try
-                        {
-                            Propertytax_Bill = driver.FindElement(By.XPath("//*[@id='lblBill']")).Text;
-                        }
-                        catch { }
-                        try
-                        {
-                            Propertytax_Bill = driver.FindElement(By.Id("lblNewAccount")).Text;
-                        }
-                        catch { }
-                        try
-                        {
-                            Bill_Status = driver.FindElement(By.XPath("//*[@id='lblBillStatus']")).Text;
-                        }
-                        catch { }
-                        Bill_Flag = driver.FindElement(By.XPath("//*[@id='lblBillFlag']")).Text;
-                        if (Bill_Flag == "")
-                        {
-                            Bill_Flag = "-";
-                        }
-                        try
-                        {
-                            Due_Date = driver.FindElement(By.XPath("//*[@id='lblDueDate']")).Text;
-                        }
-                        catch { }
-                        try
-                        {
-                            Interest_Begins = driver.FindElement(By.XPath("//*[@id='lblInterest']")).Text;
-                        }
-                        catch { }
-                        try
-                        {
-                            Interest_Begins = driver.FindElement(By.Id("lblIntBegins")).Text;
-                        }
-                        catch { }
-                        string paidbydate = "";
-                        try
-                        {
-                            paidbydate = driver.FindElement(By.Id("interestCalDate_input")).Text;
-                        }
-                        catch { }
-
-                        if (Bill_Flag == "DELINQUENT")
-                        {
-                            good_date = driver.FindElement(By.XPath("//*[@id='interestCalDate_input']"));
-                            Good_through_date = good_date.GetAttribute("value");
-                            if (Good_through_date.Contains("Select A Date"))
+                            //driver.FindElement(By.XPath("//*[@id='dgResults_r_0']/td[1]/a")).SendKeys(Keys.Enter);
+                            gc.CreatePdf(orderNumber, Parcel_No, "Tax iformation Result" + l, driver, "NC", "Mecklenburg");
+                            try
                             {
-                                Good_through_date = "-";
-                                Total_Billed = driver.FindElement(By.XPath("//*[@id='lblTotalAmountDue']")).Text;
-                                Interest = driver.FindElement(By.XPath("//*[@id='lblInterestAmt']")).Text;
-                                current_due = driver.FindElement(By.XPath("//*[@id='lblCurrentDue']")).Text;
+                                owner_name = driver.FindElement(By.Id("txtName")).Text;
                             }
-                        }
-                        else
-                        {
+                            catch { }
+                            try
+                            {
+                                owner_name = driver.FindElement(By.Id("lblPriOwner")).Text;
+                            }
+                            catch { }
+                            try
+                            {
+                                Propertytax_Bill = driver.FindElement(By.XPath("//*[@id='lblBill']")).Text;
+                            }
+                            catch { }
+                            try
+                            {
+                                Propertytax_Bill = driver.FindElement(By.Id("lblNewAccount")).Text;
+                            }
+                            catch { }
+                            try
+                            {
+                                Bill_Status = driver.FindElement(By.XPath("//*[@id='lblBillStatus']")).Text;
+                            }
+                            catch { }
+                            try
+                            {
+                                Bill_Flag = driver.FindElement(By.XPath("//*[@id='lblBillFlag']")).Text;
+                            }
+                            catch { }
+                            if (Bill_Flag == "")
+                            {
+                                Bill_Flag = "-";
+                            }
+                            try
+                            {
+                                Due_Date = driver.FindElement(By.XPath("//*[@id='lblDueDate']")).Text;
+                            }
+                            catch { }
+                            try
+                            {
+                                Interest_Begins = driver.FindElement(By.XPath("//*[@id='lblInterest']")).Text;
+                            }
+                            catch { }
+                            try
+                            {
+                                Interest_Begins = driver.FindElement(By.Id("lblIntBegins")).Text;
+                            }
+                            catch { }
+                            string paidbydate = "";
+                            try
+                            {
+                                paidbydate = driver.FindElement(By.Id("interestCalDate_input")).Text;
+                            }
+                            catch { }
 
                             if (Bill_Flag == "DELINQUENT")
                             {
-
-                                DateTime G_Date = Convert.ToDateTime(Good_through_date);
-                                string dateChecking = DateTime.Now.ToString("MM") + "/15/" + DateTime.Now.ToString("yyyy");
-
-                                if (G_Date < Convert.ToDateTime(dateChecking))
+                                good_date = driver.FindElement(By.XPath("//*[@id='interestCalDate_input']"));
+                                Good_through_date = good_date.GetAttribute("value");
+                                if (Good_through_date.Contains("Select A Date"))
                                 {
-                                    //end of the month
-                                    Good_through_date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")))).ToString("MM/dd/yyyy");
+                                    Good_through_date = "-";
+                                    Total_Billed = driver.FindElement(By.XPath("//*[@id='lblTotalAmountDue']")).Text;
+                                    Interest = driver.FindElement(By.XPath("//*[@id='lblInterestAmt']")).Text;
+                                    current_due = driver.FindElement(By.XPath("//*[@id='lblCurrentDue']")).Text;
+                                }
+                            }
+                            else
+                            {
+
+                                if (Bill_Flag == "DELINQUENT")
+                                {
+
+                                    DateTime G_Date = Convert.ToDateTime(Good_through_date);
+                                    string dateChecking = DateTime.Now.ToString("MM") + "/15/" + DateTime.Now.ToString("yyyy");
+
+                                    if (G_Date < Convert.ToDateTime(dateChecking))
+                                    {
+                                        //end of the month
+                                        Good_through_date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")))).ToString("MM/dd/yyyy");
+
+                                    }
+
+                                    else if (G_Date > Convert.ToDateTime(dateChecking))
+                                    {
+                                        // nextEndOfMonth 
+                                        if ((Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))) < 12))
+                                        {
+                                            Good_through_date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM")) + 1), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")) + 1)).ToString("MM/dd/yyyy");
+                                        }
+                                        else
+                                        {
+                                            int nxtYr = Convert.ToInt16(DateTime.Now.ToString("yyyy")) + 1;
+                                            Good_through_date = new DateTime(nxtYr, 1, DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), 1)).ToString("MM/dd/yyyy");
+
+                                        }
+                                    }
+
+                                    //recalculate interest
+                                    good_date.Clear();
+                                    good_date.SendKeys(Good_through_date);
+                                    driver.FindElement(By.Id("btnRecalInterest")).SendKeys(Keys.Enter);
+                                    gc.CreatePdf(orderNumber, Parcel_No, "After Good Through Date Calculate" + l, driver, "NC", "Mecklenburg");
+                                    Total_Billed = driver.FindElement(By.XPath("//*[@id='lblTotalAmountDue']")).Text;
+                                    Interest = driver.FindElement(By.XPath("//*[@id='lblInterestAmt']")).Text;
+                                    current_due = driver.FindElement(By.XPath("//*[@id='lblCurrentDue']")).Text;
 
                                 }
+                            }
 
-                                else if (G_Date > Convert.ToDateTime(dateChecking))
+
+                            //transcation history
+                            string strtaxyear1 = "", strtaxyear2 = "", strtaxyear3 = "", Pdate = "";
+                            try
+                            {
+                                Pdate = driver.FindElement(By.Id("lblDueDate")).Text;
+                                string[] Tax_year = Pdate.Split('/');
+                                strtaxyear1 = Tax_year[0];
+                                strtaxyear2 = Tax_year[1];
+                                strtaxyear3 = Tax_year[2];
+                            }
+                            catch { }
+                            IWebElement tb_trans = driver.FindElement(By.XPath("//*[@id='dgShowResultHistory']/tbody"));
+                            IList<IWebElement> TR_trans = tb_trans.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TD_trans;
+
+                            foreach (IWebElement row2 in TR_trans)
+                            {
+                                if (TR_trans.Count == 1)
                                 {
-                                    // nextEndOfMonth 
-                                    if ((Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))) < 12))
+
+                                    string tax = strtaxyear3 + "~ " + owner_name + "~ " + Propertytax_Bill + "~ " + Bill_Status + "~ " + Bill_Flag + "~ " + Due_Date + "~ " + Interest_Begins + "~ " + Total_Billed + "~ " + Interest + "~ " + current_due + "~ " + Good_through_date + "~ " + Paid_Date + "~ " + Type + "~ " + Paid_By + "~ " + Receipt_No + "~ " + Paid_Amount;
+                                    // tax = tax.Replace("\r\n", "");
+                                    gc.insert_date(orderNumber, Parcel_No, 61, tax, 1, DateTime.Now);
+
+
+                                }
+                                if (!row2.Text.Contains("Date"))
+                                {
+                                    TD_trans = row2.FindElements(By.TagName("td"));
+                                    try
                                     {
-                                        Good_through_date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM")) + 1), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")) + 1)).ToString("MM/dd/yyyy");
+                                        Type = TD_trans[1].Text;
+                                        Paid_By = TD_trans[2].Text;
+                                        Receipt_No = TD_trans[3].Text;
+                                        Paid_Amount = TD_trans[4].Text;
+
+                                    }
+                                    catch { }
+                                    string tax = strtaxyear3 + "~ " + owner_name + "~ " + Propertytax_Bill + "~ " + Bill_Status + "~ " + Bill_Flag + "~ " + Due_Date + "~ " + Interest_Begins + "~ " + Total_Billed + "~ " + Interest + "~ " + current_due + "~ " + Good_through_date + "~ " + Paid_Date + "~ " + Type + "~ " + Paid_By + "~ " + Receipt_No + "~ " + Paid_Amount;
+                                    if (tax.Contains("\r\n"))
+                                    {
+                                        tax = tax.Replace("\r\n", "");
+                                        gc.insert_date(orderNumber, Parcel_No, 61, tax, 1, DateTime.Now);
+
                                     }
                                     else
                                     {
-                                        int nxtYr = Convert.ToInt16(DateTime.Now.ToString("yyyy")) + 1;
-                                        Good_through_date = new DateTime(nxtYr, 1, DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), 1)).ToString("MM/dd/yyyy");
-
+                                        gc.insert_date(orderNumber, Parcel_No, 61, tax, 1, DateTime.Now);
                                     }
                                 }
 
-                                //recalculate interest
-                                good_date.Clear();
-                                good_date.SendKeys(Good_through_date);
-                                driver.FindElement(By.Id("btnRecalInterest")).SendKeys(Keys.Enter);
-                                gc.CreatePdf(orderNumber, Parcel_No, "After Good Through Date Calculate" + l, driver, "NC", "Mecklenburg");
-                                Total_Billed = driver.FindElement(By.XPath("//*[@id='lblTotalAmountDue']")).Text;
-                                Interest = driver.FindElement(By.XPath("//*[@id='lblInterestAmt']")).Text;
-                                current_due = driver.FindElement(By.XPath("//*[@id='lblCurrentDue']")).Text;
-
-                            }
-                        }
-
-
-                        //transcation history
-                        string strtaxyear1 = "", strtaxyear2 = "", strtaxyear3 = "", Pdate = "";
-                        try
-                        {
-                            Pdate = driver.FindElement(By.Id("lblDueDate")).Text;
-                            string[] Tax_year = Pdate.Split('/');
-                            strtaxyear1 = Tax_year[0];
-                            strtaxyear2 = Tax_year[1];
-                            strtaxyear3 = Tax_year[2];
-                        }
-                        catch { }
-                        IWebElement tb_trans = driver.FindElement(By.XPath("//*[@id='dgShowResultHistory']/tbody"));
-                        IList<IWebElement> TR_trans = tb_trans.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TD_trans;
-
-                        foreach (IWebElement row2 in TR_trans)
-                        {
-                            if (TR_trans.Count == 1)
-                            {
-
-                                string tax = strtaxyear3 + "~ " + owner_name + "~ " + Propertytax_Bill + "~ " + Bill_Status + "~ " + Bill_Flag + "~ " + Due_Date + "~ " + Interest_Begins + "~ " + Total_Billed + "~ " + Interest + "~ " + current_due + "~ " + Good_through_date + "~ " + Paid_Date + "~ " + Type + "~ " + Paid_By + "~ " + Receipt_No + "~ " + Paid_Amount;
-                                // tax = tax.Replace("\r\n", "");
-                                gc.insert_date(orderNumber, Parcel_No, 61, tax, 1, DateTime.Now);
-
-
-                            }
-                            if (!row2.Text.Contains("Date"))
-                            {
-                                TD_trans = row2.FindElements(By.TagName("td"));
-                                try
-                                {
-                                    Type = TD_trans[1].Text;
-                                    Paid_By = TD_trans[2].Text;
-                                    Receipt_No = TD_trans[3].Text;
-                                    Paid_Amount = TD_trans[4].Text;
-
-                                }
-                                catch { }
-                                string tax = strtaxyear3 + "~ " + owner_name + "~ " + Propertytax_Bill + "~ " + Bill_Status + "~ " + Bill_Flag + "~ " + Due_Date + "~ " + Interest_Begins + "~ " + Total_Billed + "~ " + Interest + "~ " + current_due + "~ " + Good_through_date + "~ " + Paid_Date + "~ " + Type + "~ " + Paid_By + "~ " + Receipt_No + "~ " + Paid_Amount;
-                                if (tax.Contains("\r\n"))
-                                {
-                                    tax = tax.Replace("\r\n", "");
-                                    gc.insert_date(orderNumber, Parcel_No, 61, tax, 1, DateTime.Now);
-
-                                }
-                                else
-                                {
-                                    gc.insert_date(orderNumber, Parcel_No, 61, tax, 1, DateTime.Now);
-                                }
                             }
 
-                        }
 
-
-                        //Tax/Fee Distribution Table: 
-                        string Rate = "-", Tax_Districts = "-", Description = "-", Amount = "-";
-                        try
-                        {
-                            IWebElement TBTaxFee = driver.FindElement(By.XPath("//*[@id='dgShowResultRate']/tbody"));
-                            IList<IWebElement> TRTaxFee = TBTaxFee.FindElements(By.TagName("tr"));
-                            IList<IWebElement> TDTaxFee;
-
-                            foreach (IWebElement row2 in TRTaxFee)
+                            //Tax/Fee Distribution Table: 
+                            string Rate = "-", Tax_Districts = "-", Description = "-", Amount = "-";
+                            try
                             {
-                                if (!row2.Text.Contains("Rate"))
+                                IWebElement TBTaxFee = driver.FindElement(By.XPath("//*[@id='dgShowResultRate']/tbody"));
+                                IList<IWebElement> TRTaxFee = TBTaxFee.FindElements(By.TagName("tr"));
+                                IList<IWebElement> TDTaxFee;
+
+                                foreach (IWebElement row2 in TRTaxFee)
                                 {
-                                    TDTaxFee = row2.FindElements(By.TagName("td"));
-                                    Rate = TDTaxFee[0].Text;
-                                    if (Rate == "")
+                                    if (!row2.Text.Contains("Rate"))
                                     {
-                                        Rate = "-";
+                                        TDTaxFee = row2.FindElements(By.TagName("td"));
+                                        Rate = TDTaxFee[0].Text;
+                                        if (Rate == "")
+                                        {
+                                            Rate = "-";
+                                        }
+                                        Tax_Districts = TDTaxFee[1].Text;
+                                        Description = TDTaxFee[2].Text;
+                                        Amount = TDTaxFee[3].Text;
+                                        string taxfee = strtaxyear3 + "~ " + Rate + "~ " + Tax_Districts + "~ " + Description + "~ " + Amount;
+                                        gc.insert_date(orderNumber, Parcel_No, 64, taxfee, 1, DateTime.Now);
                                     }
-                                    Tax_Districts = TDTaxFee[1].Text;
-                                    Description = TDTaxFee[2].Text;
-                                    Amount = TDTaxFee[3].Text;
-                                    string taxfee = strtaxyear3 + "~ " + Rate + "~ " + Tax_Districts + "~ " + Description + "~ " + Amount;
-                                    gc.insert_date(orderNumber, Parcel_No, 64, taxfee, 1, DateTime.Now);
                                 }
                             }
+                            catch { }
+                            driver.Navigate().Back();
+                            Thread.Sleep(4000);
                         }
                         catch { }
-                        driver.Navigate().Back();
-                        Thread.Sleep(4000);
                         l++;
 
                     }
