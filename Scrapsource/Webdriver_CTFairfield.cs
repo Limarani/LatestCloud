@@ -92,7 +92,11 @@ namespace ScrapMaricopa.Scrapsource
                             sAddressSelect.SelectByText("Address");
                             driver.FindElement(By.Id("MainContent_txtSearchAddress")).SendKeys(address.Trim());
                             gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "CT", countynameCT);
-                            driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]")).Click();
+                            //driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]")).Click();
+                            IWebElement Iaddress = driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]"));
+                            IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+                            js.ExecuteScript("arguments[0].click();", Iaddress);
+                            Thread.Sleep(3000);
                             try
                             {
                                 string nodata = driver.FindElement(By.XPath("//*[@id='MainContent_grdSearchResults']")).Text;
@@ -799,7 +803,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             searchType = "titleflex";
                         }
-                        if (townshipcode == "21" || townshipcode == "12"|| townshipcode == "29")//Ridgefield and Monroe
+                        if (townshipcode == "21" || townshipcode == "12" || townshipcode == "29")//Ridgefield and Monroe
                         {
                             HttpContext.Current.Session["Owner_CT" + countynameCT + township] = "Yes";
                             driver.Quit();
@@ -812,9 +816,10 @@ namespace ScrapMaricopa.Scrapsource
                             sOwnerSelect.SelectByText("Owner");
                             driver.FindElement(By.Id("MainContent_txtSearchOwner")).SendKeys(ownername);
                             gc.CreatePdf_WOP(orderNumber, "Owner Search", driver, "CT", countynameCT);
-                            IWebElement Iowner = driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]/i"));
+                            IWebElement Iowner = driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]"));
                             IJavaScriptExecutor js = driver as IJavaScriptExecutor;
                             js.ExecuteScript("arguments[0].click();", Iowner);
+                            Thread.Sleep(3000);
                             try
                             {
                                 string nodata = driver.FindElement(By.XPath("//*[@id='MainContent_grdSearchResults']")).Text;
@@ -1412,11 +1417,11 @@ namespace ScrapMaricopa.Scrapsource
                             sParcelSelect.SelectByText("PID");
                             driver.FindElement(By.Id("MainContent_txtSearchPid")).SendKeys(parcelNumber);
                             gc.CreatePdf_WOP(orderNumber, "Parcel Search", driver, "CT", countynameCT);
-                            IWebElement Iowner = driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]/i"));
+                            IWebElement IParcel = driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]"));
                             IJavaScriptExecutor js = driver as IJavaScriptExecutor;
-                            js.ExecuteScript("arguments[0].click();", Iowner);
+                            js.ExecuteScript("arguments[0].click();", IParcel);
                             // driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]/i")).SendKeys(Keys.Enter);
-                            Thread.Sleep(1000);
+                            Thread.Sleep(3000);
                             try
                             {
                                 string nodata = driver.FindElement(By.XPath("//*[@id='MainContent_grdSearchResults']")).Text;
@@ -1670,11 +1675,11 @@ namespace ScrapMaricopa.Scrapsource
                             sAccountSelect.SelectByText("Acct#");
                             driver.FindElement(By.Id("MainContent_txtSearchAcctNum")).SendKeys(assessment_id);
                             gc.CreatePdf_WOP(orderNumber, "Account Numver Search", driver, "CT", countynameCT);
-                            IWebElement Iowner = driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]/i"));
+                            IWebElement IAccount = driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]"));
                             IJavaScriptExecutor js = driver as IJavaScriptExecutor;
-                            js.ExecuteScript("arguments[0].click();", Iowner);
+                            js.ExecuteScript("arguments[0].click();", IAccount);
                             // driver.FindElement(By.XPath("//*[@id='SearchAll']/span[7]/i")).SendKeys(Keys.Enter);
-                            Thread.Sleep(1000);
+                            Thread.Sleep(3000);
                             try
                             {
                                 string nodata = driver.FindElement(By.XPath("//*[@id='MainContent_grdSearchResults']")).Text;
@@ -1695,518 +1700,622 @@ namespace ScrapMaricopa.Scrapsource
                     #endregion
 
                     //Property details
-                    #region Zero Assessment Link
-                    if (countAssess == "0")////Bridgeport
+                    #region Zero Tax Link
+                    if (countTax == "0")//Bridgeport
                     {
-                        //Property Details
-                        string PropertyAddress = "", MapLot = "", Owner = "", Assessment = "", Appraisal = "", ParcelID = "", BuildingCount = "";
-                        assessment_id = "";
 
-                        IWebElement IBasicDetails = driver.FindElement(By.XPath("//*[@id='tabs-1']"));
-                        IList<IWebElement> IBasicDetailsRow = IBasicDetails.FindElements(By.TagName("div"));
-                        IList<IWebElement> IBasicDetailsTD;
-                        foreach (IWebElement row in IBasicDetailsRow)
+                        if (townshipcode == "04" || townshipcode == "10" || townshipcode == "17")
                         {
-                            IBasicDetailsTD = row.FindElements(By.TagName("dl"));
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("Location"))
-                            {
-                                PropertyAddress = IBasicDetailsTD[0].Text.Replace("\r\n", "").Replace("Location", "").Trim();
-                            }
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("Mblu"))
-                            {
-
-                                MapLot = IBasicDetailsTD[1].Text.Replace("Mblu\r\n", "").Trim();
-                                parcelNumber = MapLot;
-                            }
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("Acct#"))
-                            {
-                                assessment_id = IBasicDetailsTD[2].Text.Replace("Acct#\r\n", "").Trim();
-                                assessment_id = IBasicDetailsTD[2].Text.Replace("Acct#", "").Trim();
-                            }
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("Owner"))
-                            {
-                                Owner = IBasicDetailsTD[3].Text.Replace("Owner\r\n", "").Trim();
-                            }
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("Assessment"))
-                            {
-                                Assessment = IBasicDetailsTD[4].Text.Replace("Assessment\r\n", "").Trim();
-                            }
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("Appraisal"))
-                            {
-                                Appraisal = IBasicDetailsTD[5].Text.Replace("Appraisal\r\n", "").Trim();
-                            }
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("PID"))
-                            {
-                                ParcelID = IBasicDetailsTD[6].Text.Replace("PID\r\n", "").Trim();
-                            }
-                            if (IBasicDetailsTD.Count != 0 && row.Text.Contains("Building Count"))
-                            {
-                                BuildingCount = IBasicDetailsTD[7].Text.Replace("Building Count\r\n", "").Trim();
-                            }
+                            IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                            SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                            sTaxSelect.SelectByText("Parcel Number");
+                            driver.FindElement(By.Name("uniqueId")).SendKeys(uniqueidMap);
+                            driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                            Thread.Sleep(3000);
+                        }
+                        if (townshipcode == "13" || townshipcode == "22" || townshipcode == "02" || townshipcode == "03" || townshipcode == "08" || townshipcode == "09" || townshipcode == "11" || townshipcode == "12" || townshipcode == "14" || townshipcode == "15" || townshipcode == "18" || townshipcode == "19" || townshipcode == "20" || townshipcode == "23" || townshipcode == "26" || townshipcode == "27" || townshipcode == "32" || townshipcode == "30" || townshipcode == "21" || townshipcode == "07" || townshipcode == "25" || townshipcode == "25" || townshipcode == "01" || townshipcode == "28" || townshipcode == "05" || townshipcode == "24" || townshipcode == "31")
+                        {
+                            IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                            SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                            sTaxSelect.SelectByText("Unique ID");
+                            driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                            driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                            Thread.Sleep(3000);
+                        }
+                        if (townshipcode == "29")
+                        {
+                            string taxaddress = "";
+                            IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                            SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                            sTaxSelect.SelectByText("Property Location");
+                            driver.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
+                            driver.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
+                            driver.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
+                            Thread.Sleep(3000);
                         }
 
-                        if (assessment_id == "")
+                        try
                         {
-                            assessment_id = ParcelID;
-                        }
-
-
-                        string[] splitAddress = PropertyAddress.Split(' ');
-                        streetno1 = splitAddress[0];
-                        if (splitAddress.Count() == 2)
-                        {
-                            streetname1 = splitAddress[1];
-                            streetname1 = streetname1.Trim();
-                        }
-
-                        if (splitAddress.Count() == 3)
-                        {
-                            streetname1 = splitAddress[1] + " " + splitAddress[2];
-                            streetname1 = streetname1.Trim();
-                        }
-
-                        if (splitAddress.Count() == 4)
-                        {
-                            streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
-                            streetname1 = streetname1.Trim();
-                        }
-
-                        if (splitAddress.Count() == 5)
-                        {
-                            streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
-                            streetname1 = streetname1.Trim();
-                        }
-
-                        if (townshipcode == "02")
-                        {
-
-                            string[] uniqueidsplit = MapLot.Split(' ');
-                            string block = "", lot = "", unit = "";
-                            string block1 = "", block2 = "", lot1 = "", lot2 = "", unit1 = "", unit2 = "";
-                            block = uniqueidsplit[1];
-                            lot = uniqueidsplit[2];
-                            unit = uniqueidsplit[3];
-                            string[] blocksplit = block.Split('/');
-                            string[] lotsplit = lot.Split('/');
-                            string[] unitsplit = unit.Split('/');
-                            if (blocksplit[0].Length == 3)
+                            string Nodata = driver.FindElement(By.XPath("//*[@id='notification']/div/span")).Text;
+                            if (Nodata.Contains("No record is found"))
                             {
-                                block1 = "0" + blocksplit[0];
-                            }
-                            else if (blocksplit[0].Length == 2)
-                            {
-                                block1 = "00" + blocksplit[0];
-                            }
-                            else if (blocksplit[0].Length == 1)
-                            {
-                                block1 = "000" + blocksplit[0];
-                            }
-                            else if (blocksplit[0].Length == 4)
-                            {
-                                block1 = blocksplit[0];
-                            }
-                            block2 = GlobalClass.After(block, "/");
-                            if (block2 == "")
-                            {
-                                block2 = "-";
-                            }
-                            if (lotsplit[0].Length == 1)
-                            {
-                                lot1 = "0" + lotsplit[0];
-                            }
-                            if (lotsplit[0].Length == 2)
-                            {
-                                lot1 = lotsplit[0];
-                            }
-                            lot2 = GlobalClass.After(lot, "/");
-                            if (lot2 == "")
-                            {
-                                lot2 = "-";
-                            }
-
-                            unit1 = GlobalClass.Before(unit, "/");
-                            if (unit1 != "")
-                            {
-                                bool containsLetter = Regex.IsMatch(unit1, "[A-Z]");
-                                if (containsLetter == true)
+                                if (townshipcode == "24")
                                 {
-                                    unit = unit1;
+                                    uniqueidMap = Regex.Replace(uniqueidMap, @"\s+", " ");
+                                    IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                    SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                    sTaxSelect.SelectByText("Unique ID");
+                                    driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).Clear();
+                                    driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                                    driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
                                 }
                                 else
                                 {
-                                    if (unit1.Length == 3)
-                                    {
-                                        unit = unit1;
-                                    }
-                                    if (unit1.Length == 1)
-                                    {
-                                        unit = "00" + unit1;
-                                    }
-                                    if (unit1.Length == 2)
-                                    {
-                                        unit = "0" + unit1;
-                                    }
+                                    HttpContext.Current.Session["NoTax_NJ" + countynameCT + township] = "No_Tax";
+                                    driver.Quit();
+                                    return "No Data in Tax Site";
                                 }
                             }
-                            else
-                            {
-                                unit = unit1;
-                            }
-                            uniqueidMap = block1 + block2 + "-" + lot1 + lot2 + "-" + unit;
-                        }
-                        if (townshipcode == "03" || townshipcode == "08" || townshipcode == "09" || townshipcode == "11" || townshipcode == "12" || townshipcode == "14" || townshipcode == "15" || townshipcode == "18" || townshipcode == "19" || townshipcode == "20" || townshipcode == "23" || townshipcode == "26" || townshipcode == "27")
-                        {
-                            uniqueidMap = assessment_id;
-                        }
-                        if (townshipcode == "32")
-                        {
-
-                            uniqueidMap = assessment_id.TrimStart('0');
-                        }
-                        if (townshipcode == "05")
-                        {
-
-                            string[] uniqueidsplit = MapLot.Split(' ');
-                            string map = "", block = "", lot = "", unit = "";
-                            string block1 = "", block2 = "", lot1 = "", lot2 = "", unit1 = "", unit2 = "";
-                            map = uniqueidsplit[0];
-                            lot = uniqueidsplit[2];
-                            unit = uniqueidsplit[3];
-
-                            map = GlobalClass.Before(map, "/");
-                            lot = GlobalClass.Before(lot, "/");
-                            unit = GlobalClass.Before(unit, "/");
-
-                            if (lot.Length == 1)
-                            {
-                                lot = "00" + lot;
-                            }
-                            else if (lot.Length == 2)
-                            {
-                                lot = "0" + lot;
-                            }
-                            else if (lot.Length == 0)
-                            {
-                                lot = "000";
-                            }
-
-                            unit = GlobalClass.Before(unit, "/");
-                            if (unit.Trim() == "")
-                            {
-                                uniqueidMap = map + lot;
-                            }
-                            else
-                            {
-                                uniqueidMap = map + lot + "-" + unit;
-                            }
-                            assessment_id = uniqueidMap;
-                        }
-                        if (townshipcode == "16")
-                        {
-
-                            string[] uniqueidsplit = MapLot.Split(' ');
-                            string map = "", block = "", lot = "", unit = "";
-                            string block1 = "", block2 = "", lot1 = "", lot2 = "", unit1 = "", unit2 = "";
-                            map = uniqueidsplit[0];
-                            block = uniqueidsplit[1];
-                            lot = uniqueidsplit[2];
-                            unit = uniqueidsplit[3];
-
-                            map = GlobalClass.Before(map, "/");
-                            block = GlobalClass.Before(block, "/");
-                            lot = GlobalClass.Before(lot, "/");
-                            unit = GlobalClass.Before(unit, "/");
-                            uniqueidMap = map + "-" + block + "-" + lot + "-" + unit;
-                            //assessment_id = uniqueidMap;
-                        }
-                        string BasicDetails = PropertyAddress + "~" + MapLot + "~" + assessment_id + "~" + Owner + "~" + Assessment + "~" + Appraisal + "~" + ParcelID + "~" + BuildingCount;
-                        string property1 = "Property Address~Mblu~Account Number~Owner Name~Assessment~Appraisal~PID~Building Count";
-
-                        dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property1 + "' where Id = '2160'");
-                        gc.insert_date(orderNumber, assessment_id, 2160, BasicDetails, 1, DateTime.Now);
-                        //Property Address~Mblu~Account Number~Owner Name~Assessment~Appraisal~PID~Building Count
-                        assessment_id = assessment_id.Replace("-", "");
-                        gc.CreatePdf(orderNumber, assessment_id, "Search Result", driver, "CT", countynameCT);
-
-                        //Current Appraisal Valuation
-                        IWebElement ICurrentValueAppDetails = driver.FindElement(By.XPath("//*[@id='MainContent_grdCurrentValueAppr']/tbody"));
-                        IList<IWebElement> ICurrentValueAppDetailsRow = ICurrentValueAppDetails.FindElements(By.TagName("tr"));
-                        IList<IWebElement> IICurrentValueAppDetailsTD;
-                        foreach (IWebElement row in ICurrentValueAppDetailsRow)
-                        {
-                            IICurrentValueAppDetailsTD = row.FindElements(By.TagName("td"));
-                            if (IICurrentValueAppDetailsTD.Count != 0 && IICurrentValueAppDetailsTD.Count == 4 && !row.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAppraisal = "Appraisal" + "~" + IICurrentValueAppDetailsTD[0].Text + "~" + IICurrentValueAppDetailsTD[1].Text + "~" + IICurrentValueAppDetailsTD[2].Text + "~" + IICurrentValueAppDetailsTD[3].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2161, ValueAppraisal, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                            if (IICurrentValueAppDetailsTD.Count != 0 && IICurrentValueAppDetailsTD.Count == 2 && !row.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAppraisal = "Appraisal" + "~" + IICurrentValueAppDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IICurrentValueAppDetailsTD[1].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2161, ValueAppraisal, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                        }
-                        string property2 = "Type~Valuation Year~Improvements~Land~Total";
-                        dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property2 + "' where Id = '2161'");
-                        //Current Assessment Valuation
-                        IWebElement ICurrentValueAssDetails = driver.FindElement(By.XPath("//*[@id='MainContent_grdCurrentValueAsmt']/tbody"));
-                        IList<IWebElement> ICurrentValueAssDetailsRow = ICurrentValueAssDetails.FindElements(By.TagName("tr"));
-                        IList<IWebElement> IICurrentValueAssDetailsTD;
-                        foreach (IWebElement assessment in ICurrentValueAssDetailsRow)
-                        {
-                            IICurrentValueAssDetailsTD = assessment.FindElements(By.TagName("td"));
-                            if (IICurrentValueAssDetailsTD.Count != 0 && IICurrentValueAssDetailsTD.Count == 4 && !assessment.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAssessment = "Assessment" + "~" + IICurrentValueAssDetailsTD[0].Text + "~" + IICurrentValueAssDetailsTD[1].Text + "~" + IICurrentValueAssDetailsTD[2].Text + "~" + IICurrentValueAssDetailsTD[3].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2161, ValueAssessment, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                            if (IICurrentValueAssDetailsTD.Count != 0 && IICurrentValueAssDetailsTD.Count == 2 && !assessment.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAssessment = "Assessment" + "~" + IICurrentValueAssDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IICurrentValueAssDetailsTD[1].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2161, ValueAssessment, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                        }
-
-
-                        //Owner of Record
-                        string ownerOnly = "", ownerAddress = "";
-
-                        string Propertyhead = "";
-                        string Propertyresult = "";
-
-                        IWebElement multitableElement1 = driver.FindElement(By.XPath("//*[@id='MainContent_grdSales']/tbody"));
-                        IList<IWebElement> multitableRow1 = multitableElement1.FindElements(By.TagName("tr"));
-                        IList<IWebElement> multirowTD1;
-                        IList<IWebElement> multirowTH1;
-                        foreach (IWebElement row in multitableRow1)
-                        {
-                            multirowTH1 = row.FindElements(By.TagName("tH"));
-                            multirowTD1 = row.FindElements(By.TagName("td"));
-                            if (multirowTD1.Count != 0 && multirowTD1[0].Text != " ")
-                            {
-                                for (int i = 0; i < multirowTD1.Count; i++)
-                                {
-                                    Propertyresult += multirowTD1[i].Text + "~";
-                                }
-                                Propertyresult = Propertyresult.TrimEnd('~');
-                                gc.insert_date(orderNumber, assessment_id, 2162, Propertyresult, 1, DateTime.Now);
-                                Propertyresult = "";
-                            }
-                            if (multirowTH1.Count != 0 && multirowTH1[0].Text != " ")
-                            {
-                                for (int i = 0; i < multirowTH1.Count; i++)
-                                {
-
-                                    Propertyhead += multirowTH1[i].Text + "~";
-                                }
-                                Propertyhead = Propertyhead.TrimEnd('~');
-                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Propertyhead + "' where Id = '2162'");
-
-                            }
-
-
-                        }
-
-                        // string property3 = "Address~Owner~Sale Price~Certificate~Book Page~Instrument~Sale Date";
-
-                        //Building Information
-                        string YearBuilt = "", LivingArea = "", ReplacementCost = "", BuildingPercent = "", LessDepreciation = "";
-                        IWebElement IYearBuilt = driver.FindElement(By.XPath("//*[@id='MainContent_ctl01_tblBldg']/tbody"));
-                        IList<IWebElement> IYearBuiltRow = IYearBuilt.FindElements(By.TagName("tr"));
-                        IList<IWebElement> IYearBuiltTD;
-                        foreach (IWebElement built in IYearBuiltRow)
-                        {
-                            IYearBuiltTD = built.FindElements(By.TagName("td"));
-                            if (IYearBuiltTD.Count != 0 && built.Text.Contains("Year Built"))
-                            {
-                                YearBuilt = IYearBuiltTD[1].Text;
-                            }
-                            if (IYearBuiltTD.Count != 0 && built.Text.Contains("Living Area"))
-                            {
-                                LivingArea = IYearBuiltTD[1].Text;
-                            }
-                            if (IYearBuiltTD.Count != 0 && built.Text.Contains("Replacement Cost"))
-                            {
-                                ReplacementCost = IYearBuiltTD[1].Text;
-                            }
-                            if (IYearBuiltTD.Count != 0 && built.Text.Contains("Building Percent Good"))
-                            {
-                                BuildingPercent = IYearBuiltTD[1].Text;
-                            }
-                            if (IYearBuiltTD.Count != 0 && built.Text.Contains("Less Depreciation"))
-                            {
-                                LessDepreciation = IYearBuiltTD[1].Text;
-                            }
-                        }
-
-                        string YearBuiltDetails = YearBuilt + "~" + LivingArea + "~" + ReplacementCost + "~" + BuildingPercent + "~" + LessDepreciation;
-                        gc.insert_date(orderNumber, assessment_id, 2163, YearBuiltDetails, 1, DateTime.Now);
-                        string property4 = "Year Built~Living Area~Replacement Cost~Building Percent Good~Replacement Cost Less Depreciation";
-                        dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property4 + "' where Id = '2163'");
-
-                        //Year Built~Living Area~Replacement Cost~Building Percent Good~Replacement Cost Less Depreciation
-
-                        //Land 
-                        string UseCode = "", Description = "", Zone = "", Neighborhood = "", LandAppr = "", Category = "", Size = "", Frontage = "", Depth = "", AssessedValue = "", AppraisedValue = "";
-                        IWebElement ILandUseDetails = driver.FindElement(By.XPath("//*[@id='MainContent_tblLandUse']/tbody"));
-                        IList<IWebElement> ILandUseDetailsRow = ILandUseDetails.FindElements(By.TagName("tr"));
-                        IList<IWebElement> ILandUseDetailsTD;
-                        foreach (IWebElement use in ILandUseDetailsRow)
-                        {
-                            ILandUseDetailsTD = use.FindElements(By.TagName("td"));
-                            if (ILandUseDetailsTD.Count != 0 && use.Text.Contains("Use Code"))
-                            {
-                                UseCode = ILandUseDetailsTD[1].Text;
-                            }
-                            if (ILandUseDetailsTD.Count != 0 && use.Text.Contains("Description"))
-                            {
-                                Description = ILandUseDetailsTD[1].Text;
-                            }
-                            if (ILandUseDetailsTD.Count != 0 && use.Text.Contains("Zone"))
-                            {
-                                Zone = ILandUseDetailsTD[1].Text;
-                            }
-                            if (ILandUseDetailsTD.Count != 0 && use.Text.Contains("Neighborhood"))
-                            {
-                                Neighborhood = ILandUseDetailsTD[1].Text;
-                            }
-                            if (ILandUseDetailsTD.Count != 0 && use.Text.Contains("Alt Land Appr"))
-                            {
-                                LandAppr = ILandUseDetailsTD[1].Text;
-                            }
-                            if (ILandUseDetailsTD.Count != 0 && use.Text.Contains("Category"))
-                            {
-                                Category = ILandUseDetailsTD[1].Text;
-                            }
-                        }
-
-                        IWebElement ILandLineDetails = driver.FindElement(By.XPath("//*[@id='MainContent_tblLand']/tbody"));
-                        IList<IWebElement> ILandLineDetailsRow = ILandLineDetails.FindElements(By.TagName("tr"));
-                        IList<IWebElement> ILandLineDetailsTD;
-                        foreach (IWebElement line in ILandLineDetailsRow)
-                        {
-                            ILandLineDetailsTD = line.FindElements(By.TagName("td"));
-
-                            if (ILandLineDetailsTD.Count != 0 && line.Text.Contains("Size (Acres)"))
-                            {
-                                Size = ILandLineDetailsTD[1].Text;
-                            }
-                            if (ILandLineDetailsTD.Count != 0 && line.Text.Contains("Frontage"))
-                            {
-                                Frontage = ILandLineDetailsTD[1].Text;
-                            }
-                            if (ILandLineDetailsTD.Count != 0 && line.Text.Contains("Depth"))
-                            {
-                                Depth = ILandLineDetailsTD[1].Text;
-                            }
-                            if (ILandLineDetailsTD.Count != 0 && line.Text.Contains("Assessed Value"))
-                            {
-                                AssessedValue = ILandLineDetailsTD[1].Text;
-                            }
-                            if (ILandLineDetailsTD.Count != 0 && line.Text.Contains("Appraised Value"))
-                            {
-                                AppraisedValue = ILandLineDetailsTD[1].Text;
-                            }
-                        }
-
-                        string LandDetails = UseCode + "~" + Description + "~" + Zone + "~" + Neighborhood + "~" + LandAppr + "~" + Category + "~" + Size + "~" + Frontage + "~" + Depth + "~" + AssessedValue + "~" + AppraisedValue;
-                        gc.insert_date(orderNumber, assessment_id, 2164, LandDetails, 1, DateTime.Now);
-                        //Use Code~Description~Zone~Neighborhood~Alt Land Appr~Category~Size(Acres)~Frontage~Depth~Assessed Value~Appraised Value
-
-                        string property5 = "Use Code~Description~Zone~Neighborhood~Alt Land Appr~Category~Size(Acres)~Frontage~Depth~Assessed Value~Appraised Value";
-                        dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property5 + "' where Id = '2164'");
-
-
-                        //Appraisal Valuation History
-                        IWebElement IValueAppDetails = driver.FindElement(By.XPath("//*[@id='MainContent_grdHistoryValuesAppr']/tbody"));
-                        IList<IWebElement> IValueAppDetailsRow = IValueAppDetails.FindElements(By.TagName("tr"));
-                        IList<IWebElement> IValueAppDetailsTD;
-                        foreach (IWebElement row in IValueAppDetailsRow)
-                        {
-                            IValueAppDetailsTD = row.FindElements(By.TagName("td"));
-                            if (IValueAppDetailsTD.Count != 0 && IValueAppDetailsTD.Count == 4 && !row.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAppraisal = "Appraisal" + "~" + IValueAppDetailsTD[0].Text + "~" + IValueAppDetailsTD[1].Text + "~" + IValueAppDetailsTD[2].Text + "~" + IValueAppDetailsTD[3].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2165, ValueAppraisal, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                            if (IValueAppDetailsTD.Count != 0 && IValueAppDetailsTD.Count == 2 && !row.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAppraisal = "Appraisal" + "~" + IValueAppDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IValueAppDetailsTD[1].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2165, ValueAppraisal, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                        }
-
-                        //Assessment Valuation History
-                        IWebElement IValueAssDetails = driver.FindElement(By.XPath("//*[@id='MainContent_grdHistoryValuesAsmt']/tbody"));
-                        IList<IWebElement> IValueAssDetailsRow = IValueAssDetails.FindElements(By.TagName("tr"));
-                        IList<IWebElement> IValueAssDetailsTD;
-                        foreach (IWebElement assessment in IValueAssDetailsRow)
-                        {
-                            IValueAssDetailsTD = assessment.FindElements(By.TagName("td"));
-                            if (IValueAssDetailsTD.Count != 0 && IValueAssDetailsTD.Count == 4 && !assessment.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAssessment = "Assessment" + "~" + IValueAssDetailsTD[0].Text + "~" + IValueAssDetailsTD[1].Text + "~" + IValueAssDetailsTD[2].Text + "~" + IValueAssDetailsTD[3].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2165, ValueAssessment, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                            if (IValueAssDetailsTD.Count != 0 && IValueAssDetailsTD.Count == 2 && !assessment.Text.Contains("Valuation Year"))
-                            {
-                                string ValueAssessment = "Assessment" + "~" + IValueAssDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IValueAssDetailsTD[1].Text;
-                                gc.insert_date(orderNumber, assessment_id, 2165, ValueAssessment, 1, DateTime.Now);
-                                //Type~Valuation Year~Improvements~Land~Total
-                            }
-                        }
-
-                        string property6 = "Type~Valuation Year~Improvements~Land~Total";
-                        dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property6 + "' where Id = '2165'");
-                        string urlpdf = "http://images.vgsi.com/cards/WestportCTCards//" + ParcelID + ".pdf";
-                        try
-                        {
-                            gc.downloadfile(urlpdf, orderNumber, assessment_id, "Propertypdf", "CT", countynameCT);
-                            Thread.Sleep(3000);
                         }
                         catch { }
-                        if (townshipcode == "31")
+                        string BillNumber = "";
+                        List<string> InformURL = new List<string>();
+                        List<string> HistoryURL = new List<string>();
+                        List<string> DownloadURL = new List<string>();
+                        List<string> SewerTaxinfo = new List<string>();
+                        gc.CreatePdf(orderNumber, assessment_id, "Tax Search Result", driver, "CT", countynameCT);
+                        try
                         {
-                            try
+                            string Nodata = driver.FindElement(By.XPath("//*[@id='notification']/div/span")).Text;
+                            if (Nodata.Contains("No record is found"))
                             {
-                                string FilePath = gc.filePath(orderNumber, assessment_id) + "Propertypdf.pdf";
-                                PdfReader reader;
-                                string pdfData;
-                                string pdftext = "";
+                                HttpContext.Current.Session["NoTax_NJ" + countynameCT + township] = "No_Tax";
+                                driver.Quit();
+                                return "No Data in Tax Site";
+                            }
+                        }
+                        catch { }
+                        //Tax Bill 
+                        IWebElement IBillDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/form[2]/div/table/tbody"));
+                        IList<IWebElement> IBillDetailsRow = IBillDetails.FindElements(By.TagName("tr"));
+                        IList<IWebElement> IBillDetailsTD;
+                        foreach (IWebElement bill in IBillDetailsRow)
+                        {
+                            IBillDetailsTD = bill.FindElements(By.TagName("td"));
+                            if (IBillDetailsTD.Count != 0 && !bill.Text.Contains("BILL"))
+                            {
                                 try
                                 {
-                                    reader = new PdfReader(FilePath);
-                                    String textFromPage = PdfTextExtractor.GetTextFromPage(reader, 1);
-                                    System.Diagnostics.Debug.WriteLine("" + textFromPage);
-
-                                    pdftext = textFromPage;
+                                    string BillDetails = IBillDetailsTD[0].Text + "~" + IBillDetailsTD[1].Text + "~" + IBillDetailsTD[2].Text + "~" + IBillDetailsTD[3].Text + "~" + IBillDetailsTD[4].Text + "~" + IBillDetailsTD[5].Text;
+                                    gc.insert_date(orderNumber, assessment_id, 2167, BillDetails, 1, DateTime.Now);
+                                    //Bill~Name/Address~Property/Vehicle~Total Tax~Paid~Outstanding
                                 }
                                 catch { }
+                            }
+                        }
+                        string tax1 = "Bill~Name/Address~Property/Vehicle~Total Tax~Paid~Outstanding";
+                        dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + tax1 + "' where Id = '2167'");
 
+                        try
+                        {
+                            string currentyear = Convert.ToString(DateTime.Now.Year - 1);
+                            IWebElement ITaxClick = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/form[2]/div/table/tbody"));
+                            IList<IWebElement> ITaxClickRow = ITaxClick.FindElements(By.TagName("tr"));
+                            IList<IWebElement> ITaxClickTD;
+                            for (int i = 0; i < ITaxClickRow.Count; i++)
+                            {
+                                if (ITaxClickRow.Count() != 0)
+                                {
+                                    IList<IWebElement> ITaxClickTag;
+                                    ITaxClickTD = ITaxClickRow[i].FindElements(By.TagName("td"));
+                                    if (ITaxClickTD.Count != 0)
+                                    {
+                                        BillNumber = GlobalClass.Before(ITaxClickTD[0].Text, "\r\n");
+                                        string[] Yearsplit = BillNumber.Split('-');
+                                        string Yeartax = Yearsplit[0];
 
-                                string tableassess = gc.Between(pdftext, "Account #", "Bldg #:").Trim();
-                                if (tableassess.Length == 4)
-                                {
-                                    tableassess = "0" + tableassess;
+                                        if (Yeartax.Trim() == currentyear.Trim())
+                                        {
+                                            ITaxClickTag = ITaxClickRow[i].FindElements(By.TagName("a"));
+                                            foreach (IWebElement click in ITaxClickTag)
+                                            {
+                                                if (ITaxClickRow.Count() != 0)
+                                                {
+                                                    string strLink = click.GetAttribute("title");
+                                                    if (strLink.Contains("Information on this account"))
+                                                    {
+                                                        InformURL.Add(click.GetAttribute("href"));
+                                                    }
+                                                    if (strLink.Contains("Tax Payment History"))
+                                                    {
+                                                        HistoryURL.Add(click.GetAttribute("href"));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
-                                if (tableassess.Length == 3)
+                            }
+                        }
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.Id("sewerMenu")).Click();
+                            Thread.Sleep(3000);
+                            gc.CreatePdf(orderNumber, assessment_id, "sewer Menu click", driver, "CT", countynameCT);
+                            if (townshipcode == "04" || townshipcode == "10" || townshipcode == "17")
+                            {
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Parcel Number");
+                                driver.FindElement(By.Name("uniqueId")).SendKeys(uniqueidMap);
+                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+                            }
+                            if (townshipcode == "13" || townshipcode == "22" || townshipcode == "02" || townshipcode == "03" || townshipcode == "08" || townshipcode == "09" || townshipcode == "11" || townshipcode == "12" || townshipcode == "14" || townshipcode == "15" || townshipcode == "18" || townshipcode == "19" || townshipcode == "20" || townshipcode == "23" || townshipcode == "26" || townshipcode == "27" || townshipcode == "32" || townshipcode == "30" || townshipcode == "21" || townshipcode == "07" || townshipcode == "25" || townshipcode == "25" || townshipcode == "01" || townshipcode == "28" || townshipcode == "05" || townshipcode == "24" || townshipcode == "31")
+                            {
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Unique ID");
+                                driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+                            }
+                            if (townshipcode == "29")
+                            {
+                                string taxaddress = "";
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Property Location");
+                                driver.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
+                                driver.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
+                                driver.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+                            }
+                            gc.CreatePdf(orderNumber, assessment_id, "Unique ID sewer Result", driver, "CT", countynameCT);
+                            IWebElement Sewerdetailtable = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/center/div/table/tbody"));
+                            IList<IWebElement> Sewerdetailrow = Sewerdetailtable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> swerdetailTD;
+                            foreach (IWebElement Sewerdetail in Sewerdetailrow)
+                            {
+                                swerdetailTD = Sewerdetail.FindElements(By.TagName("td"));
+                                if (swerdetailTD.Count() != 0)
                                 {
-                                    tableassess = "00" + tableassess;
+                                    string Sewerdetailresult = swerdetailTD[0].Text + "~" + swerdetailTD[1].Text + "~" + swerdetailTD[2].Text + "~" + swerdetailTD[3].Text + "~" + swerdetailTD[4].Text;
+                                    gc.insert_date(orderNumber, assessment_id, 2254, Sewerdetailresult, 1, DateTime.Now);
                                 }
-                                uniqueidMap = tableassess.Trim();
-                                assessment_id = uniqueidMap;
+                            }
+
+                            try
+                            {
+                                string currentyear = Convert.ToString(DateTime.Now.Year - 1);
+                                IWebElement ITaxClick = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/center/div/table/tbody"));
+                                IList<IWebElement> ITaxClickRow = ITaxClick.FindElements(By.TagName("tr"));
+                                IList<IWebElement> ITaxClickTD;
+                                for (int i = 0; i < ITaxClickRow.Count; i++)
+                                {
+                                    if (ITaxClickRow.Count() != 0)
+                                    {
+                                        IList<IWebElement> ITaxClickTag;
+                                        ITaxClickTD = ITaxClickRow[i].FindElements(By.TagName("td"));
+                                        if (ITaxClickRow.Count - 1 == i)
+                                        {
+                                            BillNumber = GlobalClass.Before(ITaxClickTD[0].Text, "\r\n");
+                                            string[] Yearsplit = BillNumber.Split('-');
+                                            string Yeartax = Yearsplit[0];
+                                            ITaxClickTag = ITaxClickRow[i].FindElements(By.TagName("a"));
+                                            foreach (IWebElement click in ITaxClickTag)
+                                            {
+                                                if (ITaxClickRow.Count() != 0)
+                                                {
+                                                    string strLink = click.GetAttribute("title");
+                                                    if (strLink.Contains("Information on this account"))
+                                                    {
+                                                        SewerTaxinfo.Add(click.GetAttribute("href"));
+                                                    }
+                                                    //if (strLink.Contains("Tax Payment History"))
+                                                    //{
+                                                    //    HistoryURL.Add(click.GetAttribute("href"));
+                                                    //}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             catch { }
                         }
+                        catch { }
+                        foreach (string Sewerinfo in SewerTaxinfo)
+                        {
+                            driver.Navigate().GoToUrl(Sewerinfo);
+                            Thread.Sleep(2000);
+                            gc.CreatePdf(orderNumber, assessment_id, "Sewer Information Result", driver, "CT", countynameCT);
+                        }
+                        foreach (string information in InformURL)
+                        {
+                            driver.Navigate().GoToUrl(information);
+                            try
+                            {
+                                gc.CreatePdf(orderNumber, assessment_id, "Tax Information Result", driver, "CT", countynameCT);
+                                //Tax Information
+                                string TaxBill = "", GrossAssessment = "", UniqueID = "", Exemptions = "", District = "", NetAssessment = "", Name = "", TownMillRate = "", CareOf = "", PropertyLocation = "", MBL = "", TownBenefit = "", VolumePage = "", ElderlyBenefit = "";
+                                IWebElement ITaxInformDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div[1]/table[1]/tbody"));
+                                IList<IWebElement> ITaxInformDetailsRow = ITaxInformDetails.FindElements(By.TagName("tr"));
+                                IList<IWebElement> ITaxInformDetailsTD;
+                                foreach (IWebElement inform in ITaxInformDetailsRow)
+                                {
+                                    ITaxInformDetailsTD = inform.FindElements(By.TagName("td"));
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("Bill #") && inform.Text.Contains("Gross Assessment"))
+                                    {
+                                        TaxBill = ITaxInformDetailsTD[1].Text;
+                                        GrossAssessment = ITaxInformDetailsTD[3].Text;
+                                    }
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("Unique ID") && inform.Text.Contains("Exemptions"))
+                                    {
+                                        UniqueID = ITaxInformDetailsTD[1].Text;
+                                        Exemptions = ITaxInformDetailsTD[3].Text;
+                                    }
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("District") && inform.Text.Contains("Net Assessment"))
+                                    {
+                                        District = ITaxInformDetailsTD[1].Text;
+                                        NetAssessment = ITaxInformDetailsTD[3].Text;
+                                    }
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("Name") && inform.Text.Contains("Town Mill Rate"))
+                                    {
+                                        Name = ITaxInformDetailsTD[1].Text;
+                                        TownMillRate = ITaxInformDetailsTD[3].Text;
+                                    }
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("Care Of"))
+                                    {
+                                        CareOf = ITaxInformDetailsTD[1].Text;
+                                    }
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("Property Location"))
+                                    {
+                                        PropertyLocation = ITaxInformDetailsTD[1].Text;
+                                    }
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("MBL") && inform.Text.Contains("Town Benefit"))
+                                    {
+                                        MBL = ITaxInformDetailsTD[1].Text;
+                                        TownBenefit = ITaxInformDetailsTD[3].Text;
+                                    }
+                                    if (ITaxInformDetailsTD.Count != 0 && inform.Text.Contains("Elderly Benefit (C)") && inform.Text.Contains("Volume & Page"))
+                                    {
+                                        VolumePage = ITaxInformDetailsTD[1].Text;
+                                        ElderlyBenefit = ITaxInformDetailsTD[3].Text;
+                                    }
+                                }
+                                string TaxInformation = TaxBill + "~" + GrossAssessment + "~" + UniqueID + "~" + Exemptions + "~" + District + "~" + NetAssessment + "~" + Name + "~" + TownMillRate + "~" + CareOf + "~" + PropertyLocation + "~" + MBL + "~" + TownBenefit + "~" + VolumePage + "~" + ElderlyBenefit;
+                                gc.insert_date(orderNumber, assessment_id, 2168, TaxInformation, 1, DateTime.Now);
+                                //Bill~Gross Assessment~Unique ID~Exemptions~District~Net Assessment~Name~Town Mill Rate~Care Of~Property Location~MBL~Town Benefit~Volume & Page~Elderly Benefit (C)
+
+                                string tax2 = "Bill~Gross Assessment~Unique ID~Exemptions~District~Net Assessment~Name~Town Mill Rate~Care Of~Property Location~MBL~Town Benefit~Volume & Page~Elderly Benefit (C)";
+                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + tax2 + "' where Id = '2168'");
 
 
+                                string Propertyhead = "";
+                                string Propertyresult = "";
+                                int counttaxbill = 0;
+                                try
+                                {
+                                    IWebElement multitableElement1 = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div[1]/table[2]/tbody/tr/td[1]/table/tbody"));
+                                    IList<IWebElement> multitableRow1 = multitableElement1.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> multirowTD1;
+                                    // IList<IWebElement> multirowTH1;
+                                    foreach (IWebElement row in multitableRow1)
+                                    {
+                                        //multirowTH1 = row.FindElements(By.TagName("tH"));
+                                        multirowTD1 = row.FindElements(By.TagName("td"));
+                                        if (!row.Text.Contains("Total payments") && row.Text.Trim() != "")
+                                        {
+                                            if (row.Text.Contains("Installment"))
+                                            {
+                                                for (int i = 0; i < multirowTD1.Count; i++)
+                                                {
+
+                                                    Propertyhead += multirowTD1[i].Text + "~";
+                                                }
+                                                Propertyhead = Propertyhead.TrimEnd('~');
+                                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Propertyhead + "' where Id = '2169'");
+
+                                            }
+                                            else
+                                            {
+                                                for (int i = 0; i < multirowTD1.Count; i++)
+                                                {
+                                                    Propertyresult += multirowTD1[i].Text + "~";
+                                                }
+                                                Propertyresult = Propertyresult.TrimEnd('~');
+                                                gc.insert_date(orderNumber, assessment_id, 2169, Propertyresult, 1, DateTime.Now);
+                                                Propertyresult = "";
+                                                counttaxbill = multirowTD1.Count;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            for (int i = 0; i < counttaxbill; i++)
+                                            {
+                                                Propertyresult += multirowTD1[i].Text + "~";
+                                            }
+                                            Propertyresult = Propertyresult.TrimEnd('~');
+                                            gc.insert_date(orderNumber, assessment_id, 2169, Propertyresult, 1, DateTime.Now);
+                                            Propertyresult = "";
+
+                                        }
+                                    }
+                                }
+                                catch { }
+                                //Tax Payment Details     
+
+                                IWebElement IPaymentDetails = null;
+                                try
+                                {
+                                    IPaymentDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div[2]/table/tbody"));
+                                }
+                                catch
+                                { }
+                                try
+                                {
+                                    if (IPaymentDetails == null)
+                                    {
+                                        IPaymentDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/form[2]/div/table/tbody"));
+                                    }
+                                }
+                                catch { }
+                                try
+                                {
+                                    IList<IWebElement> IPaymentDetailsRow = IPaymentDetails.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> IPaymentDetailsTD;
+                                    foreach (IWebElement bill in IPaymentDetailsRow)
+                                    {
+                                        IPaymentDetailsTD = bill.FindElements(By.TagName("td"));
+                                        if (IPaymentDetailsTD.Count != 0 && !bill.Text.Contains("PAY DATE"))
+                                        {
+                                            string PaymentDetails = IPaymentDetailsTD[0].Text + "~" + IPaymentDetailsTD[1].Text + "~" + IPaymentDetailsTD[2].Text + "~" + IPaymentDetailsTD[3].Text + "~" + IPaymentDetailsTD[4].Text + "~" + IPaymentDetailsTD[5].Text + "~" + IPaymentDetailsTD[6].Text;
+                                            gc.insert_date(orderNumber, assessment_id, 2170, PaymentDetails, 1, DateTime.Now);
+                                            //Pay Date~Type~Tax/Principal~Interest~Lien~Fee~Total
+                                        }
+                                    }
+                                    string tax3 = "Pay Date~Type~Tax/Principal~Interest~Lien~Fee~Total";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + tax3 + "' where Id = '2170'");
+                                }
+                                catch { }
+                                try
+                                {
+                                    string strTotalPayment = GlobalClass.After(driver.FindElement(By.XPath("//*[@id='content']/div/div/div/center/div[1]")).Text, ":").Trim();
+                                    string PaymentDetails = "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + strTotalPayment;
+
+                                    gc.insert_date(orderNumber, assessment_id, 2170, PaymentDetails, 1, DateTime.Now);
+                                    //Pay Date~Type~Tax/Principal~Interest~Lien~Fee~Total
+                                }
+                                catch { }
+
+                                //Tax Total Due 
+                                string TaxPrincBint = "", InterestDue = "", LienDue = "", FeeDue = "", TotalDue = "";
+                                IWebElement IDueDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div[1]/table[2]/tbody/tr/td[2]/table/tbody[2]"));
+                                IList<IWebElement> IDueDetailsRow = IDueDetails.FindElements(By.TagName("tr"));
+                                IList<IWebElement> IDueDetailsTD;
+                                foreach (IWebElement due in IDueDetailsRow)
+                                {
+                                    IDueDetailsTD = due.FindElements(By.TagName("td"));
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Tax/Princ/Bint Due"))
+                                    {
+                                        TaxPrincBint = IDueDetailsTD[1].Text;
+                                    }
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Interest Due"))
+                                    {
+                                        InterestDue = IDueDetailsTD[1].Text;
+                                    }
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Lien Due"))
+                                    {
+                                        LienDue = IDueDetailsTD[1].Text;
+                                    }
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Fee Due"))
+                                    {
+                                        FeeDue = IDueDetailsTD[1].Text;
+                                    }
+                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Total Due Now"))
+                                    {
+                                        TotalDue = IDueDetailsTD[1].Text;
+                                    }
+                                }
+                                string DueDetails = TaxPrincBint + "~" + InterestDue + "~" + LienDue + "~" + FeeDue + "~" + TotalDue;
+                                gc.insert_date(orderNumber, assessment_id, 2171, DueDetails, 1, DateTime.Now);
+                                //Tax/Princ/Bint Due~Interest Due~Lien Due~Fee Due~Total Due
+                            }
+                            catch { }
+                            string tax5 = "Tax/Princ/Bint Due~Interest Due~Lien Due~Fee Due~Total Due";
+                            dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + tax5 + "' where Id = '2171'");
+
+                        }
+                        foreach (string strhistory in HistoryURL)
+                        {
+                            driver.Navigate().GoToUrl(strhistory);
+                            Thread.Sleep(2000);
+                            try
+                            {
+                                //Tax Bill History
+                                gc.CreatePdf(orderNumber, assessment_id, "Tax Bill History Result", driver, "CT", countynameCT);
+                                IWebElement IBillHistoryDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div/table/tbody"));
+                                IList<IWebElement> IBillHistoryDetailsRow = IBillHistoryDetails.FindElements(By.TagName("tr"));
+                                IList<IWebElement> IBillHistoryDetailsTD;
+                                foreach (IWebElement billHistory in IBillHistoryDetailsRow)
+                                {
+                                    IBillHistoryDetailsTD = billHistory.FindElements(By.TagName("td"));
+                                    if (IBillHistoryDetailsTD.Count != 0 && !billHistory.Text.Contains("BILL #"))
+                                    {
+                                        string BillHistoryDetails = IBillHistoryDetailsTD[0].Text + "~" + IBillHistoryDetailsTD[1].Text + "~" + IBillHistoryDetailsTD[2].Text + "~" + IBillHistoryDetailsTD[3].Text + "~" + IBillHistoryDetailsTD[4].Text + "~" + IBillHistoryDetailsTD[5].Text + "~" + IBillHistoryDetailsTD[6].Text + "~" + IBillHistoryDetailsTD[7].Text;
+                                        gc.insert_date(orderNumber, assessment_id, 2172, BillHistoryDetails, 1, DateTime.Now);
+                                        //Bill~Type~Paid Date~Tax~Interest~Lien~Fee~Total
+                                    }
+                                }
+                            }
+                            catch { }
+                            string tax6 = "Bill~Type~Paid Date~Tax~Interest~Lien~Fee~Total";
+                            dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + tax6 + "' where Id = '2172'");
+
+                        }
+                        int count = 0;
+                        string filename = "";
+
+                        var chromeOptions = new ChromeOptions();
+                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
+                        chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
+                        chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
+                        chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+                        chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+                        var driver1 = new ChromeDriver(chromeOptions);
+                        Array.ForEach(Directory.GetFiles(@downloadDirectory), File.Delete);
+                        try
+                        {
+
+                            driver1.Navigate().GoToUrl(urlTax);
+                            Thread.Sleep(2000);
+                            if (townshipcode == "04" || townshipcode == "10" || townshipcode == "17")
+                            {
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Parcel Number");
+                                driver.FindElement(By.Name("uniqueId")).SendKeys(uniqueidMap);
+                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+                            }
+                            if (townshipcode == "13" || townshipcode == "22" || townshipcode == "02" || townshipcode == "03" || townshipcode == "08" || townshipcode == "09" || townshipcode == "11" || townshipcode == "12" || townshipcode == "14" || townshipcode == "15" || townshipcode == "18" || townshipcode == "19" || townshipcode == "20" || townshipcode == "23" || townshipcode == "26" || townshipcode == "27" || townshipcode == "32" || townshipcode == "30" || townshipcode == "21" || townshipcode == "07" || townshipcode == "25" || townshipcode == "25" || townshipcode == "01" || townshipcode == "28" || townshipcode == "05" || townshipcode == "24" || townshipcode == "31")
+                            {
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Unique ID");
+                                driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+                            }
+                            if (townshipcode == "29")
+                            {
+                                string taxaddress = "";
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Property Location");
+                                driver.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
+                                driver.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
+                                driver.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+                            }
+                            try
+                            {
+                                string currentyear = Convert.ToString(DateTime.Now.Year - 1);
+                                IWebElement ITaxDownloadClick = driver1.FindElement(By.XPath("//*[@id='content']/div/div/div/form[2]/div/table/tbody"));
+                                IList<IWebElement> ITaxDownloadClickRow = ITaxDownloadClick.FindElements(By.TagName("tr"));
+                                IList<IWebElement> ITaxDownloadClickTD;
+                                for (int i = 0; i < ITaxDownloadClickRow.Count; i++)
+                                {
+                                    if (ITaxDownloadClickRow.Count() != 0)
+                                    {
+                                        IList<IWebElement> ITaxClickTag;
+                                        ITaxDownloadClickTD = ITaxDownloadClickRow[i].FindElements(By.TagName("td"));
+                                        if (ITaxDownloadClickTD.Count != 0)
+                                        {
+                                            BillNumber = GlobalClass.Before(ITaxDownloadClickTD[0].Text, "\r\n");
+                                            string[] Billsplit = BillNumber.Split('-');
+                                            string yearsplit = Billsplit[0];
+                                            if (yearsplit.Trim() == currentyear)
+                                            {
+                                                ITaxClickTag = ITaxDownloadClickRow[i].FindElements(By.TagName("a"));
+                                                foreach (IWebElement click in ITaxClickTag)
+                                                {
+                                                    if (ITaxDownloadClickRow.Count() != 0)
+                                                    {
+                                                        string strLink = click.GetAttribute("title");
+                                                        if (strLink.Contains("Download PDF") || strLink.Contains("View original tax bill"))
+                                                        {
+                                                            click.Click();
+                                                            Thread.Sleep(20000);
+                                                            filename = latestfilename();
+                                                            gc.AutoDownloadFile(orderNumber, assessment_id, countynameCT, "CT", filename);
+                                                            Thread.Sleep(1000);
+
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                            try
+                            {
+                                driver1.Navigate().GoToUrl(urlTax);
+                                Thread.Sleep(2000);
+                                driver1.FindElement(By.Id("sewerMenu")).Click();
+                                Thread.Sleep(2000);
+                                if (townshipcode == "04" || townshipcode == "10" || townshipcode == "17")
+                                {
+                                    IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                    SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                    sTaxSelect.SelectByText("Parcel Number");
+                                    driver.FindElement(By.Name("uniqueId")).SendKeys(uniqueidMap);
+                                    driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+                                }
+                                if (townshipcode == "13" || townshipcode == "22" || townshipcode == "02" || townshipcode == "03" || townshipcode == "08" || townshipcode == "09" || townshipcode == "11" || townshipcode == "12" || townshipcode == "14" || townshipcode == "15" || townshipcode == "18" || townshipcode == "19" || townshipcode == "20" || townshipcode == "23" || townshipcode == "26" || townshipcode == "27" || townshipcode == "32" || townshipcode == "30" || townshipcode == "21" || townshipcode == "07" || townshipcode == "25" || townshipcode == "25" || townshipcode == "01" || townshipcode == "28" || townshipcode == "05" || townshipcode == "24" || townshipcode == "31")
+                                {
+                                    IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                    SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                    sTaxSelect.SelectByText("Unique ID");
+                                    driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                                    driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+                                }
+                                if (townshipcode == "29")
+                                {
+                                    string taxaddress = "";
+                                    IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                    SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                    sTaxSelect.SelectByText("Property Location");
+                                    driver.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
+                                    driver.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
+                                    driver.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+                                }
+                                IWebElement ITaxDownloadClick = driver1.FindElement(By.XPath("//*[@id='content']/div/div/div/center/div/table/tbody"));
+                                IList<IWebElement> ITaxDownloadClickRow = ITaxDownloadClick.FindElements(By.TagName("tr"));
+                                IList<IWebElement> ITaxDownloadClickTD;
+                                for (int i = 0; i < ITaxDownloadClickRow.Count; i++)
+                                {
+                                    if (ITaxDownloadClickRow.Count() - 1 == i)
+                                    {
+                                        IList<IWebElement> ITaxClickTag;
+                                        ITaxDownloadClickTD = ITaxDownloadClickRow[i].FindElements(By.TagName("td"));
+                                        if (ITaxDownloadClickTD.Count != 0)
+                                        {
+                                            BillNumber = GlobalClass.Before(ITaxDownloadClickTD[0].Text, "\r\n");
+                                        }
+                                        ITaxClickTag = ITaxDownloadClickRow[i].FindElements(By.TagName("a"));
+                                        foreach (IWebElement click in ITaxClickTag)
+                                        {
+                                            if (ITaxDownloadClickRow.Count() != 0)
+                                            {
+                                                string strLink = click.GetAttribute("title");
+                                                if (strLink.Contains("Download PDF") || strLink.Contains("View original tax bill"))
+                                                {
+                                                    click.Click();
+                                                    Thread.Sleep(20000);
+                                                    filename = latestfilename();
+                                                    gc.AutoDownloadFile(orderNumber, assessment_id, countynameCT, "CT", filename);
+                                                    Thread.Sleep(1000);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+
+
+                        }
+                        catch { driver1.Quit(); }
+                        driver1.Quit();
                     }
                     #endregion
                     #region one Assessment Link
@@ -2381,7 +2490,7 @@ namespace ScrapMaricopa.Scrapsource
                             gc.CreatePdf(orderNumber, parcelNumber, "Permits Result", driver, "CT", countynameCT);
                         }
                         catch { }
-                       
+
                         if (townshipcode == "30" || townshipcode == "21" || townshipcode == "07")
                         {
                             uniqueidMap = parcelNumber;
@@ -3729,7 +3838,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
 
                             driver1.Navigate().GoToUrl(urlTax);
-                            Thread.Sleep(2000);
+                            Thread.Sleep(4000);
                             IWebElement ITaxDownSelect = driver1.FindElement(By.Id("actionType"));
                             SelectElement sTaxDownSelect = new SelectElement(ITaxDownSelect);
                             sTaxDownSelect.SelectByText("Unique ID");

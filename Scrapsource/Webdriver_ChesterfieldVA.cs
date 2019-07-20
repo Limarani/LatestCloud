@@ -63,12 +63,6 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         return "MultiParcel";
                     }
-                    else if (HttpContext.Current.Session["titleparcel"].ToString() == "")
-                    {
-                        HttpContext.Current.Session["Zero_Chesterfield"] = "Zero";
-                        driver.Quit();
-                        return "No Data Found";
-                    }
                     searchType = "parcel";
                     parcelNumber = HttpContext.Current.Session["titleparcel"].ToString().Replace(".", "");
                 }
@@ -81,9 +75,11 @@ namespace ScrapMaricopa.Scrapsource
 
                         driver.FindElement(By.Id("searchText")).SendKeys(address);
                         Thread.Sleep(4000);
+                        ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "VA", "Chesterfield");
                         driver.FindElement(By.XPath("//*[@id='read-search-toolbar']/div/div/div/button[2]/div/i")).Click();
                         Thread.Sleep(6000);
+                        ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf_WOP(orderNumber, "Address After", driver, "VA", "Chesterfield");
 
                         string Recored1 = driver.FindElement(By.XPath("//*[@id='read-content']/main/div/div/div[2]/div[2]/div/div/div/div[6]")).Text;
@@ -143,9 +139,11 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.Id("searchText")).SendKeys(parcelNumber);
                         Thread.Sleep(4000);
+                        ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search", driver, "VA", "Chesterfield");
                         driver.FindElement(By.XPath("//*[@id='read-search-toolbar']/div/div/div/button[2]/div/i")).Click();
                         Thread.Sleep(6000);
+                        ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search After", driver, "VA", "Chesterfield");
                         driver.FindElement(By.XPath("//*[@id='read-content']/main/div/div/div[2]/div[2]/div/div/div/div[3]/a/div/div/div[2]/div/div[4]/ul[1]")).Click();
                         Thread.Sleep(8000);
@@ -459,6 +457,11 @@ namespace ScrapMaricopa.Scrapsource
                 }
             }
 
+        }
+        public void ByVisibleElement(IWebElement Element)
+        {
+            IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+            js.ExecuteScript("arguments[0].scrollIntoView();", Element);
         }
     }
 

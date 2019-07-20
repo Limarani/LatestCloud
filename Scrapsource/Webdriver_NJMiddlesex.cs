@@ -2070,7 +2070,7 @@ namespace ScrapMaricopa.Scrapsource
                                                 IJavaScriptExecutor js2 = drivertown as IJavaScriptExecutor;
                                                 js2.ExecuteScript("arguments[0].click();", IAddressSearch2);
                                             }
-                                            Thread.Sleep(7000);
+                                            Thread.Sleep(5000);
                                         }
                                     }
 

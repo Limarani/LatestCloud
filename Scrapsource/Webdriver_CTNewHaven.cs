@@ -1803,7 +1803,7 @@ namespace ScrapMaricopa.Scrapsource
                         string ParcelValues = "", ParcelValuesHeader = "";
 
                         string col1 = "-", col3 = "-", col5 = "-";
-
+                        gc.CreatePdf(orderNumber, parcelNumber, "Property Summary Info", driver, "CT", countynameCT);
                         IWebElement Parcel = driver.FindElement(By.XPath("//*[@id='tabParcel']/div[1]/div/table/tbody"));
                         IList<IWebElement> TRParcel = Parcel.FindElements(By.TagName("tr"));
                         IList<IWebElement> TDParcel;
@@ -1951,7 +1951,7 @@ namespace ScrapMaricopa.Scrapsource
                             IWebElement IAddressSearch3 = driver.FindElement(By.LinkText("Outbuildings"));
                             IJavaScriptExecutor js3 = driver as IJavaScriptExecutor;
                             js3.ExecuteScript("arguments[0].click();", IAddressSearch3);
-                            Thread.Sleep(1000);
+                            Thread.Sleep(2000);
                             gc.CreatePdf(orderNumber, parcelNumber, "Out Building Result", driver, "CT", countynameCT);
                         }
                         catch { }
@@ -1960,7 +1960,7 @@ namespace ScrapMaricopa.Scrapsource
                             IWebElement IAddressSearch4 = driver.FindElement(By.LinkText("Permits"));
                             IJavaScriptExecutor js4 = driver as IJavaScriptExecutor;
                             js4.ExecuteScript("arguments[0].click();", IAddressSearch4);
-                            Thread.Sleep(1000);
+                            Thread.Sleep(2000);
                             gc.CreatePdf(orderNumber, parcelNumber, "Permits Result", driver, "CT", countynameCT);
                         }
                         catch { }
@@ -2658,28 +2658,10 @@ namespace ScrapMaricopa.Scrapsource
                             IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
                             SelectElement sTaxSelect = new SelectElement(ITaxSelect);
                             sTaxSelect.SelectByText("Unique ID");
-                            try
-                            {
-                                driver.FindElement(By.Name("taxPayerName")).SendKeys(uniqueidMap);
-                            }
-                            catch { }
-                            try
-                            {
-                                driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
-                            }
-                            catch { }
-                            try
-                            {
-                                driver.FindElement(By.Id("searchbtn1")).SendKeys(Keys.Enter);
-                                Thread.Sleep(3000);
-                            }
-                            catch { }
-                            try
-                            {
-                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
-                                Thread.Sleep(3000);
-                            }
-                            catch { }
+                            driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                            driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                            Thread.Sleep(3000);
+
                         }
                         if (townshipcode == "11" || townshipcode == "27" || townshipcode == "01")
                         {
@@ -2797,6 +2779,16 @@ namespace ScrapMaricopa.Scrapsource
                             driver.FindElement(By.Id("sewerMenu")).Click();
                             Thread.Sleep(3000);
                             gc.CreatePdf(orderNumber, assessment_id, "sewer Menu click", driver, "CT", countynameCT);
+                            if (townshipcode == "05" || townshipcode == "02" || townshipcode == "21" || townshipcode == "25" || townshipcode == "14" || townshipcode == "20" || townshipcode == "24" || townshipcode == "07" || townshipcode == "08" || townshipcode == "26" || townshipcode == "19" || townshipcode == "22" || townshipcode == "18" || townshipcode == "17" || townshipcode == "15" || townshipcode == "03" || townshipcode == "04" || townshipcode == "09" || townshipcode == "10" || townshipcode == "12")
+                            {
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Unique ID");
+                                driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+
+                            }
                             if (townshipcode == "11" || townshipcode == "27" || townshipcode == "01")
                             {
                                 string taxaddress = "";
@@ -2806,16 +2798,6 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
                                 driver.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
                                 driver.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
-                                Thread.Sleep(3000);
-                            }
-                            else
-                            {
-                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
-                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
-                                sTaxSelect.SelectByText("Unique ID");
-                                gc.CreatePdf(orderNumber, assessment_id, "Unique ID sewer", driver, "CT", countynameCT);
-                                driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
-                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
                                 Thread.Sleep(3000);
                             }
 
@@ -2895,7 +2877,7 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (string Sewerinfo in SewerTaxinfo)
                         {
                             driver.Navigate().GoToUrl(Sewerinfo);
-                            Thread.Sleep(2000);
+                            Thread.Sleep(3000);
                             gc.CreatePdf(orderNumber, assessment_id, "Sewer Information Result", driver, "CT", countynameCT);
                         }
                         foreach (string information in InformURL)
@@ -3028,7 +3010,7 @@ namespace ScrapMaricopa.Scrapsource
                                         IPaymentDetailsTD = bill.FindElements(By.TagName("td"));
                                         if (IPaymentDetailsTD.Count != 0 && !bill.Text.Contains("PAY DATE"))
                                         {
-                                            string PaymentDetails = IPaymentDetailsTD[0].Text + "~" + IPaymentDetailsTD[1].Text + "~" + IPaymentDetailsTD[2].Text + "~" + IPaymentDetailsTD[3].Text + "~" + IPaymentDetailsTD[4].Text + "~" + IPaymentDetailsTD[5].Text + "~" + "";
+                                            string PaymentDetails = IPaymentDetailsTD[0].Text + "~" + IPaymentDetailsTD[1].Text + "~" + IPaymentDetailsTD[2].Text + "~" + IPaymentDetailsTD[3].Text + "~" + IPaymentDetailsTD[4].Text + "~" + IPaymentDetailsTD[5].Text + "~" + IPaymentDetailsTD[6].Text;
                                             gc.insert_date(orderNumber, assessment_id, 2189, PaymentDetails, 1, DateTime.Now);
                                             //Pay Date~Type~Tax/Principal~Interest~Lien~Fee~Total
                                         }
@@ -3129,23 +3111,25 @@ namespace ScrapMaricopa.Scrapsource
                             driver1.Navigate().GoToUrl(urlTax);
                             Thread.Sleep(2000);
 
-                            if (townshipcode == "11")
+                            if (townshipcode == "05" || townshipcode == "02" || townshipcode == "21" || townshipcode == "25" || townshipcode == "14" || townshipcode == "20" || townshipcode == "24" || townshipcode == "07" || townshipcode == "08" || townshipcode == "26" || townshipcode == "19" || townshipcode == "22" || townshipcode == "18" || townshipcode == "17" || townshipcode == "15" || townshipcode == "03" || townshipcode == "04" || townshipcode == "09" || townshipcode == "10" || townshipcode == "12")
                             {
-                                IWebElement ITaxSelect = driver1.FindElement(By.Id("actionType"));
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                sTaxSelect.SelectByText("Unique ID");
+                                driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                                driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                Thread.Sleep(3000);
+
+                            }
+                            if (townshipcode == "11" || townshipcode == "27" || townshipcode == "01")
+                            {
+                                string taxaddress = "";
+                                IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
                                 SelectElement sTaxSelect = new SelectElement(ITaxSelect);
                                 sTaxSelect.SelectByText("Property Location");
-                                driver1.FindElement(By.Name("propertyNumber")).SendKeys(streetno);
-                                driver1.FindElement(By.Name("propertyName")).SendKeys(streetname.Trim().ToUpper() + " " + streettype.Trim().ToUpper());
-                                driver1.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
-                                Thread.Sleep(3000);
-                            }
-                            else
-                            {
-                                IWebElement ITaxDownSelect = driver1.FindElement(By.Id("actionType"));
-                                SelectElement sTaxDownSelect = new SelectElement(ITaxDownSelect);
-                                sTaxDownSelect.SelectByText("Unique ID");
-                                driver1.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
-                                driver1.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                driver.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
+                                driver.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
+                                driver.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
                                 Thread.Sleep(3000);
                             }
                             try
@@ -3183,7 +3167,7 @@ namespace ScrapMaricopa.Scrapsource
                                                             Thread.Sleep(20000);
                                                             filename = latestfilename();
                                                             gc.AutoDownloadFile(orderNumber, assessment_id, countynameCT, "CT", filename);
-                                                            Thread.Sleep(1000);
+                                                            Thread.Sleep(7000);
 
                                                         }
                                                     }
@@ -3200,23 +3184,25 @@ namespace ScrapMaricopa.Scrapsource
                                 Thread.Sleep(2000);
                                 driver1.FindElement(By.Id("sewerMenu")).Click();
                                 Thread.Sleep(2000);
-                                if (townshipcode == "11")
+                                if (townshipcode == "05" || townshipcode == "02" || townshipcode == "21" || townshipcode == "25" || townshipcode == "14" || townshipcode == "20" || townshipcode == "24" || townshipcode == "07" || townshipcode == "08" || townshipcode == "26" || townshipcode == "19" || townshipcode == "22" || townshipcode == "18" || townshipcode == "17" || townshipcode == "15" || townshipcode == "03" || townshipcode == "04" || townshipcode == "09" || townshipcode == "10" || townshipcode == "12")
                                 {
-                                    IWebElement ITaxSelect = driver1.FindElement(By.Id("actionType"));
+                                    IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
+                                    SelectElement sTaxSelect = new SelectElement(ITaxSelect);
+                                    sTaxSelect.SelectByText("Unique ID");
+                                    driver.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
+                                    driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                    Thread.Sleep(3000);
+
+                                }
+                                if (townshipcode == "11" || townshipcode == "27" || townshipcode == "01")
+                                {
+                                    string taxaddress = "";
+                                    IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
                                     SelectElement sTaxSelect = new SelectElement(ITaxSelect);
                                     sTaxSelect.SelectByText("Property Location");
-                                    driver1.FindElement(By.Name("propertyNumber")).SendKeys(streetno);
-                                    driver1.FindElement(By.Name("propertyName")).SendKeys(streetname.Trim().ToUpper() + " " + streettype.Trim().ToUpper());
-                                    driver1.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
-                                    Thread.Sleep(3000);
-                                }
-                                else
-                                {
-                                    IWebElement ITaxDownSelect = driver1.FindElement(By.Id("actionType"));
-                                    SelectElement sTaxDownSelect = new SelectElement(ITaxDownSelect);
-                                    sTaxDownSelect.SelectByText("Unique ID");
-                                    driver1.FindElement(By.XPath("//*[@id='uniqueid']/input[1]")).SendKeys(uniqueidMap);
-                                    driver1.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
+                                    driver.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
+                                    driver.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
+                                    driver.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
                                     Thread.Sleep(3000);
                                 }
                                 IWebElement ITaxDownloadClick = driver1.FindElement(By.XPath("//*[@id='content']/div/div/div/center/div/table/tbody"));
@@ -3244,7 +3230,7 @@ namespace ScrapMaricopa.Scrapsource
                                                     Thread.Sleep(20000);
                                                     filename = latestfilename();
                                                     gc.AutoDownloadFile(orderNumber, assessment_id, countynameCT, "CT", filename);
-                                                    Thread.Sleep(1000);
+                                                    Thread.Sleep(5000);
                                                 }
                                             }
                                         }
@@ -3280,6 +3266,7 @@ namespace ScrapMaricopa.Scrapsource
                                 IWebElement Singleclick = Multiaddressid[7].FindElement(By.TagName("button"));
                                 Singleclick.Click();
                                 Thread.Sleep(2000);
+                                break;
                             }
                         }
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Result", driver, "CT", countynameCT);
