@@ -433,9 +433,13 @@ namespace ScrapMaricopa.Scrapsource
                                 address = address.Trim();
                             }
                             address = address.Trim();
-                            IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/div/table/tbody/tr/td[2]/div/table/tbody/tr[2]/td[2]/iframe"));
-                            driver.SwitchTo().Frame(iframeElement);
-                            Thread.Sleep(3000);
+                            try
+                            {
+                                IWebElement iframeElement = driver.FindElement(By.XPath("/html/body/div/table/tbody/tr/td[2]/div/table/tbody/tr[2]/td[2]/iframe"));
+                                driver.SwitchTo().Frame(iframeElement);
+                                Thread.Sleep(3000);
+                            }
+                            catch { }
                             driver.FindElement(By.Id("col2_filter")).SendKeys(address);
                             Thread.Sleep(5000);
                             gc.CreatePdf_WOP(orderNumber, "Address search", driver, "CT", countynameCT);
