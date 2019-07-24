@@ -2025,6 +2025,7 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     Array.ForEach(Directory.GetFiles(@downloadDirectory1), File.Delete);
                                     drivertown.Navigate().GoToUrl("https://wipp.edmundsassoc.com/Wipp/?wippid=1429");
+                                    Thread.Sleep(7000);
                                     drivertown.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[3]/td[7]/input")).SendKeys(property_loc1);
                                     drivertown.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[3]/td[8]/button")).SendKeys(Keys.Enter);
                                     Thread.Sleep(5000);

@@ -106,7 +106,7 @@ namespace ScrapMaricopa.Scrapsource
                     iA = "0";
                     iT = "2";
                     urlAssessment = "http://gis.vgsi.com/NorwalkCT/Search.aspx";
-                    urlTax = "http://my.norwalkct.org/eTaxbill/eTaxBill.aspx";
+                    urlTax = "http://nwlk.norwalkct.org/etaxbill/";
                     result = "City of Norwalk 125 East Avenue P. O. Box 5125  Norwalk, CT 06856  Phone: 203-854-7731";
                 }
                 if (Districtcode == "18")
@@ -309,7 +309,7 @@ namespace ScrapMaricopa.Scrapsource
                 {
                     iA = "7";
                     iT = "0";
-                    urlAssessment = "http://www.beaconfalls-ct.org/Pages/BeaconFallsCT_Assessor/propertycards";
+                    urlAssessment = "http://www.anashtech.com/beaconfalls/";
                     urlTax = "https://www.mytaxbill.org/inet/bill/home.do?town=beaconfalls";
                     result = "Town of Beacon Falls 10 Maple Avenue Beacon Falls, CT 06403 Phone:203-723-5244";
                 }

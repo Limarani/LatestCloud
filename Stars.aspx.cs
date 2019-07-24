@@ -12257,18 +12257,22 @@ namespace ScrapMaricopa
                     //BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax Information Table");
                     //BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Tax Payment Histroy Details Table");
 
-
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                     BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
                     BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Current Year Tax Information Table");
                     BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Tax Sales Details Table");
                     BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "Tax History Details Table");
-
                     MessageBox("Data Inserted Successfully....");
                 }
 
                 else if (statecountyid == "110")
                 {
+
+                    if (txtstreetname.Text != "" && txtstreetno.Text!="")
+                    {
+                        searchType = "titleflex";
+                    }
+
                     WebDriver_SeminoleFL SeminoleFL = new WebDriver_SeminoleFL();
                     SeminoleFL.FTP_SeminoleFL(txtstreetno.Text.Trim(), txtstreetname.Text, txtdirection.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text, txtownername.Text, searchType, txtorderno.Text.Trim(), txtdirection.Text.Trim());
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
@@ -12310,7 +12314,7 @@ namespace ScrapMaricopa
 
                     MessageBox("Data Inserted Successfully....");
 
-                    MessageBox("Data Inserted Successfully....");
+
                 }
 
 
@@ -13413,7 +13417,7 @@ namespace ScrapMaricopa
 
 
                 else if (statecountyid == "246")
-                {                    
+                {
                     if (txtAddress.Text.ToUpper().Trim() != "")
                     {
                         searchType = "titleflex";
@@ -13951,7 +13955,7 @@ namespace ScrapMaricopa
                     {
                         BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
                         BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
-                       // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                        // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
                     }
 
 
@@ -14328,7 +14332,7 @@ namespace ScrapMaricopa
                     {
                         BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
                         BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
-                       // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                        // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
                     }
 
 
@@ -14933,7 +14937,7 @@ namespace ScrapMaricopa
 
                 else if (statecountyid == "244")
                 {
-                    if ((txtstreetno.Text == "" && txtstreetname.Text == "" && txtownername.Text =="" && txtunitnumber.Text != ""))
+                    if ((txtstreetno.Text == "" && txtstreetname.Text == "" && txtownername.Text == "" && txtunitnumber.Text != ""))
                     {
                         searchType = "accountno";
                     }
@@ -14947,7 +14951,7 @@ namespace ScrapMaricopa
                     string countynameNJ = "", township = "", countynameCT = "";
                     countynameCT = dropCounty.SelectedItem.Text;
                     township = dropTownship.SelectedItem.Text;
-                    if(txtstreetname.Text.Trim()!="")
+                    if (txtstreetname.Text.Trim() != "")
                     {
                         searchType = "address";
                     }
@@ -21133,7 +21137,7 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "Detail Special Charges Details");
                         BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "More Special Charges Details");
                         BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "Current Tax Details");
-                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Defaulted Tax Details");                        
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "Defaulted Tax Details");
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -21454,7 +21458,7 @@ namespace ScrapMaricopa
                         {
                             BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
                             BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
-                           // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                            // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
                         }
 
 
@@ -21658,7 +21662,7 @@ namespace ScrapMaricopa
                         NJMiddlesex.FTP_NJMiddlesex("", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, "", districtid);
                         string countynameNJ = "";
                         countynameNJ = dropCounty.SelectedItem.Text;
-                    
+
                         if (HttpContext.Current.Session["NoTax_NJ" + countynameNJ] != null && HttpContext.Current.Session["NoTax_NJ" + countynameNJ].ToString() == "No_Tax")
                         {
                             HttpContext.Current.Session["NoTax_NJ" + countynameNJ] = "";
@@ -21722,7 +21726,7 @@ namespace ScrapMaricopa
                         {
                             BindGridDisplay(GridView6, Label6, statecountyid, "26", txtorderno.Text, "Tax Information Details");
                             BindGridDisplay(GridView8, Label8, statecountyid, "27", txtorderno.Text, "Tax History Details");
-                           // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
+                            // BindGridDisplay(GridView9, Label9, statecountyid, "28", txtorderno.Text, "Tax Payment Details");
                         }
 
 
@@ -21974,7 +21978,7 @@ namespace ScrapMaricopa
                     //CT Fairfield
                     else if (statecountyid == "234")//
                     {
-                        
+
                         if (dropTownship.SelectedItem.Text == "--select--")
                         {
                             MessageBox("Select Township...");

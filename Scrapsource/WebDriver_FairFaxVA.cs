@@ -42,6 +42,8 @@ namespace ScrapMaricopa.Scrapsource
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            //driver = new PhantomJSDriver();
+            //driver = new ChromeDriver()
             using (driver = new PhantomJSDriver())
             {
                 try
@@ -961,7 +963,30 @@ namespace ScrapMaricopa.Scrapsource
 
                             //js.ExecuteScript("arguments[0].click();", IAssessment);
                             gc.CreatePdf(orderNumber, parcelNumber, "Tax Assessment History", driver, "VA", "Fairfax");
-
+                            //Owner
+                            IWebElement IOwnername = driver.FindElement(By.Id("primarynav"));
+                            IList<IWebElement> IOwnernameRow = IOwnername.FindElements(By.TagName("li"));
+                            IList<IWebElement> IOwnernameTD;
+                            foreach (IWebElement Ownername in IOwnernameRow)
+                            {
+                                IOwnernameTD = Ownername.FindElements(By.TagName("a"));
+                                if (IOwnernameTD.Count != 0)
+                                {
+                                    try
+                                    {
+                                        string strassess = IOwnernameTD[0].GetAttribute("innerText");
+                                        if (strassess.Contains("Owner Information"))
+                                        {
+                                            IWebElement IhistoryClick = IOwnernameTD[0];
+                                            js.ExecuteScript("arguments[0].click();", IhistoryClick);
+                                            Thread.Sleep(3000);
+                                            break;
+                                        }
+                                    }
+                                    catch { }
+                                }
+                            }
+                            gc.CreatePdf(orderNumber, parcelNumber, "Owner Information", driver, "VA", "Fairfax");
                             //Tax History Bill Details
                             try
                             {
