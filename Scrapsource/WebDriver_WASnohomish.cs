@@ -148,6 +148,14 @@ namespace ScrapMaricopa.Scrapsource
                                     driver.Quit();
                                     return "Maximum";
                                 }
+                                if (searchcount == 0)
+                                {
+                                    //No Data Found
+                                       HttpContext.Current.Session["Nodata_SnohomishWA"] = "Yes";
+                                        driver.Quit();
+                                        return "No Data Found";
+                                   
+                                }
                             }
                         }
                         catch { }
@@ -172,6 +180,26 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search After", driver, "WA", "Snohomish");
                         driver.SwitchTo().Window(driver.WindowHandles.Last());
+
+                        try
+                        {
+                            string Propaddress = driver.FindElement(By.Id("mSitusAddress")).Text;
+                            string Success = "";
+                            if (Propaddress.Contains(address.Trim()))
+                            {
+                                Success = "Yes";
+                            }
+                            else if (!Success.Contains("Yes"))
+                            {
+                                //if (!Success.Contains("Yes"))
+                                //{
+                                HttpContext.Current.Session["Nodata_SeminoleFL"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                                //}
+                            }
+                        }
+                        catch { }
                         try
                         {
                             //No Data Found
@@ -520,8 +548,20 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(2000);
                         driver.FindElement(By.Id("q")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax Balace Result1", driver, "WA", "Snohomish");
-                        driver.FindElement(By.XPath("//*[@id='main']/div[3]/div/div[5]/div/form/input[2]")).SendKeys(Keys.Enter);
-                        Thread.Sleep(2000);
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='main']/div[3]/div/div[5]/div/form/input[2]")).SendKeys(Keys.Enter);
+                            Thread.Sleep(2000);
+                            //gc.CreatePdf(orderNumber, parcelNumber, "Tax Balace Result2", driver, "WA", "Snohomish");
+                        }
+                        catch { }
+                        try
+                        {
+                            driver.FindElement(By.XPath("//*[@id='main']/div[3]/div/div[5]/div/div/form/div/div/div[3]/input")).SendKeys(Keys.Enter);
+                            Thread.Sleep(2000);
+                            //gc.CreatePdf(orderNumber, parcelNumber, "Tax Balace Result2", driver, "WA", "Snohomish");
+                        }
+                        catch { }
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax Balace Result2", driver, "WA", "Snohomish");
 
                         try

@@ -56,6 +56,11 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             straddress = sno + " " + sname + " " + sttype + " " + unino;
                         }
+                        if (sttype == "")
+                        {
+                            straddress = sno + " " + direction + " " + sname + " " + sttype;
+                        }
+                        
                         gc.TitleFlexSearch(orderNumber, "", ownername, straddress, "FL", "Seminole");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
@@ -144,12 +149,29 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "parcel")
                     {
-                        parcelNumber = parcelNumber.Replace(" ", "").Replace(".", "").Replace("-", "").Trim();                        
+                        parcelNumber = parcelNumber.Replace(" ", "").Replace(".", "").Replace("-", "").Trim();
                         driver.FindElement(By.Id("dnn_ctr443_View_txtParcel_I")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search Input ", driver, "FL", "Seminole");
                         driver.FindElement(By.Id("dnn_ctr443_View_ctl02")).Click();
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search Output ", driver, "FL", "Seminole");
+
+                        string Propaddress = driver.FindElement(By.Id("ctl00_Content_cellAddress2")).Text.Trim();
+                        string Success = "";
+                        if (Propaddress.Contains(straddress))
+                        {
+
+                            Success = "Yes";
+                        }
+                        else if (!Success.Contains("Yes"))
+                        {
+                            //if (!Success.Contains("Yes"))
+                            //{
+                                HttpContext.Current.Session["Nodata_SeminoleFL"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            //}
+                        }
 
                         try
                         {
@@ -851,7 +873,7 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                 }
                             }
-                            string prioryearTaxinfordetails = Taxyear1 + "~" + NonSchoolAssessedValue1 + "~" + SchoolAssessedValue1 + "~" + GrossTaxAmount1 + "~" + MillageCode1 + "~" + ExemptionsGranted1 + "~" + Homestead1+"~"+ AdditionalExemptions + "~" + NonAdValoremAssessments1;
+                            string prioryearTaxinfordetails = Taxyear1 + "~" + NonSchoolAssessedValue1 + "~" + SchoolAssessedValue1 + "~" + GrossTaxAmount1 + "~" + MillageCode1 + "~" + ExemptionsGranted1 + "~" + Homestead1 + "~" + AdditionalExemptions + "~" + NonAdValoremAssessments1;
                             gc.insert_date(orderNumber, Parcelprior, 1666, prioryearTaxinfordetails, 1, DateTime.Now);
                             gc.CreatePdf(orderNumber, Parcelprior, "Prior Year Tax Page Pdf" + Taxyear1, driver, "FL", "Seminole");
                         }

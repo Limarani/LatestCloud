@@ -40,13 +40,14 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_orderNo = orderNumber;
             HttpContext.Current.Session["orderNo"] = orderNumber;
             GlobalClass.global_parcelNo = parcelNumber;
-            string Parcel_number = "", Tax_Authority = "", yearbuilt = "", Nodeliquent = "", Addresshrf = "", TaxesDue = "", lotsize = "", Good_through_date = "";
+            string Parcel_number = "", Tax_Authority = "", yearbuilt = "", Nodeliquent = "", Addresshrf = "", TaxesDue = "", lotsize = "", Good_through_date = "", Legal = "";
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             string Inrest = "";
             driverService.HideCommandPromptWindow = true;
             // driver = new ChromeDriver();
             // driver = new PhantomJSDriver();
+            //RDP
             if (searchType == "titleflex")
             {
                 //string address1 = Streetno + " " + direction + " " + sname + " " + streettype + " " + unitnumber;
@@ -235,7 +236,11 @@ namespace ScrapMaricopa.Scrapsource
                     string Mailingaddress = driver.FindElement(By.XPath("/html/body/table/tbody/tr[5]/td/table/tbody/tr[6]/td[1]/table/tbody/tr[5]/td[2]")).Text;
                     string Taxunit = driver.FindElement(By.XPath("/html/body/table/tbody/tr[5]/td/table/tbody/tr[6]/td[1]/table/tbody/tr[7]/td[2]")).Text;
                     string priorParcel = driver.FindElement(By.XPath("/html/body/table/tbody/tr[5]/td/table/tbody/tr[9]/td/table/tbody/tr[7]/td")).Text;
-                    string Legal = driver.FindElement(By.XPath("/html/body/table/tbody/tr[5]/td/table/tbody/tr[9]/td/table/tbody/tr[9]/td/table/tbody/tr")).Text;
+                    try
+                    {
+                        Legal = driver.FindElement(By.XPath("/html/body/table/tbody/tr[5]/td/table/tbody/tr[9]/td/table/tbody/tr[9]/td/table/tbody/tr")).Text;
+                    }
+                    catch { }
                     driver.FindElement(By.XPath("/html/body/table/tbody/tr[4]/td/div/table/tbody/tr/td[4]/div/a")).Click();
                     Thread.Sleep(2000);
                     gc.CreatePdf(orderNumber, Parcel_number, "Property Characteristics", driver, "UT", "Weber");
@@ -277,7 +282,7 @@ namespace ScrapMaricopa.Scrapsource
                                 Propertyid = Property.FindElements(By.TagName("td"));
                                 if (Propertyid.Count > 1 && Property.Text.Trim() != "")
                                 {
-                                    string Propertyresult = Taxyear + "~"+Propertyid[1].Text + "~" + Propertyid[2].Text;
+                                    string Propertyresult = Taxyear + "~" + Propertyid[1].Text + "~" + Propertyid[2].Text;
                                     gc.insert_date(orderNumber, Parcel_number, 1843, Propertyresult, 1, DateTime.Now);
                                 }
                             }
@@ -400,8 +405,12 @@ namespace ScrapMaricopa.Scrapsource
                                             if ((Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))) < 12))
                                             {
                                                 Good_through_date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM")) + 1), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")) + 1)).ToString("MM/dd/yyyy");
-                                                IWebElement Inextmonth = driver.FindElement(By.XPath("//*[@id='ui-datepicker-div']/div/a[2]"));
-                                                Inextmonth.Click();
+                                                try
+                                                {
+                                                    IWebElement Inextmonth = driver.FindElement(By.XPath("//*[@id='ui-datepicker-div']/div/a[2]"));
+                                                    Inextmonth.Click();
+                                                }
+                                                catch { }
                                             }
                                             else
                                             {
@@ -417,6 +426,7 @@ namespace ScrapMaricopa.Scrapsource
                                         IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
                                         js1.ExecuteScript("arguments[0].click();", javaclick);
                                         Thread.Sleep(9000);
+                                        gc.CreatePdf(orderNumber, Parcel_number, "Delinquent Tax Date change", driver, "UT", "Weber");
                                     }
                                 }
                                 catch { }

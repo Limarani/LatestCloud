@@ -40,6 +40,8 @@ namespace ScrapMaricopa.Scrapsource
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            //driver = new ChromeDriver();
+            //driver = new PhantomJSDriver();
             using (driver = new PhantomJSDriver())
             {
                 StartTime = DateTime.Now.ToString("HH:mm:ss");
@@ -68,7 +70,11 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.Id("SearchText")).SendKeys(address);
                         gc.CreatePdf_WOP(orderNumber, "address search", driver, "TX", "Fort Bend");
-                        driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
+                        try
+                        {
+                            driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
+                        }
+                        catch { driver.FindElement(By.Id("dnn_ctl09_SearchButtonDiv")).Click(); }
                         Thread.Sleep(5000);
                         gc.CreatePdf_WOP(orderNumber, "address search result", driver, "TX", "Fort Bend");
                     }
@@ -77,7 +83,11 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.Id("SearchText")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search", driver, "TX", "Fort Bend");
-                        driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
+                        try
+                        {
+                            driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
+                        }
+                        catch { driver.FindElement(By.Id("dnn_ctl09_SearchButtonDiv")).Click(); }
                         Thread.Sleep(5000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel search result", driver, "TX", "Fort Bend");
                     }
@@ -86,7 +96,11 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.Id("SearchText")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "owner search", driver, "TX", "Fort Bend");
-                        driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
+                        try
+                        {
+                            driver.FindElement(By.Id("dnn_PropertySearch_SearchButtonDiv")).Click();
+                        }
+                        catch { driver.FindElement(By.Id("dnn_ctl09_SearchButtonDiv")).Click(); }
                         Thread.Sleep(5000);
                         gc.CreatePdf_WOP(orderNumber, "owner search result", driver, "TX", "Fort Bend");
                     }
@@ -394,30 +408,33 @@ namespace ScrapMaricopa.Scrapsource
                     ////Tax Bill Details Table:
 
                     string accountnumber = "", CADReferenceNumber1 = "", CADReferenceNumber = "", OwnerNameAndOwnerAddress = "", TaxPropertyAddress = "", legal = "", Bankruptcy = "", Pendinginterestpayments = "", Totalamountdueforyears = "", Marketvalue = "", CurrentTax = "", CurrentAmount = "", PriorYearAmount = "", TotalAmount = "", LastPaymentAmount = "", LastPayer = "", LastPaymentDate = "", ActiveLawsuitsTax = "", GrossValue = "", LandValue = "", ImprovementValue = "", CappedValue = "", AgriculturalValue = "", ExemptionsTax = "";
-                    string fullTaxeBill1 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[3]/td/table")).Text.Replace("\r\n", " ");
+                    try
+                    {
+                        string fullTaxeBill1 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[3]/td/table")).Text.Replace("\r\n", " ");
 
-                    accountnumber = gc.Between(fullTaxeBill1, "Account Number:", "Address:");
-                    OwnerNameAndOwnerAddress = gc.Between(fullTaxeBill1, "Address:", "Property Site Address:");
+                        accountnumber = gc.Between(fullTaxeBill1, "Account Number:", "Address:");
+                        OwnerNameAndOwnerAddress = gc.Between(fullTaxeBill1, "Address:", "Property Site Address:");
 
-                    CADReferenceNumber1 = gc.Between(fullTaxeBill1, "Bankruptcy", "Pending Internet Payments:").Trim();
-                    string[] CADReferenceNumbersplit = CADReferenceNumber1.Split();
-                    CADReferenceNumber = CADReferenceNumbersplit[1];
-                    TaxPropertyAddress = gc.Between(fullTaxeBill1, "Property Site Address:", " Legal Description:");
-                    legal = gc.Between(fullTaxeBill1, "Legal Description:", "Jurisdictions Collected by the Fort Bend County");
-                    ActiveLawsuitsTax = gc.Between(fullTaxeBill1, "Active Lawsuits", "Bankruptcy");
-                    Bankruptcy = CADReferenceNumbersplit[0];
-                    Pendinginterestpayments = gc.Between(fullTaxeBill1, "Pending Internet Payments:", "Total Amount Due");
-                    Totalamountdueforyears = gc.Between(fullTaxeBill1, "Prior Years:", "Market Value:");
-                    Marketvalue = gc.Between(fullTaxeBill1, "Market Value:", "Land Value:");
+                        CADReferenceNumber1 = gc.Between(fullTaxeBill1, "Bankruptcy", "Pending Internet Payments:").Trim();
+                        string[] CADReferenceNumbersplit = CADReferenceNumber1.Split();
+                        CADReferenceNumber = CADReferenceNumbersplit[1];
+                        TaxPropertyAddress = gc.Between(fullTaxeBill1, "Property Site Address:", " Legal Description:");
+                        legal = gc.Between(fullTaxeBill1, "Legal Description:", "Jurisdictions Collected by the Fort Bend County");
+                        ActiveLawsuitsTax = gc.Between(fullTaxeBill1, "Active Lawsuits", "Bankruptcy");
+                        Bankruptcy = CADReferenceNumbersplit[0];
+                        Pendinginterestpayments = gc.Between(fullTaxeBill1, "Pending Internet Payments:", "Total Amount Due");
+                        Totalamountdueforyears = gc.Between(fullTaxeBill1, "Prior Years:", "Market Value:");
+                        Marketvalue = gc.Between(fullTaxeBill1, "Market Value:", "Land Value:");
 
-                    LandValue = gc.Between(fullTaxeBill1, "Land Value:", "Improvement Value:");
-                    ImprovementValue = gc.Between(fullTaxeBill1, "Improvement Value:", "Capped Value:");
-                    CappedValue = gc.Between(fullTaxeBill1, "Capped Value:", "Agricultural Value:");
-                    AgriculturalValue = gc.Between(fullTaxeBill1, "Agricultural Value:", "Exemptions");
+                        LandValue = gc.Between(fullTaxeBill1, "Land Value:", "Improvement Value:");
+                        ImprovementValue = gc.Between(fullTaxeBill1, "Improvement Value:", "Capped Value:");
+                        CappedValue = gc.Between(fullTaxeBill1, "Capped Value:", "Agricultural Value:");
+                        AgriculturalValue = gc.Between(fullTaxeBill1, "Agricultural Value:", "Exemptions");
 
-                    string taxbill = accountnumber.Trim() + "~" + CADReferenceNumber.Trim() + "~" + OwnerNameAndOwnerAddress.Trim() + "~" + TaxPropertyAddress.Trim() + "~" + legal.Trim() + "~" + ActiveLawsuitsTax.Trim() + "~" + Bankruptcy.Trim() + "~" + Pendinginterestpayments.Trim() + "~" + Totalamountdueforyears.Trim() + "~" + Marketvalue.Trim() + "~" + LandValue.Trim() + "~" + ImprovementValue.Trim() + "~" + CappedValue.Trim() + "~" + AgriculturalValue.Trim() + "~" + Taxauthority1.Trim();
-                    gc.insert_date(orderNumber, ParcelID, 1158, taxbill, 1, DateTime.Now);
-
+                        string taxbill = accountnumber.Trim() + "~" + CADReferenceNumber.Trim() + "~" + OwnerNameAndOwnerAddress.Trim() + "~" + TaxPropertyAddress.Trim() + "~" + legal.Trim() + "~" + ActiveLawsuitsTax.Trim() + "~" + Bankruptcy.Trim() + "~" + Pendinginterestpayments.Trim() + "~" + Totalamountdueforyears.Trim() + "~" + Marketvalue.Trim() + "~" + LandValue.Trim() + "~" + ImprovementValue.Trim() + "~" + CappedValue.Trim() + "~" + AgriculturalValue.Trim() + "~" + Taxauthority1.Trim();
+                        gc.insert_date(orderNumber, ParcelID, 1158, taxbill, 1, DateTime.Now);
+                    }
+                    catch { }
                     //Tax Statement Pdf Download
                     try
                     {

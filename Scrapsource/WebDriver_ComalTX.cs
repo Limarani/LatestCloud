@@ -185,7 +185,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         IWebElement INodata = driver.FindElement(By.Id("propertySearchResults_pageHeading"));
-                        if(INodata.Text.Contains("None found"))
+                        if (INodata.Text.Contains("None found"))
                         {
                             HttpContext.Current.Session["Nodata_ComalTX"] = "Zero";
                             driver.Quit();
@@ -315,93 +315,97 @@ namespace ScrapMaricopa.Scrapsource
                     driver.FindElement(By.Id("taxDue")).Click();
                     Thread.Sleep(2000);
                     string msgdeli = "", taxdue = "";
-
-                    int count = driver.FindElements(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody/tr")).Count();
-                    taxdue = driver.FindElement(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody/tr[" + count + "]/td[7]")).Text;
-
-                    if (!taxdue.Contains("$0.00"))
+                    try
                     {
-                        IWebElement dt = driver.FindElement(By.Id("taxDueDetails_recalculateDate"));
-                        string date = dt.Text;
+                        int count = driver.FindElements(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody/tr")).Count();
+                        taxdue = driver.FindElement(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody/tr[" + count + "]/td[7]")).Text;
 
-                        DateTime G_Date = Convert.ToDateTime(date);
-                        string dateChecking = DateTime.Now.ToString("MM") + "/15/" + DateTime.Now.ToString("yyyy");
-
-                        if (G_Date < Convert.ToDateTime(dateChecking))
+                        if (!taxdue.Contains("$0.00"))
                         {
-                            //end of the month
-                            date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")))).ToString("MM/dd/yyyy");
+                            IWebElement dt = driver.FindElement(By.Id("taxDueDetails_recalculateDate"));
+                            string date = dt.Text;
 
-                        }
+                            DateTime G_Date = Convert.ToDateTime(date);
+                            string dateChecking = DateTime.Now.ToString("MM") + "/15/" + DateTime.Now.ToString("yyyy");
 
-                        else if (G_Date > Convert.ToDateTime(dateChecking))
-                        {
-                            // nextEndOfMonth 
-                            if ((Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))) < 12))
+                            if (G_Date < Convert.ToDateTime(dateChecking))
                             {
-                                date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM")) + 1), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")) + 1)).ToString("MM/dd/yyyy");
-                            }
-                            else
-                            {
-                                int nxtYr = Convert.ToInt16(DateTime.Now.ToString("yyyy")) + 1;
-                                date = new DateTime(nxtYr, 1, DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), 1)).ToString("MM/dd/yyyy");
+                                //end of the month
+                                date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")))).ToString("MM/dd/yyyy");
 
                             }
-                        }
 
-                        Thread.Sleep(2000);
-                        // dt.Clear();
-
-                        driver.FindElement(By.Id("taxDueDetails_date")).SendKeys(date);
-
-                        driver.FindElement(By.Id("taxDueDetails_recalculate")).Click();
-                        Thread.Sleep(4000);
-                    }
-                    string goodthroughdate = driver.FindElement(By.Id("taxDueDetails_recalculateDate")).Text;
-                    string payoff1 = goodthroughdate + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "";
-                    gc.insert_date(orderNumber, PropertyID, 864, payoff1, 1, DateTime.Now);
-                    string yearnow = driver.FindElement(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody/tr[2]/td[1]")).Text;
-
-                    //Amount Due if Paid on~Year~Taxing Jurisdiction~Taxable Value~Base Tax~Base Taxes Paid~Base Tax Due~Discount / Penalty & Interest~Attorney Fees~Amount Due
-                    IWebElement multitableElement5 = driver.FindElement(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody"));
-                    IList<IWebElement> multitableRow5 = multitableElement5.FindElements(By.TagName("tr"));
-                    IList<IWebElement> multirowTD5;
-                    foreach (IWebElement row in multitableRow5)
-                    {
-                        multirowTD5 = row.FindElements(By.TagName("td"));
-                        if (multirowTD5.Count != 0)
-                        {
-                            if (multirowTD5[0].Text == yearnow)
+                            else if (G_Date > Convert.ToDateTime(dateChecking))
                             {
-                                if (myList.Any(str => str.Contains(multirowTD5[1].Text)))
+                                // nextEndOfMonth 
+                                if ((Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM"))) < 12))
                                 {
-                                    myList.RemoveAt(myList.IndexOf(multirowTD5[1].Text));
+                                    date = new DateTime(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(Convert.ToInt16(DateTime.Now.ToString("MM")) + 1), DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), Convert.ToInt16(DateTime.Now.ToString("MM")) + 1)).ToString("MM/dd/yyyy");
+                                }
+                                else
+                                {
+                                    int nxtYr = Convert.ToInt16(DateTime.Now.ToString("yyyy")) + 1;
+                                    date = new DateTime(nxtYr, 1, DateTime.DaysInMonth(Convert.ToInt16(DateTime.Now.ToString("yyyy")), 1)).ToString("MM/dd/yyyy");
 
                                 }
                             }
-                            int countlist = myList.Count();
-                            string payoff11 = "" + "~" + multirowTD5[0].Text.Trim() + "~" + multirowTD5[1].Text.Trim() + "~" + multirowTD5[2].Text.Trim() + "~" + multirowTD5[3].Text.Trim() + "~" + multirowTD5[4].Text.Trim() + "~" + multirowTD5[5].Text.Trim() + "~" + multirowTD5[6].Text.Trim() + "~" + multirowTD5[7].Text.Trim() + "~" + multirowTD5[8].Text.Trim();
-                            gc.insert_date(orderNumber, PropertyID, 864, payoff11, 1, DateTime.Now);
-                        }
-                    }
-                    string entity = "";
-                    if (myList.Count() > 0)
-                    {
-                        for (int i = 0; i < myList.Count(); i++)
-                        {
-                            if (i == 0)
-                            {
-                                entity = myList[i];
-                            }
-                            else
-                            {
-                                entity = entity + "&" + myList[i];
-                            }
-                        }
-                        string msged = entity + "~" + "Need to call Tax Office";
-                        gc.insert_date(orderNumber, PropertyID, 894, msged, 1, DateTime.Now);
-                    }
 
+                            Thread.Sleep(2000);
+                            // dt.Clear();
+
+                            driver.FindElement(By.Id("taxDueDetails_date")).SendKeys(date);
+
+                            driver.FindElement(By.Id("taxDueDetails_recalculate")).Click();
+                            Thread.Sleep(4000);
+                        }
+                        string goodthroughdate = driver.FindElement(By.Id("taxDueDetails_recalculateDate")).Text;
+                        string payoff1 = goodthroughdate + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "";
+                        gc.insert_date(orderNumber, PropertyID, 864, payoff1, 1, DateTime.Now);
+
+
+                        string yearnow = driver.FindElement(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody/tr[2]/td[1]")).Text;
+                        //Amount Due if Paid on~Year~Taxing Jurisdiction~Taxable Value~Base Tax~Base Taxes Paid~Base Tax Due~Discount / Penalty & Interest~Attorney Fees~Amount Due
+                        IWebElement multitableElement5 = driver.FindElement(By.XPath("//*[@id='taxDueDetails_dataSection']/table/tbody"));
+                        IList<IWebElement> multitableRow5 = multitableElement5.FindElements(By.TagName("tr"));
+                        IList<IWebElement> multirowTD5;
+                        foreach (IWebElement row in multitableRow5)
+                        {
+                            multirowTD5 = row.FindElements(By.TagName("td"));
+                            if (multirowTD5.Count != 0)
+                            {
+                                if (multirowTD5[0].Text == yearnow)
+                                {
+                                    if (myList.Any(str => str.Contains(multirowTD5[1].Text)))
+                                    {
+                                        myList.RemoveAt(myList.IndexOf(multirowTD5[1].Text));
+
+                                    }
+                                }
+                                int countlist = myList.Count();
+                                string payoff11 = "" + "~" + multirowTD5[0].Text.Trim() + "~" + multirowTD5[1].Text.Trim() + "~" + multirowTD5[2].Text.Trim() + "~" + multirowTD5[3].Text.Trim() + "~" + multirowTD5[4].Text.Trim() + "~" + multirowTD5[5].Text.Trim() + "~" + multirowTD5[6].Text.Trim() + "~" + multirowTD5[7].Text.Trim() + "~" + multirowTD5[8].Text.Trim();
+                                gc.insert_date(orderNumber, PropertyID, 864, payoff11, 1, DateTime.Now);
+                            }
+                        }
+
+                        string entity = "";
+                        if (myList.Count() > 0)
+                        {
+                            for (int i = 0; i < myList.Count(); i++)
+                            {
+                                if (i == 0)
+                                {
+                                    entity = myList[i];
+                                }
+                                else
+                                {
+                                    entity = entity + "&" + myList[i];
+                                }
+                            }
+                            string msged = entity + "~" + "Need to call Tax Office";
+                            gc.insert_date(orderNumber, PropertyID, 894, msged, 1, DateTime.Now);
+                        }
+                    }
+                    catch { }
                     gc.CreatePdf(orderNumber, PropertyID, "property details", driver, "TX", "Comal");
 
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
@@ -418,7 +422,8 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderNumber, PropertyID, "tax search result1", driver, "TX", "Comal");
 
                     string mul = "";
-                    try {
+                    try
+                    {
                     }
                     catch { }
                     //*[@id="avalon"]/div/div[2]/div[1]/div[3]
@@ -430,7 +435,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     try
                     {
-                        if(mul.Trim() == "")
+                        if (mul.Trim() == "")
                         {
                             mul = driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[1]/div[3]")).Text;
                         }
@@ -479,7 +484,7 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.FindElement(By.XPath("//*[@id='avalon']/div/div[3]/div[2]/div[2]/ul/li[4]/a")).Click();
                             }
                             catch { }
-                           
+
                             Thread.Sleep(4000);
                             gc.CreatePdf(orderNumber, PropertyID, "tax search result2", driver, "TX", "Comal");
                             IWebElement multitableElement61 = null;

@@ -858,7 +858,7 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (MultiAddressTR.Count > 25)
                             {
-                                HttpContext.Current.Session["multiParcel_Hawaii_Maximum"] = "Maimum";
+                                HttpContext.Current.Session["multiParcel_Hawaii_Maximum"] = "Maximum";
                                 driver.Quit();
                                 return "Maximum";
                             }

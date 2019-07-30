@@ -212,7 +212,11 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(5000);
                     try
                     {
-                        driver.FindElement(By.XPath("//*[@id='parcelLookup']/div[1]/a")).Click();
+                        IWebElement IAddressSearch1 = driver.FindElement(By.XPath("//*[@id='parcelLookup']/div[1]/a"));
+                        IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                        js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                        Thread.Sleep(3000);
+                       // driver.FindElement(By.XPath("//*[@id='parcelLookup']/div[1]/a")).Click();
                     }
                     catch { }
                     string Pa1 = "", Pa2 = "", Pa3 = "", Pa4 = "";
@@ -231,13 +235,16 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderno, parcelNumber, "Tax Search", driver, "CA", "Sacramento");
                     try
                     {
-
-                        driver.FindElement(By.XPath("//*[@id='PopupDisclaimerDiv']/div/div/div[3]/button[2]")).Click();
+                        IWebElement IAddressSearch1 = driver.FindElement(By.XPath("//*[@id='PopupDisclaimerDiv']/div/div/div[3]/button[2]"));
+                        IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                        js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                        Thread.Sleep(2000);
+                       // driver.FindElement(By.XPath("//*[@id='PopupDisclaimerDiv']/div/div/div[3]/button[2]")).Click();
                     }
                     catch { }
                     driver.FindElement(By.XPath("//*[@id='btnSubmit']")).Click();
                     //gc.CreatePdf(orderno, parcelNumber, "Input Passed Tax Search", driver, "CA", "El Dorado");
-                    Thread.Sleep(6000);
+                    Thread.Sleep(3000);
                     int I = 0;
                     gc.CreatePdf(orderno, parcelNumber, "Tax Detail", driver, "CA", "Sacramento");
                     string TaxID = driver.FindElement(By.Id("parcelGlobal")).Text.Replace("Parcel Number ", "").Trim();
@@ -314,26 +321,30 @@ namespace ScrapMaricopa.Scrapsource
                                 gc.insert_date(orderno, parcelNumber, 371, Deliquent, 1, DateTime.Now);
 
                             }
-                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Amount:"))
+                            try
                             {
-                                amc.Instamount1 = CurrentTaxHistoryTD[1].Text.Trim();
-                                amc.Instamount2 = CurrentTaxHistoryTD[2].Text.Trim();
+                                if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Amount:"))
+                                {
+                                    amc.Instamount1 = CurrentTaxHistoryTD[1].Text.Trim();
+                                    amc.Instamount2 = CurrentTaxHistoryTD[2].Text.Trim();
+                                }
+                                if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Delinquent Date:"))
+                                {
+                                    FirstDelinquent = CurrentTaxHistoryTD[1].Text.Trim();
+                                    SecondDelinquent = CurrentTaxHistoryTD[2].Text.Trim();
+                                }
+                                if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Penalty:"))
+                                {
+                                    FirstPenalty = CurrentTaxHistoryTD[1].Text.Trim();
+                                    SecondPenalty = CurrentTaxHistoryTD[2].Text.Trim();
+                                }
+                                if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Status:"))
+                                {
+                                    FirstStatus = CurrentTaxHistoryTD[1].Text.Trim();
+                                    SecondStatus = CurrentTaxHistoryTD[2].Text.Trim();
+                                }
                             }
-                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Delinquent Date:"))
-                            {
-                                FirstDelinquent = CurrentTaxHistoryTD[1].Text.Trim();
-                                SecondDelinquent = CurrentTaxHistoryTD[2].Text.Trim();
-                            }
-                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Penalty:"))
-                            {
-                                FirstPenalty = CurrentTaxHistoryTD[1].Text.Trim();
-                                SecondPenalty = CurrentTaxHistoryTD[2].Text.Trim();
-                            }
-                            if (CurrentTaxHistoryTD.Count != 0 && row.Text.Contains("Status:"))
-                            {
-                                FirstStatus = CurrentTaxHistoryTD[1].Text.Trim();
-                                SecondStatus = CurrentTaxHistoryTD[2].Text.Trim();
-                            }
+                            catch { }
                         }
 
                         driver.Navigate().Back();
@@ -446,9 +457,8 @@ namespace ScrapMaricopa.Scrapsource
 
                         foreach (string bill in listurl)
                         {
-
-                            //driver.Navigate().GoToUrl("https://eproptax.saccounty.net/#DirectLevy/" + bill + "");
-                            driver.Navigate().GoToUrl("https://eproptax.saccounty.net//#secured/DirectLevy/" + bill + "");
+                                                //     https://eproptax.saccounty.net/#secured/DirectLevy/18107260
+                            driver.Navigate().GoToUrl("https://eproptax.saccounty.net/#secured/DirectLevy/" + bill + "");
                             Thread.Sleep(6000);
                             CreatePdf(orderno, parcelNumber, "Tax Detail" + bill, driver, "CA", "Sacramento");
                             IWebElement CurrentPayHistoryTB = driver.FindElement(By.XPath("//*[@id='billDetailGrid']/table/tbody"));

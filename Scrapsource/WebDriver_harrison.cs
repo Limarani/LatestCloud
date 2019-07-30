@@ -56,6 +56,8 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            // driver = new PhantomJSDriver();
+            //driver = new ChromeDriver(); 
             using (driver = new PhantomJSDriver())
             {
                 try
@@ -151,6 +153,13 @@ namespace ScrapMaricopa.Scrapsource
                                     }
                                     b++;
                                 }
+
+                            }
+                            if (Li.Count ==0)
+                            {
+                                HttpContext.Current.Session["Nodata_HarrisonMS"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
                             }
                         }
 

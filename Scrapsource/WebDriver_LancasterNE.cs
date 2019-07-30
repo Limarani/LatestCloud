@@ -47,13 +47,9 @@ namespace ScrapMaricopa.Scrapsource
             // using (driver = new ChromeDriver())
             using (driver = new PhantomJSDriver())
             {
-
-
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-
-
                     if (searchType == "titleflex")
                     {
                         if (Direction != "")
@@ -821,9 +817,12 @@ namespace ScrapMaricopa.Scrapsource
                                     if (TDsplAss.Count != 0 && !row.Text.Contains("Description") && TDsplAss[3].Text.Trim() == Convert.ToString(TaxYear) && row.Text.Trim() != "")
                                     {
                                         TDsplAss[0].Click();
-                                        Thread.Sleep(4000);
+                                        Thread.Sleep(2000);
+                                        if (i == 0)
+                                        {
+                                            gc.CreatePdf(orderNumber, parcelNumber, "Special Assessment" + TaxYear, driver, "NE", "Lancaster");
+                                        }
                                         break;
-                                        gc.CreatePdf(orderNumber, parcelNumber, "Special Assessment" + TaxYear, driver, "NE", "Lancaster");
                                     }
                                 }
                             }
@@ -981,7 +980,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.XPath("//*[@id='datacontent']/a")).Click();
-                        Thread.Sleep(4000);
+                        Thread.Sleep(5000);
                     }
                     catch { }
 
@@ -992,7 +991,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.LinkText("Special Sale")).Click();
-                        Thread.Sleep(4000);
+                        Thread.Sleep(5000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Special Sale Details", driver, "NE", "Lancaster");
                     }
                     catch { }
@@ -1053,7 +1052,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             driver.Navigate().Back();
-                            Thread.Sleep(4000);
+                            Thread.Sleep(5000);
                         }
                         catch { }
                     }
@@ -1065,7 +1064,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         driver.FindElement(By.LinkText("Tax Sale")).Click();
-                        Thread.Sleep(4000);
+                        Thread.Sleep(5000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax Sale Details", driver, "NE", "Lancaster");
                     }
                     catch { }

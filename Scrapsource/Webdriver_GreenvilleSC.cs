@@ -162,9 +162,10 @@ namespace ScrapMaricopa.Scrapsource
                         IWebElement Multiparceladdress = driver.FindElement(By.XPath("//*[@id='tbl_Data']/tbody"));
                         IList<IWebElement> Multiparcelrow = Multiparceladdress.FindElements(By.TagName("tr"));
                         IList<IWebElement> Multiparcelid;
-                        gc.CreatePdf_WOP(orderNumber, "Multiparcel", driver, "SC", "Greenville");
+                     
                         if (Multiparcelrow.Count < 26)
                         {
+                            gc.CreatePdf_WOP(orderNumber, "Multiparcel", driver, "SC", "Greenville");
                             foreach (IWebElement multiparcel in Multiparcelrow)
                             {
                                 Multiparcelid = multiparcel.FindElements(By.TagName("td"));

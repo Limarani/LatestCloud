@@ -48,7 +48,7 @@ namespace ScrapMaricopa.Scrapsource
             string pathurl = "", Owner_Name = "";
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             List<string> taxurllist = new List<string>();
-            using (driver = new ChromeDriver())
+            using (driver = new PhantomJSDriver())
             {
                 try
                 {

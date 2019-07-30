@@ -66,6 +66,8 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_parcelNo = parcelNumber;
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            // driver = new PhantomJSDriver();
+            //driver = new ChromeDriver();      
             using (driver = new PhantomJSDriver())//
             {
                 try
@@ -244,8 +246,8 @@ namespace ScrapMaricopa.Scrapsource
             gc.CreatePdf(orderNumber, Outparcelno, "OHFranklinProperty", driver, "OH", "Franklin");
 
             parcelsplit = driver.FindElement(By.XPath("//*[@id='datalet_header_row']/td/table/tbody/tr[1]/td[1]")).Text;
-            Outparcelno = WebDriverTest.After(parcelsplit, "ParcelID: ");
-            string fulltext = driver.FindElement(By.XPath("//*[@id='Owner']")).Text;
+            Outparcelno = WebDriverTest.After(parcelsplit, "Parcel ID:");
+            string fulltext = driver.FindElement(By.XPath("//*[@id='Owner']")).Text.Replace("\r\n","");
             try
             {
                 strOwner1 = gc.Between(fulltext, "Owner", "Owner Address").Trim();
@@ -332,7 +334,7 @@ namespace ScrapMaricopa.Scrapsource
             strOwnerCredit = gc.Between(fulltaxstatus, "Owner Occ. Credit", "Homestead Credit").Trim();
             strHomesteadCredit = gc.Between(fulltaxstatus, "Homestead Credit", "Rental Registration").Trim();
 
-            string strTaxStatus = strOwnerName + "~" + strSitusAddress + "~" + strLegalDescription + "~" + strYearBuild + "~" + strPropertyClass + "~" + strLandUse + "~" + strTaxDistrict + "~" + strSchoolDistrict + "~" + strCityVillage + "~" + strTownship + "~" + strTaxLien + "~" + strCAUV + "~" + strOwnerCredit + "~" + strHomesteadCredit;
+            string strTaxStatus = strOwner1 + "~" + strSitusAddress + "~" + strLegalDescription + "~" + strYearBuild + "~" + strPropertyClass + "~" + strLandUse + "~" + strTaxDistrict + "~" + strSchoolDistrict + "~" + strCityVillage + "~" + strTownship + "~" + strTaxLien + "~" + strCAUV + "~" + strOwnerCredit + "~" + strHomesteadCredit;
             gc.insert_date(orderNumber, Outparcelno, 62, strTaxStatus, 1, DateTime.Now);
 
             //Assessment Market Value

@@ -119,9 +119,9 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Citrus"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Citrus"] = "Yes";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }
@@ -219,9 +219,9 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 if (Max == 0)
                                 {
-                                    HttpContext.Current.Session["Zero_Citrus"] = "Zero";
+                                    HttpContext.Current.Session["Nodata_Citrus"] = "Yes";
                                     driver.Quit();
-                                    return "Zero";
+                                    return "No Data Found";
                                 }
 
                             }
@@ -278,9 +278,9 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Citrus"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Citrus"] = "Yes";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }
@@ -334,9 +334,9 @@ namespace ScrapMaricopa.Scrapsource
                             }
                             if (Max == 0)
                             {
-                                HttpContext.Current.Session["Zero_Citrus"] = "Zero";
+                                HttpContext.Current.Session["Nodata_Citrus"] = "Yes";
                                 driver.Quit();
-                                return "Zero";
+                                return "No Data Found";
                             }
 
                         }

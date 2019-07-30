@@ -2007,6 +2007,7 @@ namespace ScrapMaricopa.Scrapsource
                             driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[3]/td[7]/input")).SendKeys(property_loc1);
                             driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[3]/td[8]/button")).SendKeys(Keys.Enter);
                             Thread.Sleep(3000);
+                            gc.CreatePdf(orderNumber, Parcel_Id, "Utility Input Passing", driver, "NJ", countynameNJ);
                             driver.FindElement(By.Name("picklistGroup")).Click();
                             Thread.Sleep(6000);
                             gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details", driver, "NJ", countynameNJ);
@@ -2029,13 +2030,14 @@ namespace ScrapMaricopa.Scrapsource
                                     drivertown.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[3]/td[7]/input")).SendKeys(property_loc1);
                                     drivertown.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/div/table/tbody/tr/td/table/tbody/tr[2]/td/table/tbody/tr[3]/td[8]/button")).SendKeys(Keys.Enter);
                                     Thread.Sleep(5000);
-                                    gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details1", drivertown, "NJ", countynameNJ);
+                                    //gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details1", drivertown, "NJ", countynameNJ);
                                     try
                                     {
                                         IWebElement IAddressSearch1 = drivertown.FindElement(By.Name("picklistGroup"));
                                         IJavaScriptExecutor js1 = drivertown as IJavaScriptExecutor;
                                         js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
-                                        gc.CreatePdf(orderNumber, Parcel_Id, "Picklistgrouping", drivertown, "NJ", countynameNJ);
+                                        Thread.Sleep(7000);
+                                        //gc.CreatePdf(orderNumber, Parcel_Id, "Picklistgrouping", drivertown, "NJ", countynameNJ);
                                     }
                                     catch
                                     { }
@@ -2043,7 +2045,7 @@ namespace ScrapMaricopa.Scrapsource
                                     {
                                         drivertown.FindElement(By.Name("picklistGroup")).Click();
                                         Thread.Sleep(7000);
-                                        gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details2", drivertown, "NJ", countynameNJ);
+                                         gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details2", drivertown, "NJ", countynameNJ);
                                         int towncount = drivertown.FindElements(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[1]/td/table/tbody/tr/td")).Count;
                                         string towntax = "";
                                     }
@@ -2061,7 +2063,8 @@ namespace ScrapMaricopa.Scrapsource
                                                 IWebElement IAddressSearch1 = drivertown.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[2]/td/div/div/table/tbody/tr[1]/td/table/tbody/tr/td[2]/button"));
                                                 IJavaScriptExecutor js1 = drivertown as IJavaScriptExecutor;
                                                 js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
-                                                gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details3", drivertown, "NJ", countynameNJ);
+                                                //Thread.Sleep(7000);
+                                                //gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details3", drivertown, "NJ", countynameNJ);
 
                                             }
                                             catch
@@ -2070,8 +2073,10 @@ namespace ScrapMaricopa.Scrapsource
                                                 IWebElement IAddressSearch2 = drivertown.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/table/tbody/tr[1]/td/div/div/table/tbody/tr[1]/td/table/tbody/tr/td[2]/button"));
                                                 IJavaScriptExecutor js2 = drivertown as IJavaScriptExecutor;
                                                 js2.ExecuteScript("arguments[0].click();", IAddressSearch2);
+                                                //Thread.Sleep(7000);
                                             }
-                                            Thread.Sleep(5000);
+                                            Thread.Sleep(8000);
+                                            //gc.CreatePdf(orderNumber, Parcel_Id, "Utility Details4", drivertown, "NJ", countynameNJ);
                                         }
                                     }
 

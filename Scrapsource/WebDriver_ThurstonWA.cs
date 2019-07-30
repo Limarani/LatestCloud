@@ -128,8 +128,8 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults")).Text;
-                            if (nodata.Contains("No results match your search criteria."))
+                            string nodata = driver.FindElement(By.XPath("/html/body/div/table[2]/tbody/tr[1]/td")).Text;
+                            if (nodata.Contains("No records match your search criteria."))
                             {
                                 HttpContext.Current.Session["Nodata_ThurstonWA"] = "Yes";
                                 driver.Quit();
@@ -207,8 +207,8 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctlBodyPane_noDataList_pnlNoResults")).Text;
-                            if (nodata.Contains("No results match your search criteria."))
+                            string nodata = driver.FindElement(By.XPath("/html/body/div/table[2]/tbody/tr[1]/td")).Text;
+                            if (nodata.Contains("No records match your search criteria."))
                             {
                                 HttpContext.Current.Session["Nodata_ThurstonWA"] = "Yes";
                                 driver.Quit();

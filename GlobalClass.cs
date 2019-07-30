@@ -735,7 +735,7 @@ namespace ScrapMaricopa
                         XmlNode INDIVIDUAL1 = PARTY1.AppendChild(XD.CreateElement("INDIVIDUAL"));
                         XmlNode NAME1 = INDIVIDUAL1.AppendChild(XD.CreateElement("NAME"));
 
-                        if (state == "KY" && county == "Fayette")
+                        if ((state == "KY" && county == "Fayette") || (state == "VA" && county == "Chesterfield"))
                         {
                             string[] ownersplit = ownerName.Trim().Split(' ');
                             if (ownersplit.Count() == 2)

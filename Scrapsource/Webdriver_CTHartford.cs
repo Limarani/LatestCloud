@@ -2308,15 +2308,22 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement row in ICurrentValueAppDetailsRow)
                         {
                             IICurrentValueAppDetailsTD = row.FindElements(By.TagName("td"));
-                            if (IICurrentValueAppDetailsTD.Count != 0 && !row.Text.Contains("Valuation Year"))
+                            if (IICurrentValueAppDetailsTD.Count != 0 && IICurrentValueAppDetailsTD.Count == 4 && !row.Text.Contains("Valuation Year"))
                             {
                                 string ValueAppraisal = "Appraisal" + "~" + IICurrentValueAppDetailsTD[0].Text + "~" + IICurrentValueAppDetailsTD[1].Text + "~" + IICurrentValueAppDetailsTD[2].Text + "~" + IICurrentValueAppDetailsTD[3].Text;
+                                gc.insert_date(orderNumber, assessment_id, 2236, ValueAppraisal, 1, DateTime.Now);
+                                //Type~Valuation Year~Improvements~Land~Total
+                            }
+                            if (IICurrentValueAppDetailsTD.Count != 0 && IICurrentValueAppDetailsTD.Count == 2 && !row.Text.Contains("Valuation Year"))
+                            {
+                                string ValueAppraisal = "Appraisal" + "~" + IICurrentValueAppDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IICurrentValueAppDetailsTD[1].Text;
                                 gc.insert_date(orderNumber, assessment_id, 2236, ValueAppraisal, 1, DateTime.Now);
                                 //Type~Valuation Year~Improvements~Land~Total
                             }
                         }
                         string property2 = "Type~Valuation Year~Improvements~Land~Total";
                         dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property2 + "' where Id = '2236'");
+
                         //Current Assessment Valuation
                         IWebElement ICurrentValueAssDetails = driver.FindElement(By.XPath("//*[@id='MainContent_grdCurrentValueAsmt']/tbody"));
                         IList<IWebElement> ICurrentValueAssDetailsRow = ICurrentValueAssDetails.FindElements(By.TagName("tr"));
@@ -2324,9 +2331,15 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement assessment in ICurrentValueAssDetailsRow)
                         {
                             IICurrentValueAssDetailsTD = assessment.FindElements(By.TagName("td"));
-                            if (IICurrentValueAssDetailsTD.Count != 0 && !assessment.Text.Contains("Valuation Year"))
+                            if (IICurrentValueAssDetailsTD.Count != 0 && IICurrentValueAssDetailsTD.Count == 4 && !assessment.Text.Contains("Valuation Year"))
                             {
                                 string ValueAssessment = "Assessment" + "~" + IICurrentValueAssDetailsTD[0].Text + "~" + IICurrentValueAssDetailsTD[1].Text + "~" + IICurrentValueAssDetailsTD[2].Text + "~" + IICurrentValueAssDetailsTD[3].Text;
+                                gc.insert_date(orderNumber, assessment_id, 2236, ValueAssessment, 1, DateTime.Now);
+                                //Type~Valuation Year~Improvements~Land~Total
+                            }
+                            if (IICurrentValueAssDetailsTD.Count != 0 && IICurrentValueAssDetailsTD.Count == 2 && !assessment.Text.Contains("Valuation Year"))
+                            {
+                                string ValueAssessment = "Assessment" + "~" + IICurrentValueAssDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IICurrentValueAssDetailsTD[1].Text;
                                 gc.insert_date(orderNumber, assessment_id, 2236, ValueAssessment, 1, DateTime.Now);
                                 //Type~Valuation Year~Improvements~Land~Total
                             }
@@ -2450,7 +2463,8 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement line in ILandLineDetailsRow)
                         {
                             ILandLineDetailsTD = line.FindElements(By.TagName("td"));
-                            if (ILandLineDetailsTD.Count != 0 && line.Text.Contains("Size(Acres)"))
+
+                            if (ILandLineDetailsTD.Count != 0 && line.Text.Contains("Size (Acres)"))
                             {
                                 Size = ILandLineDetailsTD[1].Text;
                             }
@@ -2483,14 +2497,20 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             //Appraisal Valuation History
                             IWebElement IValueAppDetails = driver.FindElement(By.XPath("//*[@id='MainContent_grdHistoryValuesAppr']/tbody"));
-                            IList<IWebElement> IValueAppDetailsRow = ICurrentValueAppDetails.FindElements(By.TagName("tr"));
+                            IList<IWebElement> IValueAppDetailsRow = IValueAppDetails.FindElements(By.TagName("tr"));
                             IList<IWebElement> IValueAppDetailsTD;
                             foreach (IWebElement row in IValueAppDetailsRow)
                             {
                                 IValueAppDetailsTD = row.FindElements(By.TagName("td"));
-                                if (IValueAppDetailsTD.Count != 0 && !row.Text.Contains("Valuation Year"))
+                                if (IValueAppDetailsTD.Count != 0 && IValueAppDetailsTD.Count == 4 && !row.Text.Contains("Valuation Year"))
                                 {
                                     string ValueAppraisal = "Appraisal" + "~" + IValueAppDetailsTD[0].Text + "~" + IValueAppDetailsTD[1].Text + "~" + IValueAppDetailsTD[2].Text + "~" + IValueAppDetailsTD[3].Text;
+                                    gc.insert_date(orderNumber, assessment_id, 2240, ValueAppraisal, 1, DateTime.Now);
+                                    //Type~Valuation Year~Improvements~Land~Total
+                                }
+                                if (IValueAppDetailsTD.Count != 0 && IValueAppDetailsTD.Count == 2 && !row.Text.Contains("Valuation Year"))
+                                {
+                                    string ValueAppraisal = "Appraisal" + "~" + IValueAppDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IValueAppDetailsTD[1].Text;
                                     gc.insert_date(orderNumber, assessment_id, 2240, ValueAppraisal, 1, DateTime.Now);
                                     //Type~Valuation Year~Improvements~Land~Total
                                 }
@@ -2501,14 +2521,20 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             IWebElement IValueAssDetails = driver.FindElement(By.XPath("//*[@id='MainContent_grdHistoryValuesAsmt']/tbody"));
-                            IList<IWebElement> IValueAssDetailsRow = ICurrentValueAssDetails.FindElements(By.TagName("tr"));
+                            IList<IWebElement> IValueAssDetailsRow = IValueAssDetails.FindElements(By.TagName("tr"));
                             IList<IWebElement> IValueAssDetailsTD;
                             foreach (IWebElement assessment in IValueAssDetailsRow)
                             {
                                 IValueAssDetailsTD = assessment.FindElements(By.TagName("td"));
-                                if (IValueAssDetailsTD.Count != 0 && !assessment.Text.Contains("Valuation Year"))
+                                if (IValueAssDetailsTD.Count != 0 && IValueAssDetailsTD.Count == 4 && !assessment.Text.Contains("Valuation Year"))
                                 {
                                     string ValueAssessment = "Assessment" + "~" + IValueAssDetailsTD[0].Text + "~" + IValueAssDetailsTD[1].Text + "~" + IValueAssDetailsTD[2].Text + "~" + IValueAssDetailsTD[3].Text;
+                                    gc.insert_date(orderNumber, assessment_id, 2240, ValueAssessment, 1, DateTime.Now);
+                                    //Type~Valuation Year~Improvements~Land~Total
+                                }
+                                if (IValueAssDetailsTD.Count != 0 && IValueAssDetailsTD.Count == 2 && !assessment.Text.Contains("Valuation Year"))
+                                {
+                                    string ValueAssessment = "Assessment" + "~" + IValueAssDetailsTD[0].Text + "~" + "" + "~" + "" + "~" + IValueAssDetailsTD[1].Text;
                                     gc.insert_date(orderNumber, assessment_id, 2240, ValueAssessment, 1, DateTime.Now);
                                     //Type~Valuation Year~Improvements~Land~Total
                                 }
@@ -2525,41 +2551,6 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(3000);
                         }
                         catch { }
-                        //if (townshipcode == "31")
-                        //{
-                        //    try
-                        //    {
-                        //        string FilePath = gc.filePath(orderNumber, assessment_id) + "Propertypdf.pdf";
-                        //        PdfReader reader;
-                        //        string pdfData;
-                        //        string pdftext = "";
-                        //        try
-                        //        {
-                        //            reader = new PdfReader(FilePath);
-                        //            String textFromPage = PdfTextExtractor.GetTextFromPage(reader, 1);
-                        //            System.Diagnostics.Debug.WriteLine("" + textFromPage);
-
-                        //            pdftext = textFromPage;
-                        //        }
-                        //        catch { }
-
-
-                        //        string tableassess = gc.Between(pdftext, "Account #", "Bldg #:").Trim();
-                        //        if (tableassess.Length == 4)
-                        //        {
-                        //            tableassess = "0" + tableassess;
-                        //        }
-                        //        if (tableassess.Length == 3)
-                        //        {
-                        //            tableassess = "00" + tableassess;
-                        //        }
-                        //        uniqueidMap = tableassess.Trim();
-                        //        assessment_id = uniqueidMap;
-                        //    }
-                        //    catch { }
-                        //}
-
-
                     }
                     #endregion
                     #region one Assessment Link

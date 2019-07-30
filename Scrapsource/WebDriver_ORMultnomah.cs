@@ -413,7 +413,7 @@ namespace ScrapMaricopa.Scrapsource
                             foreach (IWebElement row in TRadd_search)
                             {
                                 TDadd_search = row.FindElements(By.TagName("td"));
-                                if (TDadd_search.Count != 0 && !row.Text.Contains("Location Address"))
+                                if (TDadd_search.Count != 0 && !row.Text.Contains("Location Address") && !row.Text.Contains("No properties found"))
                                 {
                                     parcelNumber = TDadd_search[0].Text;
                                     string Address = TDadd_search[4].Text;

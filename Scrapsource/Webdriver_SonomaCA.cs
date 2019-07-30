@@ -45,7 +45,7 @@ namespace ScrapMaricopa.Scrapsource
 
             //driver = new PhantomJSDriver();
             //   driver = new ChromeDriver();
-            using (driver = new ChromeDriver()) //PhantomJSDriver
+            using (driver = new PhantomJSDriver()) //PhantomJSDriver
             {
                 try
                 {

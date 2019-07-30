@@ -380,9 +380,12 @@ namespace ScrapMaricopa.Scrapsource
                     //Tax Information
                     try
                     {
-                        driver.Navigate().GoToUrl("https://services.wakegov.com/TaxPortal/Contact");
-                        string Taxauthority1 = driver.FindElement(By.XPath("/html/body/div[4]/div")).Text;
-                        Taxing_Authority = gc.Between(Taxauthority1, "Physical Address", "Mailing Address");
+                        driver.Navigate().GoToUrl("http://www.wakegov.com/tax/Pages/default.aspx");
+                        Thread.Sleep(1000);
+                        ByVisibleElement(driver.FindElement(By.Id("footer")));
+                       gc.CreatePdf(orderNumber, parcel_number.Replace("/", ""), "Taxing Authority", driver, "NC", "Wake");
+                        string Taxauthority1 = driver.FindElement(By.Id("footer")).Text;
+                        Taxing_Authority = GlobalClass.Before(Taxauthority1, "Mailing Address:").Trim();
                     }
                     catch { }
                     driver.Navigate().GoToUrl("https://services.wakegov.com/ptax/main/billing/");
@@ -523,19 +526,9 @@ namespace ScrapMaricopa.Scrapsource
                 SecondMultiTD = SecondMulti.FindElements(By.TagName("td"));
 
                 if (!SecondMulti.Text.Contains("Street Name"))
-                { 
-                    try
-                    {
-                        IWebElement CheckParcel = SecondMultiTD[1].FindElement(By.TagName("a"));
-                        CheckParcel.Click();
-                    }
-                    catch { }
-                    try
-                    {
-                        IWebElement Checkbok = SecondMultiTD[0].FindElement(By.TagName("a"));
-                        Checkbok.Click();
-                    }
-                    catch { }
+                {
+                    IWebElement Checkbok = SecondMultiTD[0];
+                    Checkbok.Click();
                     break;
                 }
             }

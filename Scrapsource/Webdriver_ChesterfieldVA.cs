@@ -38,7 +38,7 @@ namespace ScrapMaricopa.Scrapsource
             GlobalClass.global_parcelNo = parcelNumber;
             List<string> taxinformation = new List<string>();
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
-            string As_of = "", Total_Due = "", MillLevy = "", Class = "", YearBuilt = "", subdivision = "";
+            string As_of = "", Total_Due = "", MillLevy = "", Class = "", YearBuilt = "", subdivision = "", printhrefLink="";
             List<string> pdflink = new List<string>();
             string Parcel_number = "", Tax_Authority = "", type = "", AddressCombain = "", Addresshrf = "", Pin = "", address = "", MailingAddress = "", Constructed = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
@@ -75,11 +75,10 @@ namespace ScrapMaricopa.Scrapsource
 
                         driver.FindElement(By.Id("searchText")).SendKeys(address);
                         Thread.Sleep(4000);
-                     ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "VA", "Chesterfield");
+                        Thread.Sleep(3000);
                         driver.FindElement(By.XPath("//*[@id='read-search-toolbar']/div/div/div/button[2]/div/i")).Click();
                         Thread.Sleep(6000);
-                    ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf_WOP(orderNumber, "Address After", driver, "VA", "Chesterfield");
 
                         string Recored1 = driver.FindElement(By.XPath("//*[@id='read-content']/main/div/div/div[2]/div[2]/div/div/div/div[6]")).Text;
@@ -87,7 +86,7 @@ namespace ScrapMaricopa.Scrapsource
                         if (Recored.Trim().Contains("1"))
                         {
                             driver.FindElement(By.XPath("//*[@id='read-content']/main/div/div/div[2]/div[2]/div/div/div/div[3]/a/div/div/div[2]")).Click();
-                            Thread.Sleep(2000);
+                            Thread.Sleep(5000);
                         }
                         if (!Recored.Trim().Contains("1"))
                         {
@@ -137,13 +136,11 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "parcel")
                     {
-                        driver.FindElement(By.Id("searchText")).SendKeys(parcelNumber);
+                        driver.FindElement(By.Id("searchText")).SendKeys(parcelNumber.Replace("-", ""));
                         Thread.Sleep(4000);
-                      ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search", driver, "VA", "Chesterfield");
                         driver.FindElement(By.XPath("//*[@id='read-search-toolbar']/div/div/div/button[2]/div/i")).Click();
                         Thread.Sleep(6000);
-                       ByVisibleElement(driver.FindElement(By.Id("searchText")));
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search After", driver, "VA", "Chesterfield");
                         driver.FindElement(By.XPath("//*[@id='read-content']/main/div/div/div[2]/div[2]/div/div/div/div[3]/a/div/div/div[2]/div/div[4]/ul[1]")).Click();
                         Thread.Sleep(8000);
@@ -161,10 +158,25 @@ namespace ScrapMaricopa.Scrapsource
                         Thread.Sleep(8000);
                         gc.CreatePdf(orderNumber, parcelNumber, "Parcel Search click After", driver, "VA", "Chesterfield");
                     }
-
-                    IWebElement printhref = driver.FindElement(By.XPath("//*[@id='read-content']/div[4]/div/div/div[2]/div")).FindElement(By.TagName("a"));
-                    string printhrefLink = printhref.GetAttribute("href");
-                  // 
+                    IWebElement Pdflinktable = driver.FindElement(By.XPath("//*[@id='read-content']/div[4]/div/div/div[2]/div"));
+                    IList<IWebElement> pdflinkrow = Pdflinktable.FindElements(By.TagName("a"));
+                    IList<IWebElement> PdfTD;
+                    foreach (IWebElement Pdf in pdflinkrow)
+                    {
+                        try
+                        {
+                            string PDflink1 = Pdf.GetAttribute("title");
+                            if (PDflink1.Contains("Open Print View"))
+                            {
+                                printhrefLink = Pdf.GetAttribute("href");
+                            }
+                        }
+                        catch { }
+                    }
+                    //*[@id="read-content"]/div[4]/div/div/div[2]/div/a[2]
+                    //IWebElement printhref = driver.FindElement(By.XPath("//*[@id='read-content']/div[4]/div/div/div[2]/div")).FindElement(By.TagName("a"));
+                    //string printhrefLink = printhref.GetAttribute("href");
+                    // 
 
                     Parcel_number = driver.FindElement(By.Id("parcelNumber")).Text;
                     string RealEstateAccount = driver.FindElement(By.Id("accountNumber")).Text;
@@ -183,7 +195,7 @@ namespace ScrapMaricopa.Scrapsource
                     string MailingAddress3 = MailingAddress1 + " " + MailingAddress2;
                     string OwnershipType = driver.FindElement(By.Id("ownershipType")).Text;
                     string legalDescription = driver.FindElement(By.Id("legalDescription")).Text;
-                 //   gc.CreatePdf(orderNumber, parcelNumber, "Overview", driver, "VA", "Chesterfield");
+                    //   gc.CreatePdf(orderNumber, parcelNumber, "Overview", driver, "VA", "Chesterfield");
                     IJavaScriptExecutor js = driver as IJavaScriptExecutor;
                     //*[@id="read-content"]/div[4]/div/div/div[1]/div/div/div
                     IWebElement Assessmentslink = driver.FindElement(By.XPath("//*[@id='read-content']/div[4]/div/div/div[1]/div/div/div"));
@@ -210,7 +222,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     Thread.Sleep(2000);
 
-                   // gc.CreatePdf(orderNumber, parcelNumber, "Residential", driver, "VA", "Chesterfield");
+                    // gc.CreatePdf(orderNumber, parcelNumber, "Residential", driver, "VA", "Chesterfield");
                     try
                     {
                         YearBuilt = driver.FindElement(By.Id("yearBuilt_0")).Text;
@@ -244,7 +256,7 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     Thread.Sleep(2000);
-                  //  gc.CreatePdf(orderNumber, parcelNumber, "Assessment", driver, "VA", "Chesterfield");
+                    //  gc.CreatePdf(orderNumber, parcelNumber, "Assessment", driver, "VA", "Chesterfield");
                     IWebElement Assessmenttable = driver.FindElement(By.XPath("//*[@id='tab_Assessments']/div/div[2]/div/div[1]/div/table/tbody"));
                     IList<IWebElement> Assessmentrow = Assessmenttable.FindElements(By.TagName("tr"));
                     IList<IWebElement> assessmentid;
@@ -279,7 +291,7 @@ namespace ScrapMaricopa.Scrapsource
                             catch { }
                         }
                     }
-                   // gc.CreatePdf(orderNumber, parcelNumber, "Improvements", driver, "VA", "Chesterfield");
+                    // gc.CreatePdf(orderNumber, parcelNumber, "Improvements", driver, "VA", "Chesterfield");
                     IWebElement Improvementtable = driver.FindElement(By.XPath("//*[@id='tab_Improvements']/div/div[2]/div/div[1]/div/table/tbody"));
                     IList<IWebElement> Improvementrow = Improvementtable.FindElements(By.TagName("tr"));
                     IList<IWebElement> Improvementid;
@@ -308,14 +320,14 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     IWebElement IChargesSearch = IChargesTD3[0];
                                     js.ExecuteScript("arguments[0].click();", IChargesSearch);
-                                    Thread.Sleep(3000);
+                                    Thread.Sleep(5000);
                                     break;
                                 }
                             }
                             catch { }
                         }
                     }
-                //    gc.CreatePdf(orderNumber, parcelNumber, "Land", driver, "VA", "Chesterfield");
+                    //    gc.CreatePdf(orderNumber, parcelNumber, "Land", driver, "VA", "Chesterfield");
                     string Deeded_Acreage = "";
                     IList<IWebElement> Acreslist = driver.FindElements(By.Id("acres"));
                     foreach (IWebElement Acres in Acreslist)
@@ -355,14 +367,14 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     IWebElement IChargesSearch = IChargesTD4[0];
                                     js.ExecuteScript("arguments[0].click();", IChargesSearch);
-                                    Thread.Sleep(3000);
+                                    Thread.Sleep(5000);
                                     break;
                                 }
                             }
                             catch { }
                         }
                     }
-                  //  gc.CreatePdf(orderNumber, parcelNumber, "Ownership", driver, "VA", "Chesterfield");
+                    //  gc.CreatePdf(orderNumber, parcelNumber, "Ownership", driver, "VA", "Chesterfield");
                     IWebElement Ownershiptable = driver.FindElement(By.XPath("//*[@id='tab_Ownership']/div/div[2]/div/div[1]/div/table/tbody"));
                     IList<IWebElement> Ownershiprow = Ownershiptable.FindElements(By.TagName("tr"));
                     IList<IWebElement> Ownershipid;
@@ -399,7 +411,7 @@ namespace ScrapMaricopa.Scrapsource
                             catch { }
                         }
                     }
-                   // gc.CreatePdf(orderNumber, parcelNumber, "TaxHistory", driver, "VA", "Chesterfield");
+                    // gc.CreatePdf(orderNumber, parcelNumber, "TaxHistory", driver, "VA", "Chesterfield");
                     string taxAccount = driver.FindElement(By.Id("taxAccount")).Text;
                     string Currentbalance1 = driver.FindElement(By.XPath("//*[@id='tab_Tax']/div/div[2]/div/ul/li[2]/div/div/div/ul/li/div[1]")).Text;
                     string currentbalncedate = GlobalClass.After(Currentbalance1, "as of");
@@ -416,8 +428,22 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, Parcel_number, 2144, TaxAssessmentresult, 1, DateTime.Now);
                         }
                     }
-                    driver.FindElement(By.XPath("//*[@id='tab_Tax']/div/div[2]/div/ul/li[6]/div/div[1]/div[1]")).Click();
-                    Thread.Sleep(6000);
+                    //try
+                    //{
+                    //    driver.FindElement(By.LinkText("Tax Account History")).Click();
+                    //}
+                    //catch { }
+                    try
+                    {
+                        driver.FindElement(By.XPath("//*[@id='tab_Tax']/div/div[2]/div/ul/li[6]/div/div[1]/div[1]")).Click();
+                        Thread.Sleep(6000);
+                    }
+                    catch
+                    {
+                        driver.FindElement(By.XPath("//*[@id='tab_Tax']/div/div[2]/div/ul/li[6]/div/div[1]/div[3]")).Click();
+                        Thread.Sleep(6000);
+                    }
+
                     IList<IWebElement> Licount = driver.FindElement(By.XPath("//*[@id='tab_Tax']/div/div[2]/div/ul/li[6]/div/div[2]/div/ul")).FindElements(By.TagName("li"));
                     try
                     {
@@ -430,7 +456,7 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(4000);
                             string Taxyear1 = driver.FindElement(By.XPath("//*[@id='tab_Tax']/div/div[2]/div/ul/li[6]/div/div[2]/div/ul/li[" + I + "]/div[1]")).Text;
                             string taxyear = GlobalClass.Before(Taxyear1, ":");
-                           // gc.CreatePdf(orderNumber, parcelNumber, "TaxHistory" + I, driver, "VA", "Chesterfield");
+                            // gc.CreatePdf(orderNumber, parcelNumber, "TaxHistory" + I, driver, "VA", "Chesterfield");
                             IWebElement TaxaccountHistorytable = driver.FindElement(By.XPath("//*[@id='tab_Tax']/div/div[2]/div/ul/li[6]/div/div[2]/div/ul/li[" + I + "]/div[2]/div/div/div/table/tbody"));
                             IList<IWebElement> TaxaccountHistoryrow = TaxaccountHistorytable.FindElements(By.TagName("tr"));
                             IList<IWebElement> TaxaccountHistoryid;

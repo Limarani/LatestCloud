@@ -42,7 +42,7 @@ namespace ScrapMaricopa.Scrapsource
             driverService.HideCommandPromptWindow = true;
             using (driver = new PhantomJSDriver())
             {
-                //   driver = new ChromeDriver();
+                // driver = new ChromeDriver();
 
                 try
                 {
@@ -73,11 +73,24 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "address")
                     {
 
-                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[3]/td[2]/form/table/tbody/tr/td/input[1]")).SendKeys(address);
+                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[4]/td[2]/form/table/tbody/tr/td/input[1]")).SendKeys(address);
                         gc.CreatePdf_WOP(orderNumber, "Address search", driver, "OK", "Oklahoma");
-                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[3]/td[2]/form/table/tbody/tr/td/input[2]")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[4]/td[2]/form/table/tbody/tr/td/input[2]")).SendKeys(Keys.Enter);
                         Thread.Sleep(4000);
                         gc.CreatePdf_WOP(orderNumber, "Address Search result", driver, "OK", "Oklahoma");
+
+                        try
+                        {
+                            string strnodata = driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr/td")).Text;
+                            if (strnodata.Contains("Sorry, no physical address records were returned"))
+                            {
+                                HttpContext.Current.Session["Nodata_Oklahoma"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
+
                         try
                         {
                             int Max = 0;
@@ -155,10 +168,9 @@ namespace ScrapMaricopa.Scrapsource
 
                     else if (searchType == "ownername")
                     {
-
-                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[2]/td[2]/form/table/tbody/tr/td/input[1]")).SendKeys(ownername);
+                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[3]/td[2]/form/table/tbody/tr/td/input[1]")).SendKeys(ownername);
                         gc.CreatePdf_WOP(orderNumber, "OwnerName search", driver, "OK", "Oklahoma");
-                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[2]/td[2]/form/table/tbody/tr/td/input[2]")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[3]/td[2]/form/table/tbody/tr/td/input[2]")).SendKeys(Keys.Enter);
                         Thread.Sleep(4000);
                         gc.CreatePdf_WOP(orderNumber, "OwnerName Search result", driver, "OK", "Oklahoma");
                         try
@@ -221,16 +233,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         if (parcelNumber.Count() == 10)
                         {
-                            driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[4]/td[2]/form/table/tbody/tr/td/input[1]")).Clear();
+                            driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[5]/td[2]/form/table/tbody/tr/td/input[1]")).Clear();
                         }
                         else
                         {
-                            driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[4]/td[2]/form/table/tbody/tr/td/input[1]")).Clear();
+                            driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[5]/td[2]/form/table/tbody/tr/td/input[1]")).Clear();
                             parcelNumber = "R" + parcelNumber;
                         }
-                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[4]/td[2]/form/table/tbody/tr/td/input[1]")).SendKeys(parcelNumber);
+                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[5]/td[2]/form/table/tbody/tr/td/input[1]")).SendKeys(parcelNumber);
                         gc.CreatePdf(orderNumber, parcelNumber, "parcel search", driver, "OK", "Oklahoma");
-                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[4]/td[2]/form/table/tbody/tr/td/input[2]")).SendKeys(Keys.Enter);
+                        driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[5]/td[2]/form/table/tbody/tr/td/input[2]")).SendKeys(Keys.Enter);
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber, "parcel search Result", driver, "OK", "Oklahoma");
                         try
@@ -257,7 +269,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             IWebElement INodata = driver.FindElement(By.XPath("/html/body/table[4]/tbody"));
-                            if(INodata.Text.Contains("No records returned"))
+                            if (INodata.Text.Contains("No records returned"))
                             {
                                 HttpContext.Current.Session["Nodata_Oklahoma"] = "Yes";
                                 driver.Quit();
@@ -280,7 +292,14 @@ namespace ScrapMaricopa.Scrapsource
                     OwnerName1 = StrOwnerName1.Text.Trim();
                     IWebElement StrOwnerName2 = driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[4]/td[2]/font"));
                     OwnerName2 = StrOwnerName2.Text.Trim();
-                    OwnerName = OwnerName1 + " & " + OwnerName2;
+                    if (OwnerName2 == "")
+                    {
+                        OwnerName = OwnerName1;
+                    }
+                    else
+                    {
+                        OwnerName = OwnerName1 + " & " + OwnerName2;
+                    }
                     IWebElement StrPropertylocation1 = driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[5]/td[2]/font"));
                     Propertylocation1 = StrPropertylocation1.Text.Trim();
                     IWebElement StrPropertylocation2 = driver.FindElement(By.XPath("/html/body/table[4]/tbody/tr[6]/td[2]"));

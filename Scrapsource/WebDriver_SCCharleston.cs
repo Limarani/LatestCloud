@@ -42,6 +42,8 @@ namespace ScrapMaricopa
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
+            // driver = new PhantomJSDriver();
+            //driver = new ChromeDriver();  
             using (driver = new PhantomJSDriver())
             {
                 string[] stringSeparators1 = new string[] { "\r\n" };
@@ -200,7 +202,7 @@ namespace ScrapMaricopa
                     try
                     {
                         IWebElement INodata = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr/td/table"));
-                        if(INodata.Text.Contains("No Records Found"))
+                        if (INodata.Text.Contains("No Records Found"))
                         {
                             HttpContext.Current.Session["Nodata_SCCharleston"] = "Yes";
                             driver.Quit();
@@ -227,23 +229,35 @@ namespace ScrapMaricopa
 
                     string PropertyDeatil = AlternateParcel + "~" + ownername + "~" + PropertyAddress + "~" + MailingAddress + "~" + PropertyType + "~" + LegalDescription + "~" + YearBuilt;
                     gc.insert_date(orderno, parcelNumber, 213, PropertyDeatil, 1, DateTime.Now);
-                    driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[1]/td[1]/table/tbody/tr[2]/td/table/tbody/tr[3]/td/a")).Click();
-                    Thread.Sleep(10000);
+                    //Click Parcel
+                    //                            //*[@id="main"]/tbody/tr[1]/td[1]/table/tbody/tr[2]/td/table/tbody/tr[3]/td/a
+                    //driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[1]/td[1]/table/tbody/tr[2]/td/table/tbody/tr[3]/td/a")).Click();
+                    //Thread.Sleep(10000);
+
+
+                    IWebElement IAddressSearch1 = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[1]/td[1]/table/tbody/tr[2]/td/table/tbody/tr[3]/td/a"));
+                    IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                    js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
+                    Thread.Sleep(3000);
 
                     string AssesYear = "", AppraisedLandValue = "", AppraisedBuildingValue = "", TotalAppraisedValue = "", CappedAppraisedValue = "", ExemptionAmount = "", TaxableValue = "", AssessmentRatio = "", AssessedValue = "";
                     gc.CreatePdf(orderno, parcelNumber, "Assessment Detail", driver, "SC", "Charleston");
-                    AssesYear = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[2]/td[4]/font")).Text;
-                    AppraisedLandValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[3]/td[4]/font")).Text;
-                    AppraisedBuildingValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[4]/td[4]/font")).Text;
-                    TotalAppraisedValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[5]/td[4]/font")).Text;
-                    CappedAppraisedValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[6]/td[4]/font")).Text;
-                    ExemptionAmount = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[7]/td[4]/font")).Text;
-                    TaxableValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[8]/td[4]/font")).Text;
-                    AssessmentRatio = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[9]/td[4]/font")).Text;
-                    AssessedValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[10]/td[4]/font")).Text;
+                    try
+                    {
+                        AssesYear = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[2]/td[4]/font")).Text;
+                        AppraisedLandValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[3]/td[4]/font")).Text;
+                        AppraisedBuildingValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[4]/td[4]/font")).Text;
+                        TotalAppraisedValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[5]/td[4]/font")).Text;
+                        CappedAppraisedValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[6]/td[4]/font")).Text;
+                        ExemptionAmount = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[7]/td[4]/font")).Text;
+                        TaxableValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[8]/td[4]/font")).Text;
+                        AssessmentRatio = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[9]/td[4]/font")).Text;
+                        AssessedValue = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[2]/tbody/tr/td/table[5]/tbody/tr[10]/td[4]/font")).Text;
 
-                    string AsseDeatil = AssesYear + "~" + AppraisedLandValue + "~" + AppraisedBuildingValue + "~" + TotalAppraisedValue + "~" + CappedAppraisedValue + "~" + ExemptionAmount + "~" + TaxableValue + "~" + AssessmentRatio + "~" + AssessedValue;
-                    gc.insert_date(orderno, parcelNumber, 214, AsseDeatil, 1, DateTime.Now);
+                        string AsseDeatil = AssesYear + "~" + AppraisedLandValue + "~" + AppraisedBuildingValue + "~" + TotalAppraisedValue + "~" + CappedAppraisedValue + "~" + ExemptionAmount + "~" + TaxableValue + "~" + AssessmentRatio + "~" + AssessedValue;
+                        gc.insert_date(orderno, parcelNumber, 214, AsseDeatil, 1, DateTime.Now);
+                    }
+                    catch { }
 
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
 
@@ -431,11 +445,11 @@ namespace ScrapMaricopa
                     }
                     try
                     {
-                        driver.FindElement(By.XPath("//*[@id='form1']/table/tbody/tr[3]/td/a[1]")).Click();
+                        driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/a[1]")).Click();
                         //*[@id="main"]/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/a[1]
                         Thread.Sleep(2000);
 
-                        string Authority = "", Gross = "", Credits = "", Saving = "", Nettax = "";
+                        string Authority = "", Gross = "", Credits = "", Saving = "", Nettax = "", Comments1 = "";
 
 
                         string xpath = "//*[@id='tab_assmt_data_" + TaxBillId + "']/table/tbody";
@@ -457,13 +471,13 @@ namespace ScrapMaricopa
                                     Credits = "";
                                     Saving = "";
                                     Nettax = TaxDistributionTD[1].Text;
-                                    string TaxPayMentHistory = Authority + "~" + Gross + "~" + Credits + "~" + Saving + "~" + Nettax;
+                                    string TaxPayMentHistory = Authority + "~" + Gross + "~" + Credits + "~" + Saving + "~" + Nettax + "~" + Comments1;
                                     if (Authority.Trim() != "Authority")
                                     {
                                         gc.insert_date(orderno, parcelNumber, 216, TaxPayMentHistory, 1, DateTime.Now);
                                     }
 
-                                }
+                                }                               
                                 else
 
                                 {
@@ -472,12 +486,24 @@ namespace ScrapMaricopa
                                     Credits = TaxDistributionTD[2].Text;
                                     Saving = TaxDistributionTD[3].Text;
                                     Nettax = TaxDistributionTD[4].Text;
-                                    string TaxPayMentHistory = Authority + "~" + Gross + "~" + Credits + "~" + Saving + "~" + Nettax;
+                                    string TaxPayMentHistory = Authority + "~" + Gross + "~" + Credits + "~" + Saving + "~" + Nettax + "~" + Comments1;
                                     if (Authority.Trim() != "Authority")
                                     {
                                         gc.insert_date(orderno, parcelNumber, 216, TaxPayMentHistory, 1, DateTime.Now);
                                     }
                                 }
+
+                            }
+                            if (TaxDistributionTD.Count==1)
+                            {
+                                Authority = "";
+                                Gross = "";
+                                Credits = "";
+                                Saving = "";
+                                Nettax = "";
+                                Comments1= TaxDistributionTD[0].Text;
+                                string TaxPayMentHistory = Authority + "~" + Gross + "~" + Credits + "~" + Saving + "~" + Nettax + "~" + Comments1;
+                                gc.insert_date(orderno, parcelNumber, 216, TaxPayMentHistory, 1, DateTime.Now);
 
                             }
 
@@ -488,9 +514,11 @@ namespace ScrapMaricopa
 
                     try
                     {
-                        driver.FindElement(By.XPath("//*[@id='form1']/table/tbody/tr[3]/td/a[2]")).Click();
+
+                        ////*[@id="main"]/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/a[2]
+                        driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table/tbody/tr[2]/td/a[2]")).Click();
                         Thread.Sleep(2000);
-                        string PaidDate = "", PaidAmount = "", ReceiptNumber = "";
+                        string PaidDate = "", PaidAmount = "", ReceiptNumber = "", Comments = "";
                         IWebElement TaxPaymentTB = driver.FindElement(By.XPath("//*[@id='tab_pmt_data']/table/tbody"));
                         IList<IWebElement> TaxPaymentTR = TaxPaymentTB.FindElements(By.TagName("tr"));
                         IList<IWebElement> TaxPaymentTD;
@@ -507,7 +535,7 @@ namespace ScrapMaricopa
 
                                 if (PaidDate.Trim() != "Last Paid")
                                 {
-                                    string TaxPayMentHistory1 = PaidDate + "~" + PaidAmount + "~" + ReceiptNumber;
+                                    string TaxPayMentHistory1 = PaidDate + "~" + PaidAmount + "~" + ReceiptNumber + "~" + Comments;
                                     gc.insert_date(orderno, parcelNumber, 217, TaxPayMentHistory1, 1, DateTime.Now);
                                 }
 
@@ -517,10 +545,11 @@ namespace ScrapMaricopa
 
                                 if (TaxPaymentTD[0].Text.Trim() == "No records found.")
                                 {
-                                    PaidDate = TaxPaymentTD[0].Text;
+                                    PaidDate = "";
                                     PaidAmount = "";
                                     ReceiptNumber = "";
-                                    string TaxPayMentHistory1 = PaidDate + "~" + PaidAmount + "~" + ReceiptNumber;
+                                    Comments = TaxPaymentTD[0].Text;
+                                    string TaxPayMentHistory1 = PaidDate + "~" + PaidAmount + "~" + ReceiptNumber + "~" + Comments;
                                     gc.insert_date(orderno, parcelNumber, 217, TaxPayMentHistory1, 1, DateTime.Now);
                                 }
                             }

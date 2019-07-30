@@ -432,6 +432,7 @@ namespace ScrapMaricopa.Scrapsource
                     //tax Site
                     driver.Navigate().GoToUrl("https://actweb.acttax.com/act_webdev/elpaso/index.jsp");
                     Thread.Sleep(3000);
+                    gc.CreatePdf(orderNumber, Parcel_number, "Tax Site", driver, "TX", "El Paso");
                     IWebElement PropertyInformation = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td/div[2]/table/tbody/tr/td/center/form/table/tbody/tr[3]/td[2]/div[3]/select"));
                     SelectElement PropertyInformationSelect = new SelectElement(driver.FindElement(By.Name("searchby")));
                     PropertyInformationSelect.SelectByValue("4");

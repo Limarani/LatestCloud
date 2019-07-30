@@ -990,15 +990,6 @@ namespace ScrapMaricopa.Scrapsource
                             //Tax History Bill Details
                             try
                             {
-                                try
-                                {
-                                    IWebElement IAddressSearch1 = driver.FindElement(By.LinkText("All Bills"));
-                                    IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                                    js1.ExecuteScript("arguments[0].click();", IAddressSearch1);
-                                    Thread.Sleep(9000);
-                                }
-                                catch { }
-
                                 IWebElement IBill = driver.FindElement(By.Id("primarynav"));
                                 IList<IWebElement> IBillRow = IBill.FindElements(By.TagName("li"));
                                 IList<IWebElement> IBillTD;
@@ -1014,7 +1005,7 @@ namespace ScrapMaricopa.Scrapsource
                                             {
                                                 IWebElement IbillClick = IBillTD[0];
                                                 js.ExecuteScript("arguments[0].click();", IbillClick);
-                                                Thread.Sleep(3000);
+                                                Thread.Sleep(4000);
                                                 break;
                                             }
                                         }

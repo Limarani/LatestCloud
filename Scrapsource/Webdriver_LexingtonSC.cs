@@ -372,40 +372,44 @@ namespace ScrapMaricopa.Scrapsource
                         IWebElement IHome = null;
                         try
                         {
-                            IHome = driver.FindElement(By.XPath("//*[@id='divcenter']/center[2]/table/tbody"));
-                        }
-                        catch { }
-                        try
-                        {
-                            if (IHome == null)
+                            try
                             {
                                 IHome = driver.FindElement(By.XPath("//*[@id='divcenter']/center[2]/table/tbody"));
                             }
-                        }
-                        catch { }
-                        IList<IWebElement> IHomerow = IHome.FindElements(By.TagName("tr"));
-                        IList<IWebElement> IHomeid;
-                        foreach (IWebElement home in IHomerow)
-                        {
-                            IHomeid = home.FindElements(By.TagName("td"));
-                            if (IHomeid.Count != 0 && home.Text.Contains("H/S%")                                                                                                                        )
+                            catch { }
+                            try
                             {
-                                for(int i=0;i< IHomeid.Count;i++)
+                                if (IHome == null)
                                 {
-                                    string check = IHomeid[i].Text;
-                                    try
+                                    IHome = driver.FindElement(By.XPath("//*[@id='divcenter']/center[2]/table/tbody"));
+                                }
+                            }
+                            catch { }
+                            IList<IWebElement> IHomerow = IHome.FindElements(By.TagName("tr"));
+                            IList<IWebElement> IHomeid;
+                            foreach (IWebElement home in IHomerow)
+                            {
+                                IHomeid = home.FindElements(By.TagName("td"));
+                                if (IHomeid.Count != 0 && home.Text.Contains("H/S%"))
+                                {
+                                    for (int i = 0; i < IHomeid.Count; i++)
                                     {
-                                        if (check == "H/S%")
+                                        string check = IHomeid[i].Text;
+                                        try
                                         {
-                                            i++;
-                                            HomesteadPercentage = IHomeid[i].Text;
-                                            break;
+                                            if (check == "H/S%")
+                                            {
+                                                i++;
+                                                HomesteadPercentage = IHomeid[i].Text;
+                                                break;
+                                            }
                                         }
+                                        catch { }
                                     }
-                                    catch { }
                                 }
                             }
                         }
+                        catch { }
                         string Duedate1 = driver.FindElement(By.XPath("//*[@id='divcenter']/center[1]/b")).Text;
                         if (Duedate1.Contains("PENALTY DATE"))
                         {
