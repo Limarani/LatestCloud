@@ -25,6 +25,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class Webdriver_DupageIL
     {
+        Amrock amck = new Amrock();
         IWebDriver driver;
         DBconnection db = new DBconnection();
         MySqlConnection con = new MySqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ToString());
@@ -189,6 +190,7 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
 
                     Parcel_number = driver.FindElement(By.XPath("//*[@id='tabid01']/div[2]/div[2]")).Text;
+                    amck.TaxId = Parcel_number;
                     string[] Parcelsplit = Parcel_number.Split('-');
                     string firstsplit = Parcelsplit[0].Trim();
                     string secondsplit = Parcelsplit[1];
@@ -203,20 +205,43 @@ namespace ScrapMaricopa.Scrapsource
                     gc.insert_date(orderNumber, Parcel_number, 1670, taxinfo, 1, DateTime.Now);
                     gc.CreatePdf(orderNumber, Parcel_number, "Tax Site Enter", driver, "IL", "Dupage");
                     //Installment
-
                     IWebElement Installmenttable = driver.FindElement(By.Id("ctl00_pageContent_ctl00_tblResults"));
                     IList<IWebElement> Installmentrow = Installmenttable.FindElements(By.TagName("tr"));
                     IList<IWebElement> Installmentid;
                     foreach (IWebElement Installment in Installmentrow)
                     {
                         Installmentid = Installment.FindElements(By.TagName("td"));
-                        if (Installmentid.Count > 1 && Installmentid.Count== 5)
+                        if (Installmentid.Count > 1 && Installmentid.Count == 5)
                         {
                             string[] instalsplit = Installmentid[0].Text.Split(':');
                             string Installmentresult = "~" + instalsplit[0] + "~" + instalsplit[1] + "~" + Installmentid[1].Text + "~" + Installmentid[2].Text + "~" + Installmentid[3].Text + "~" + Installmentid[4].Text;
                             gc.insert_date(orderNumber, Parcel_number, 1671, Installmentresult, 1, DateTime.Now);
+                            if (instalsplit[0].Contains("First Due") && Installmentid[4].Text.Trim() != "" && Installmentid[2].Text.Trim() == "$0.00")
+                            {
+                                amck.Instamount1 = Installmentid[1].Text;
+                                amck.Instamountpaid1 = Installmentid[3].Text;
+                                amck.Installmentdate1 = Installmentid[4].Text;
+
+                            }
+                            if (instalsplit[0].Contains("First Due") && Installmentid[2].Text.Trim() != "$0.00")
+                            {
+                                amck.IsDelinquent = "Yes";
+                            }
+                            if (instalsplit[0].Contains("Second Due") && Installmentid[2].Text.Trim() == "$0.00" && Installmentid[4].Text.Trim() != "")
+                            {
+                                amck.Instamount2 = Installmentid[1].Text;
+                                amck.Instamountpaid2 = Installmentid[3].Text;
+                                amck.InstPaidDue1 = "Paid";
+                            }
+                            if (instalsplit[0].Contains("Second Due") && Installmentid[4].Text.Trim() == "")
+                            {
+                                amck.Instamount2 = Installmentid[1].Text;
+                                amck.Instamountpaid2 = Installmentid[3].Text;
+                                amck.InstPaidDue1 = "Due";
+                            }
+
                         }
-                        if (Installmentid.Count ==3)
+                        if (Installmentid.Count == 3)
                         {
                             string Installmentresult1 = "~" + Installmentid[0].Text + "~" + "" + "~" + Installmentid[1].Text + "~" + Installmentid[2].Text + "~" + "" + "~" + "";
                             gc.insert_date(orderNumber, Parcel_number, 1671, Installmentresult1, 1, DateTime.Now);
@@ -229,6 +254,8 @@ namespace ScrapMaricopa.Scrapsource
                         //Prior Year 1
                         string prioryear1split = driver.FindElement(By.XPath("//*[@id='tabid01']")).Text;
                         string prioryear1tax = gc.Between(prioryear1split, "Year", "Taxes");
+                        amck.TaxType = prioryear1tax;
+                        int D = 0;
                         IWebElement PriorYear1table = driver.FindElement(By.XPath("//*[@id='tabid01']"));
                         IList<IWebElement> PriorYear1Div = PriorYear1table.FindElements(By.TagName("div"));
                         IList<IWebElement> PriorYear1Row;
@@ -246,13 +273,35 @@ namespace ScrapMaricopa.Scrapsource
                                     {
                                         string PriorYear1Result = prioryear1tax + "~" + PriorYear1Td[0].Text + "~" + "" + "~" + PriorYear1Td[1].Text + "~" + "" + "~" + "" + "~" + PriorYear1Td[2].Text;
                                         gc.insert_date(orderNumber, Parcel_number, 1671, PriorYear1Result, 1, DateTime.Now);
+                                        if (D == 0 && amck.IsDelinquent.Trim() == "")
+                                        {
+                                            if (PriorYear1Td[2].Text.Trim() == "TAXES SOLD")
+                                            {
+                                                amck.IsDelinquent = "Yes";
+                                                D++;
+                                            }
+                                            if (PriorYear1Td[2].Text.Trim() != "TAXES SOLD")
+                                            {
+                                                amck.IsDelinquent = "No";
+                                                D++;
+
+                                            }
+
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                     catch { }
-
+                    if (amck.IsDelinquent == "No")
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                    }
+                    if (amck.IsDelinquent == "Yes")
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+                    }
                     ////Prior Year 1
                     //string prioryear1split = driver.FindElement(By.XPath("//*[@id='tabid01']/div[8]/h2")).Text;
                     //string prioryear1tax = gc.Between(prioryear1split, "Year", "Taxes");
@@ -334,12 +383,12 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         TaxHistoryid = TaxHistory.FindElements(By.TagName("td"));
                         TaxHistoryth = TaxHistory.FindElements(By.TagName("th"));
-                        if (TaxHistoryth.Count==0)
+                        if (TaxHistoryth.Count == 0)
                         {
                             string Taxhistoryresult = TaxHistoryid[0].Text + "~" + TaxHistoryid[1].Text + "~" + TaxHistoryid[2].Text + "~" + TaxHistoryid[3].Text + "~" + TaxHistoryid[4].Text;
                             gc.insert_date(orderNumber, Parcel_number, 1673, Taxhistoryresult, 1, DateTime.Now);
                         }
-                        if (TaxHistoryid.Count ==0)
+                        if (TaxHistoryid.Count == 0)
                         {
                             string TaxhistoryHead = "Tax History" + "~" + TaxHistoryth[1].Text + "~" + TaxHistoryth[2].Text + "~" + TaxHistoryth[3].Text + "~" + TaxHistoryth[4].Text;
                             db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + TaxhistoryHead + "' where Id = '" + 1673 + "'");

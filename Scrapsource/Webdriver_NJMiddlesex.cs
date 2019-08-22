@@ -102,20 +102,20 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "address")
                     {
-                        if (statecountyid == "229")//Ocean
+                        if (statecountyid == "229")//Ocean Address
                         {
-                            driver.Navigate().GoToUrl("https://www.tax.co.ocean.nj.us/TaxBoardTaxListSearch.aspx ");
+                            driver.Navigate().GoToUrl("http://www.tax.co.ocean.nj.us/frmTaxBoardTaxListSearch");
                             Thread.Sleep(2000);
                             countyname = countynameNJ.ToUpper();
-                            driver.FindElement(By.Id("cmbDistrict")).SendKeys(township);
+                            driver.FindElement(By.Id("MainContent_cmbDistrict")).SendKeys(township);
                             Thread.Sleep(2000);
-                            driver.FindElement(By.Id("txtStreet")).SendKeys(address.Trim());
+                            driver.FindElement(By.Id("MainContent_txtStreet")).SendKeys(address.Trim());
                             gc.CreatePdf_WOP(orderNumber, "Address Search Before", driver, "NJ", countynameNJ);
-                            driver.FindElement(By.Id("btnSearch")).Click();
+                            driver.FindElement(By.Id("MainContent_btnSearch")).Click();
                             Thread.Sleep(2000);
                             try
                             {
-                                string Nodatafound = driver.FindElement(By.Id("lblMessage")).Text;
+                                string Nodatafound = driver.FindElement(By.Id("MainContent_lblMessage")).Text;
                                 if (Nodatafound.Contains("No matching records"))
                                 {
                                     HttpContext.Current.Session["Zero_NJ" + countynameNJ] = "Zero";
@@ -129,7 +129,7 @@ namespace ScrapMaricopa.Scrapsource
                             int Max = 0;
                             Pid = db.ExecuteScalar("SELECT id FROM data_field_master where State_County_ID='" + statecountyid + "'and Category_Id='7'");
                             id = Convert.ToInt32(Pid);
-                            IWebElement multiaddress = driver.FindElement(By.Id("m_DataTable"));
+                            IWebElement multiaddress = driver.FindElement(By.Id("MainContent_m_DataTable"));
                             IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
                             IList<IWebElement> TDmultiaddress;
                             foreach (IWebElement Multiparcel in TRmultiaddress)
@@ -227,13 +227,13 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "parcel")
                     {
-                        if (statecountyid == "229")
+                        if (statecountyid == "229")//parcel
                         {
-                            driver.Navigate().GoToUrl("https://www.tax.co.ocean.nj.us/TaxBoardTaxListSearch.aspx ");
+                            driver.Navigate().GoToUrl("http://www.tax.co.ocean.nj.us/frmTaxBoardTaxListSearch");
                             Thread.Sleep(2000);
                             string Parcelsplit3 = "";
                             countyname = countynameNJ.ToUpper();
-                            driver.FindElement(By.Id("cmbDistrict")).SendKeys(township);
+                            driver.FindElement(By.Id("MainContent_cmbDistrict")).SendKeys(township);
                             Thread.Sleep(2000);
                             string[] splitparcel = parcelNumber.Split('/');
                             if (splitparcel[2].Trim() == "n")
@@ -244,12 +244,12 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 Parcelsplit3 = splitparcel[2].Trim();
                             }
-                            driver.FindElement(By.Id("txtBlock")).SendKeys(splitparcel[0].Trim());
-                            driver.FindElement(By.Id("txtLot")).SendKeys(splitparcel[1].Trim());
-                            driver.FindElement(By.Id("txtQual")).SendKeys(Parcelsplit3.Trim());
-                            driver.FindElement(By.Id("btnSearch")).Click();
+                            driver.FindElement(By.Id("MainContent_txtBlock")).SendKeys(splitparcel[0].Trim());
+                            driver.FindElement(By.Id("MainContent_txtLot")).SendKeys(splitparcel[1].Trim());
+                            driver.FindElement(By.Id("MainContent_txtQual")).SendKeys(Parcelsplit3.Trim());
+                            driver.FindElement(By.Id("MainContent_btnSearch")).Click();
                             Thread.Sleep(2000);
-                            IWebElement multiaddress = driver.FindElement(By.Id("m_DataTable"));
+                            IWebElement multiaddress = driver.FindElement(By.Id("MainContent_m_DataTable"));
                             IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
                             IList<IWebElement> TDmultiaddress;
                             foreach (IWebElement Multiparcel in TRmultiaddress)
@@ -459,14 +459,14 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             //Ownername
 
-                            driver.Navigate().GoToUrl("https://www.tax.co.ocean.nj.us/TaxBoardTaxListSearch.aspx ");
+                            driver.Navigate().GoToUrl("http://www.tax.co.ocean.nj.us/frmTaxBoardTaxListSearch");
                             Thread.Sleep(2000);
                             countyname = countynameNJ.ToUpper();
-                            driver.FindElement(By.Id("cmbDistrict")).SendKeys(township);
+                            driver.FindElement(By.Id("MainContent_cmbDistrict")).SendKeys(township);
                             Thread.Sleep(2000);
-                            driver.FindElement(By.Id("txtOwner")).SendKeys(ownername);
+                            driver.FindElement(By.Id("MainContent_txtOwner")).SendKeys(ownername);
                             gc.CreatePdf_WOP(orderNumber, "Owner Search Before", driver, "NJ", countynameNJ);
-                            driver.FindElement(By.Id("btnSearch")).Click();
+                            driver.FindElement(By.Id("MainContent_btnSearch")).Click();
                             Thread.Sleep(2000);
                             try
                             {
@@ -483,7 +483,7 @@ namespace ScrapMaricopa.Scrapsource
                             int Max = 0;
                             Pid = db.ExecuteScalar("SELECT id FROM data_field_master where State_County_ID='" + statecountyid + "'and Category_Id='7'");
                             id = Convert.ToInt32(Pid);
-                            IWebElement multiaddress = driver.FindElement(By.Id("m_DataTable"));
+                            IWebElement multiaddress = driver.FindElement(By.Id("MainContent_m_DataTable"));
                             IList<IWebElement> TRmultiaddress = multiaddress.FindElements(By.TagName("tr"));
                             IList<IWebElement> TDmultiaddress;
                             foreach (IWebElement Multiparcel in TRmultiaddress)
@@ -704,8 +704,9 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         //Property
 
-                        string Propertydetailtable = driver.FindElement(By.Id("MOD4Table")).Text;
+                        string Propertydetailtable = driver.FindElement(By.Id("MainContent_MOD4Table")).Text;
                         string Municipality = gc.Between(Propertydetailtable, "Municipality:", "Deed date:");
+                        //string Deeddate = gc.Between(Propertydetailtable, "Deed date:", "Owner:");
                         string Ownername = gc.Between(Propertydetailtable, "Owner:", "Block:");
                         Pro_Block = gc.Between(Propertydetailtable, "Block:", "Mailing address:").Trim();
                         string Mailingaddress = gc.Between(Propertydetailtable, "Mailing address:", "Lot:");
@@ -735,7 +736,7 @@ namespace ScrapMaricopa.Scrapsource
                         gc.insert_date(orderNumber, Parcel_Id, id, Propertyresult, 1, DateTime.Now);
                         Pid = db.ExecuteScalar("SELECT id FROM data_field_master where State_County_ID='" + statecountyid + "'and Category_Id='2'");
                         id = Convert.ToInt32(Pid);
-                        IWebElement Assessmenttable = driver.FindElement(By.Id("AssmtHistTable"));
+                        IWebElement Assessmenttable = driver.FindElement(By.Id("MainContent_AssmtHistTable"));
                         IList<IWebElement> TRAssessment = Assessmenttable.FindElements(By.TagName("tr"));
                         //IList<IWebElement> THOwnershipHistory = OwnershipHistory.FindElements(By.TagName("th"));
                         IList<IWebElement> TDAssessment;

@@ -33,10 +33,11 @@ namespace ScrapMaricopa.Scrapsource
         MySqlConnection con = new MySqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ToString());
         string msg;
         IWebElement addclick;
+        IWebElement multitableElement1;
         string multiparceldata = "";
         string countyname = "";
         string uniqueidMap = "";
-        string streetno1 = "", streetname1 = "";
+        string streetno1 = "", streetname1 = "", Acres = "";
         string urlAssess = "", urlTax = "", countAssess = "", countTax = "", taxCollectorlink = "";
         int countmulti;
 
@@ -53,7 +54,8 @@ namespace ScrapMaricopa.Scrapsource
             // driver = new ChromeDriver();
             //driver = new PhantomJSDriver()
             DBconnection dbconn = new DBconnection();
-
+            var chromeOptions1 = new ChromeOptions();
+            var chromedriver = new ChromeDriver(chromeOptions1);
             using (driver = new PhantomJSDriver())
             {
                 try
@@ -178,7 +180,13 @@ namespace ScrapMaricopa.Scrapsource
                                             string Multi = TDmultiaddress[0].Text + "~" + TDmultiaddress[1].Text + "~" + TDmultiaddress[2].Text + "~" + TDmultiaddress[3].Text + "-" + TDmultiaddress[4].Text + "-" + TDmultiaddress[5].Text + "-" + TDmultiaddress[6].Text + TDmultiaddress[7].Text + "-" + TDmultiaddress[8].Text + "-" + TDmultiaddress[9].Text + "-" + TDmultiaddress[10].Text;
                                             gc.insert_date(orderNumber, TDmultiaddress[11].Text, 2185, Multi, 1, DateTime.Now);
                                         }
-
+                                        if (TDmultiaddress.Count == 9 && !row.Text.Contains("Address") && !row.Text.Contains("Results"))
+                                        {
+                                            //Address~Owner~Account ID~PID
+                                            multiparceldata = "Address~Owner~Account ID~MBLU";
+                                            string Multi = TDmultiaddress[0].Text + "~" + TDmultiaddress[1].Text + "~" + TDmultiaddress[2].Text + "~" + TDmultiaddress[3].Text + "-" + TDmultiaddress[4].Text + "-" + TDmultiaddress[5].Text + "-" + TDmultiaddress[6].Text + "-" + TDmultiaddress[7].Text;
+                                            gc.insert_date(orderNumber, TDmultiaddress[8].Text, 2185, Multi, 1, DateTime.Now);
+                                        }
                                     }
                                     dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
 
@@ -285,137 +293,275 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (countAssess == "5")//Burlington
                         {
-                            try
+                            if (townshipcode != "25")
                             {
-                                driver.ExecuteJavaScript("document.getElementById('houseno').setAttribute('value','" + streetno + "')");
-
-                                string Addresshrf = "", mergetype = "", AddressCombain = "";
-                                if (streettype != "")
-                                {
-                                    mergetype = streetname.Trim().ToUpper() + " " + streettype.Trim().ToUpper();
-                                }
-                                else
-                                {
-                                    mergetype = streetname.Trim().ToUpper();
-                                }
-
-                                IWebElement select = driver.FindElement(By.Id("street"));
-                                ((IJavaScriptExecutor)driver).ExecuteScript("var select = arguments[0]; for(var i = 0; i < select.options.length; i++){ if(select.options[i].text == arguments[1]){ select.options[i].selected = true; } }", select, mergetype);
-                                gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "CT", countynameCT);
-
-                                IWebElement Iviewpay = driver.FindElement(By.Name("go"));
-                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                                js1.ExecuteScript("arguments[0].click();", Iviewpay);
-                                Thread.Sleep(5000);
-
-                                // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
-                                driver.SwitchTo().Frame(0);
-
                                 try
                                 {
-                                    string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
-                                    if (nodata.Contains("No matching"))
+                                    driver.ExecuteJavaScript("document.getElementById('houseno').setAttribute('value','" + streetno + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "Address Number", driver, "CT", countynameCT);
+                                    string Addresshrf = "", mergetype = "", AddressCombain = "";
+                                    if (streettype != "")
+                                    {
+                                        mergetype = streetname.Trim().ToUpper() + " " + streettype.Trim().ToUpper();
+                                    }
+                                    else
+                                    {
+                                        mergetype = streetname.Trim().ToUpper();
+                                    }
+
+                                    IWebElement select = driver.FindElement(By.Id("street"));
+                                    ((IJavaScriptExecutor)driver).ExecuteScript("var select = arguments[0]; for(var i = 0; i < select.options.length; i++){ if(select.options[i].text == arguments[1]){ select.options[i].selected = true; } }", select, mergetype);
+                                    gc.CreatePdf_WOP(orderNumber, "Address Search", driver, "CT", countynameCT);
+
+                                    IWebElement Iviewpay = driver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
+                                    Thread.Sleep(5000);
+
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    driver.SwitchTo().Frame(0);
+
+                                    try
+                                    {
+                                        string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        gc.CreatePdf_WOP(orderNumber, "No data", driver, "CT", countynameCT);
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            driver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+
+
+                                    if (streetdir.Trim() == "")
+                                    {
+                                        AddressCombain = streetno.Trim() + " " + mergetype;
+                                    }
+                                    else
+                                    {
+                                        AddressCombain = streetno.Trim() + " " + streetdir.Trim() + " " + mergetype;
+                                    }
+                                    int Max = 0;
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = driver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Address After", driver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 1 && AddressTD[1].Text.Contains(AddressCombain.ToUpper()))
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        driver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        driver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        driver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
                                     {
                                         HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
                                         driver.Quit();
                                         return "No Data Found";
                                     }
                                 }
-                                catch { }
-
-
-                                if (streetdir.Trim() == "")
+                                catch (Exception e)
+                                { }
+                            }
+                            else
+                            {
+                                try
                                 {
-                                    AddressCombain = streetno.Trim() + " " + mergetype;
-                                }
-                                else
-                                {
-                                    AddressCombain = streetno.Trim() + " " + streetdir.Trim() + " " + mergetype;
-                                }
-                                int Max = 0;
 
-
-                                string GisID = "", UniqueID = "", Ownername = "", Address = "";
-                                IWebElement Addresstable = driver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
-                                IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
-                                IList<IWebElement> AddressTD;
-                                //gc.CreatePdf_WOP(orderNumber, "Address After", driver, "CO", "Adams");
-                                foreach (IWebElement AddressT in Addresrow)
-                                {
-                                    AddressTD = AddressT.FindElements(By.TagName("td"));
-                                    if (AddressTD.Count > 1 && AddressTD[1].Text.Contains(AddressCombain.ToUpper()))
+                                    chromedriver.Navigate().GoToUrl(urlAssess);
+                                    chromedriver.ExecuteJavaScript("document.getElementById('houseno').setAttribute('value','" + streetno + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "Address Number", chromedriver, "CT", countynameCT);
+                                    string Addresshrf = "", mergetype = "", AddressCombain = "";
+                                    if (streettype != "")
                                     {
-                                        string[] Arrayaddress = AddressTD[1].Text.Split('\r');
-                                        if (townshipcode == "01" || townshipcode == "06")
-                                        {
-
-                                            GisID = Arrayaddress[0];
-                                            UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
-                                            Ownername = Arrayaddress[2].Replace("\n", "").Trim();
-                                            Address = Arrayaddress[3].Replace("\n", "").Trim();
-                                        }
-                                        if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
-                                        {
-
-                                            GisID = Arrayaddress[0];
-                                            UniqueID = "";
-                                            Ownername = Arrayaddress[1].Replace("\n", "").Trim();
-                                            Address = Arrayaddress[2].Replace("\n", "").Trim();
-                                        }
-                                        IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
-                                        hrefCardlink = Parcellink.GetAttribute("href");
-                                        if (townshipcode == "03")
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        else if (townshipcode == "14" || townshipcode == "25")
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        else
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-
-                                        }
-                                        string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
-                                        gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
-                                        Max++;
-                                        gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "CT", countynameCT);
+                                        mergetype = streetname.Trim().ToUpper() + " " + streettype.Trim().ToUpper();
+                                    }
+                                    else
+                                    {
+                                        mergetype = streetname.Trim().ToUpper();
                                     }
 
-                                }
-                                multiparceldata = "Address~Owner~Account Number";
-                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+                                    IWebElement select = chromedriver.FindElement(By.Id("street"));
+                                    ((IJavaScriptExecutor)chromedriver).ExecuteScript("var select = arguments[0]; for(var i = 0; i < select.options.length; i++){ if(select.options[i].text == arguments[1]){ select.options[i].selected = true; } }", select, mergetype);
+                                    gc.CreatePdf_WOP(orderNumber, "Address Search", chromedriver, "CT", countynameCT);
 
-                                if (Max == 1)
-                                {
-                                    driver.Navigate().GoToUrl(hrefCardlink);
+                                    IWebElement Iviewpay = chromedriver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = chromedriver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
                                     Thread.Sleep(5000);
+
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    chromedriver.SwitchTo().Frame(0);
+
+                                    try
+                                    {
+                                        string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        gc.CreatePdf_WOP(orderNumber, "No data", chromedriver, "CT", countynameCT);
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            chromedriver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+
+
+                                    if (streetdir.Trim() == "")
+                                    {
+                                        AddressCombain = streetno.Trim() + " " + mergetype;
+                                    }
+                                    else
+                                    {
+                                        AddressCombain = streetno.Trim() + " " + streetdir.Trim() + " " + mergetype;
+                                    }
+                                    int Max = 0;
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = chromedriver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Address After", driver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 1 && AddressTD[1].Text.Contains(AddressCombain.ToUpper()))
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", chromedriver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        chromedriver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        chromedriver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
+                                    {
+                                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "No Data Found";
+                                    }
                                 }
-                                if (Max > 1 && Max < 26)
-                                {
-                                    HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "MultiParcel";
-                                }
-                                if (Max > 25)
-                                {
-                                    HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
-                                    driver.Quit();
-                                    return "Maximum";
-                                }
-                                if (Max == 0)
-                                {
-                                    HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "No Data Found";
-                                }
+                                catch (Exception e)
+                                { }
                             }
-                            catch (Exception e)
-                            { }
+
                         }
 
                         if (countAssess == "7")//Address
@@ -718,6 +864,13 @@ namespace ScrapMaricopa.Scrapsource
                                             string Multi = TDmultiaddress[0].Text + "~" + TDmultiaddress[1].Text + "~" + TDmultiaddress[2].Text + "~" + TDmultiaddress[3].Text + "-" + TDmultiaddress[4].Text + "-" + TDmultiaddress[5].Text + "-" + TDmultiaddress[6].Text + TDmultiaddress[7].Text + "-" + TDmultiaddress[8].Text + "-" + TDmultiaddress[9].Text + "-" + TDmultiaddress[10].Text;
                                             gc.insert_date(orderNumber, TDmultiaddress[11].Text, 2185, Multi, 1, DateTime.Now);
                                         }
+                                        if (TDmultiaddress.Count == 9 && !row.Text.Contains("Address") && !row.Text.Contains("Results"))
+                                        {
+                                            //Address~Owner~Account ID~PID
+                                            multiparceldata = "Address~Owner~Account ID~MBLU";
+                                            string Multi = TDmultiaddress[0].Text + "~" + TDmultiaddress[1].Text + "~" + TDmultiaddress[2].Text + "~" + TDmultiaddress[3].Text + "-" + TDmultiaddress[4].Text + "-" + TDmultiaddress[5].Text + "-" + TDmultiaddress[6].Text + "-" + TDmultiaddress[7].Text;
+                                            gc.insert_date(orderNumber, TDmultiaddress[8].Text, 2185, Multi, 1, DateTime.Now);
+                                        }
                                     }
                                     dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
 
@@ -806,180 +959,226 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (countAssess == "5")//Burlington
                         {
-                            try
+                            if (townshipcode != "25")
                             {
-                                driver.ExecuteJavaScript("document.getElementById('searchname').setAttribute('value','" + ownername + "')");
-                                IWebElement Iviewpay = driver.FindElement(By.Name("go"));
-                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                                js1.ExecuteScript("arguments[0].click();", Iviewpay);
-                                Thread.Sleep(5000);
-
-                                // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
-                                driver.SwitchTo().Frame(0);
-
                                 try
                                 {
-                                    string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
-                                    if (nodata.Contains("No matching"))
+                                    driver.ExecuteJavaScript("document.getElementById('searchname').setAttribute('value','" + ownername + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "OwnerName Search", driver, "CT", countynameCT);
+                                    IWebElement Iviewpay = driver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
+                                    Thread.Sleep(5000);
+                                    gc.CreatePdf_WOP(orderNumber, "OwnerName Search After", driver, "CT", countynameCT);
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    driver.SwitchTo().Frame(0);
+
+                                    try
+                                    {
+                                        string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            gc.CreatePdf_WOP(orderNumber, "OwnerName Nodata", driver, "CT", countynameCT);
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            driver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+                                    int Max = 0;
+
+
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = driver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "OwnerName Search After1", driver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 1 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        driver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        driver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        driver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
                                     {
                                         HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
                                         driver.Quit();
                                         return "No Data Found";
                                     }
                                 }
-                                catch { }
-                                int Max = 0;
-
-
-                                string GisID = "", UniqueID = "", Ownername = "", Address = "";
-                                IWebElement Addresstable = driver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
-                                IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
-                                IList<IWebElement> AddressTD;
-                                //gc.CreatePdf_WOP(orderNumber, "Address After", driver, "CO", "Adams");
-                                foreach (IWebElement AddressT in Addresrow)
-                                {
-                                    AddressTD = AddressT.FindElements(By.TagName("td"));
-                                    if (AddressTD.Count > 1 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
-                                    {
-                                        string[] Arrayaddress = AddressTD[1].Text.Split('\r');
-                                        if (townshipcode == "01" || townshipcode == "06")
-                                        {
-                                            GisID = Arrayaddress[0];
-                                            UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
-                                            Ownername = Arrayaddress[2].Replace("\n", "").Trim();
-                                            Address = Arrayaddress[3].Replace("\n", "").Trim();
-                                        }
-                                        if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
-                                        {
-
-                                            GisID = Arrayaddress[0];
-                                            UniqueID = "";
-                                            Ownername = Arrayaddress[1].Replace("\n", "").Trim();
-                                            Address = Arrayaddress[2].Replace("\n", "").Trim();
-                                        }
-                                        IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
-                                        hrefCardlink = Parcellink.GetAttribute("href");
-                                        if (townshipcode == "03")
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        else if (townshipcode == "14" || townshipcode == "25")
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        else
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
-                                        gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
-                                        Max++;
-                                        gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "CT", countynameCT);
-                                    }
-
-                                }
-                                multiparceldata = "Address~Owner~Account Number";
-                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
-
-                                if (Max == 1)
-                                {
-                                    driver.Navigate().GoToUrl(hrefCardlink);
-                                    Thread.Sleep(5000);
-                                }
-                                if (Max > 1 && Max < 26)
-                                {
-                                    HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "MultiParcel";
-                                }
-                                if (Max > 25)
-                                {
-                                    HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
-                                    driver.Quit();
-                                    return "Maximum";
-                                }
-                                if (Max == 0)
-                                {
-                                    HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "No Data Found";
-                                }
-                            }
-                            catch (Exception e)
-                            { }
-                        }
-
-                        if (countAssess == "7")//Ownername
-                        {
-                            try
-                            {
-                                IWebElement parceldata = driver.FindElement(By.Id("option-2"));
-                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                                js1.ExecuteScript("arguments[0].click();", parceldata);
-                            }
-                            catch { }
-                            Thread.Sleep(5000);
-                            driver.FindElement(By.Id("col2_filter")).SendKeys(ownername);
-                            Thread.Sleep(5000);
-                            gc.CreatePdf_WOP(orderNumber, "Address search", driver, "CT", countynameCT);
-                            try
-                            {
-                                string Nodatafound = driver.FindElement(By.XPath("//*[@id='example']/tbody/tr/td")).Text;
-                                if (Nodatafound.Contains("No matching records"))
-                                {
-                                    HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "No Data Found";
-                                }
-                            }
-                            catch { }
-                            int a = 0;
-                            IWebElement Addressmultitable = driver.FindElement(By.Id("example"));
-                            IList<IWebElement> AddressmutiRow = Addressmultitable.FindElements(By.TagName("tr"));
-                            IList<IWebElement> Addressmutiid;
-                            if (AddressmutiRow.Count() == 2)
-                            {
-                                driver.FindElement(By.XPath("//*[@id='example']/tbody/tr")).Click();
-                                Thread.Sleep(2000);
+                                catch (Exception e)
+                                { }
                             }
                             else
                             {
-                                foreach (IWebElement addressmulti in AddressmutiRow)
+                                try
                                 {
-                                    Addressmutiid = addressmulti.FindElements(By.TagName("td"));
-                                    if (Addressmutiid.Count != 0)
+                                    chromedriver.Navigate().GoToUrl(urlAssess);
+                                    chromedriver.ExecuteJavaScript("document.getElementById('searchname').setAttribute('value','" + ownername + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "OwnerName Search", chromedriver, "CT", countynameCT);
+                                    IWebElement Iviewpay = chromedriver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = chromedriver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
+                                    Thread.Sleep(5000);
+                                    gc.CreatePdf_WOP(orderNumber, "OwnerName Search After", chromedriver, "CT", countynameCT);
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    chromedriver.SwitchTo().Frame(0);
+
+                                    try
                                     {
-                                        string proprtyad = Addressmutiid[0].Text;
-                                        string ownerMulti = Addressmutiid[1].Text;
-                                        string parcelid = Addressmutiid[2].Text;
-                                        string Multiaddress = proprtyad + "~" + ownerMulti;
-                                        gc.insert_date(orderNumber, parcelid, 2185, Multiaddress, 1, DateTime.Now);
-                                        a++;
+                                        string nodata = chromedriver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            gc.CreatePdf_WOP(orderNumber, "OwnerName Nodata", chromedriver, "CT", countynameCT);
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            chromedriver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+                                    int Max = 0;
+
+
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = chromedriver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "OwnerName Search After1", chromedriver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 1 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", chromedriver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        chromedriver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        chromedriver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
+                                    {
+                                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "No Data Found";
                                     }
                                 }
-                                multiparceldata = "Property Location~Owner Name";
-                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
-                                if (a == 1)
-                                {
-                                    driver.FindElement(By.XPath("//*[@id='example']/tbody/tr")).Click();
-                                    Thread.Sleep(2000);
-                                }
-                                if (a > 1 && a < 26)
-                                {
-                                    HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "MultiParcel"; ;
-                                }
-                                if (a > 25)
-                                {
-                                    HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
-                                    driver.Quit();
-                                    return "Maximum";
-                                }
+                                catch (Exception e)
+                                { }
                             }
+
                         }
                         if (countAssess == "8")//ownername
                         {
@@ -1150,111 +1349,228 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (countAssess == "5")
                         {
-                            try
+                            if (townshipcode != "25")
                             {
-                                driver.ExecuteJavaScript("document.getElementById('mbl').setAttribute('value','" + parcelNumber + "')");
-                                IWebElement Iviewpay = driver.FindElement(By.Name("go"));
-                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                                js1.ExecuteScript("arguments[0].click();", Iviewpay);
-                                Thread.Sleep(5000);
-
-                                // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
-                                driver.SwitchTo().Frame(0);
-
                                 try
                                 {
-                                    string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
-                                    if (nodata.Contains("No matching"))
+                                    driver.ExecuteJavaScript("document.getElementById('mbl').setAttribute('value','" + parcelNumber + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search ", driver, "CT", countynameCT);
+                                    IWebElement Iviewpay = driver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
+                                    Thread.Sleep(5000);
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After", driver, "CT", countynameCT);
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    driver.SwitchTo().Frame(0);
+
+                                    try
+                                    {
+                                        string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            gc.CreatePdf_WOP(orderNumber, "Parcel Nodata", driver, "CT", countynameCT);
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            driver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+                                    int Max = 0;
+
+
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = driver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After1", driver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 2 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        driver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        driver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        driver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
                                     {
                                         HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
                                         driver.Quit();
                                         return "No Data Found";
                                     }
                                 }
-                                catch { }
-                                int Max = 0;
-
-
-                                string GisID = "", UniqueID = "", Ownername = "", Address = "";
-                                IWebElement Addresstable = driver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
-                                IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
-                                IList<IWebElement> AddressTD;
-                                //gc.CreatePdf_WOP(orderNumber, "Address After", driver, "CO", "Adams");
-                                foreach (IWebElement AddressT in Addresrow)
-                                {
-                                    AddressTD = AddressT.FindElements(By.TagName("td"));
-                                    if (AddressTD.Count > 2 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
-                                    {
-                                        string[] Arrayaddress = AddressTD[1].Text.Split('\r');
-                                        if (townshipcode == "01" || townshipcode == "06")
-                                        {
-
-                                            GisID = Arrayaddress[0];
-                                            UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
-                                            Ownername = Arrayaddress[2].Replace("\n", "").Trim();
-                                            Address = Arrayaddress[3].Replace("\n", "").Trim();
-                                        }
-                                        if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
-                                        {
-
-                                            GisID = Arrayaddress[0];
-                                            UniqueID = "";
-                                            Ownername = Arrayaddress[1].Replace("\n", "").Trim();
-                                            Address = Arrayaddress[2].Replace("\n", "").Trim();
-                                        }
-                                        IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
-                                        hrefCardlink = Parcellink.GetAttribute("href");
-                                        if (townshipcode == "03")
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        else if (townshipcode == "14" || townshipcode == "25")
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        else
-                                        {
-                                            IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
-                                            hrefparcellink = Parcellinkw.GetAttribute("href");
-                                        }
-                                        string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
-                                        gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
-                                        Max++;
-                                        gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "CT", countynameCT);
-                                    }
-
-                                }
-                                multiparceldata = "Address~Owner~Account Number";
-                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
-
-                                if (Max == 1)
-                                {
-                                    driver.Navigate().GoToUrl(hrefCardlink);
-                                    Thread.Sleep(5000);
-                                }
-                                if (Max > 1 && Max < 26)
-                                {
-                                    HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "MultiParcel";
-                                }
-                                if (Max > 25)
-                                {
-                                    HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
-                                    driver.Quit();
-                                    return "Maximum";
-                                }
-                                if (Max == 0)
-                                {
-                                    HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
-                                    driver.Quit();
-                                    return "No Data Found";
-                                }
+                                catch (Exception e)
+                                { }
                             }
-                            catch (Exception e)
-                            { }
+                            else
+                            {
+                                try
+                                {
+                                    chromedriver.Navigate().GoToUrl(urlAssess);
+                                    chromedriver.ExecuteJavaScript("document.getElementById('mbl').setAttribute('value','" + parcelNumber + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search ", chromedriver, "CT", countynameCT);
+                                    IWebElement Iviewpay = chromedriver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = chromedriver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
+                                    Thread.Sleep(5000);
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After", chromedriver, "CT", countynameCT);
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    chromedriver.SwitchTo().Frame(0);
+
+                                    try
+                                    {
+                                        string nodata = chromedriver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            gc.CreatePdf_WOP(orderNumber, "Parcel Nodata", chromedriver, "CT", countynameCT);
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            chromedriver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+                                    int Max = 0;
+
+
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = chromedriver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After1", driver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 2 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", chromedriver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        chromedriver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        chromedriver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
+                                    {
+                                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "No Data Found";
+                                    }
+                                }
+                                catch (Exception e)
+                                { }
+                            }
+
                         }
 
 
@@ -1341,6 +1657,231 @@ namespace ScrapMaricopa.Scrapsource
                             IWebElement parceldata = driver.FindElement(By.XPath("//*[@id='MainContent_grdSearchResults']/tbody/tr[2]/td[1]/a"));
                             parceldata.Click();
                             Thread.Sleep(1000);
+                        }
+                        if (countAssess == "5")
+                        {
+                            if (townshipcode != "25")
+                            {
+                                try
+                                {
+                                    driver.ExecuteJavaScript("document.getElementById('mbl').setAttribute('value','" + assessment_id + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search ", driver, "CT", countynameCT);
+                                    IWebElement Iviewpay = driver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
+                                    Thread.Sleep(5000);
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After", driver, "CT", countynameCT);
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    driver.SwitchTo().Frame(0);
+
+                                    try
+                                    {
+                                        string nodata = driver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            gc.CreatePdf_WOP(orderNumber, "Parcel Nodata", driver, "CT", countynameCT);
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            driver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+                                    int Max = 0;
+
+
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = driver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After1", driver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 2 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", driver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        driver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        driver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        driver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
+                                    {
+                                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                        driver.Quit();
+                                        return "No Data Found";
+                                    }
+                                }
+                                catch (Exception e)
+                                { }
+                            }
+
+                            else
+                            {
+                                try
+                                {
+                                    chromedriver.Navigate().GoToUrl(urlAssess);
+                                    chromedriver.ExecuteJavaScript("document.getElementById('mbl').setAttribute('value','" + assessment_id + "')");
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search ", chromedriver, "CT", countynameCT);
+                                    IWebElement Iviewpay = chromedriver.FindElement(By.Name("go"));
+                                    IJavaScriptExecutor js1 = chromedriver as IJavaScriptExecutor;
+                                    js1.ExecuteScript("arguments[0].click();", Iviewpay);
+                                    Thread.Sleep(5000);
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After", chromedriver, "CT", countynameCT);
+                                    // IWebElement iframeElement1 = driver.FindElement(By.XPath("//*[@id='body']"));
+                                    chromedriver.SwitchTo().Frame(0);
+
+                                    try
+                                    {
+                                        string nodata = chromedriver.FindElement(By.XPath("/html/body/div[2]")).Text;
+                                        if (nodata.Contains("No matching"))
+                                        {
+                                            gc.CreatePdf_WOP(orderNumber, "Parcel Nodata", chromedriver, "CT", countynameCT);
+                                            HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                            chromedriver.Quit();
+                                            return "No Data Found";
+                                        }
+                                    }
+                                    catch { }
+                                    int Max = 0;
+
+
+                                    string GisID = "", UniqueID = "", Ownername = "", Address = "";
+                                    IWebElement Addresstable = chromedriver.FindElement(By.XPath("/html/body/div[2]/table/tbody"));
+                                    IList<IWebElement> Addresrow = Addresstable.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> AddressTD;
+                                    gc.CreatePdf_WOP(orderNumber, "Parcel Search After1", chromedriver, "CT", countynameCT);
+                                    foreach (IWebElement AddressT in Addresrow)
+                                    {
+                                        AddressTD = AddressT.FindElements(By.TagName("td"));
+                                        if (AddressTD.Count > 2 && !AddressT.Text.Contains("Quick Links") && AddressT.Text.Trim() != "")
+                                        {
+                                            string[] Arrayaddress = AddressTD[1].Text.Split('\r');
+                                            if (townshipcode == "01" || townshipcode == "06")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Ownername = Arrayaddress[2].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[3].Replace("\n", "").Trim();
+                                            }
+                                            if (townshipcode == "03" || townshipcode == "14" || townshipcode == "25")
+                                            {
+
+                                                GisID = Arrayaddress[0];
+                                                UniqueID = "";
+                                                Ownername = Arrayaddress[1].Replace("\n", "").Trim();
+                                                Address = Arrayaddress[2].Replace("\n", "").Trim();
+                                            }
+                                            IWebElement Parcellink = AddressTD[2].FindElement(By.TagName("a"));
+                                            hrefCardlink = Parcellink.GetAttribute("href");
+                                            if (townshipcode == "03")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("eQuality Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else if (townshipcode == "14" || townshipcode == "25")
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            else
+                                            {
+                                                IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Summary Card"));
+                                                hrefparcellink = Parcellinkw.GetAttribute("href");
+                                            }
+                                            string Multiresult = Address + "~" + Ownername + "~" + UniqueID;
+                                            gc.insert_date(orderNumber, GisID, 2185, Multiresult, 1, DateTime.Now);
+                                            Max++;
+                                            gc.CreatePdf_WOP(orderNumber, "Address Search Result", chromedriver, "CT", countynameCT);
+                                        }
+
+                                    }
+                                    multiparceldata = "Address~Owner~Account Number";
+                                    dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + multiparceldata + "' where Id = '2185'");
+
+                                    if (Max == 1)
+                                    {
+                                        chromedriver.Navigate().GoToUrl(hrefCardlink);
+                                        Thread.Sleep(5000);
+                                    }
+                                    if (Max > 1 && Max < 26)
+                                    {
+                                        HttpContext.Current.Session["multiparcel_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "MultiParcel";
+                                    }
+                                    if (Max > 25)
+                                    {
+                                        HttpContext.Current.Session["multiParcel_Multicount_CT" + countynameCT + township] = "Maximum";
+                                        chromedriver.Quit();
+                                        return "Maximum";
+                                    }
+                                    if (Max == 0)
+                                    {
+                                        HttpContext.Current.Session["Zero_CT" + countynameCT + township] = "Yes";
+                                        chromedriver.Quit();
+                                        return "No Data Found";
+                                    }
+                                }
+                                catch (Exception e)
+                                { }
+                            }
                         }
                     }
                     #endregion
@@ -1610,7 +2151,7 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 LivingArea = IYearBuiltTD[1].Text;
                             }
-                            if (IYearBuiltTD.Count != 0 && built.Text.Contains("Replacement Cost"))
+                            if (IYearBuiltTD.Count != 0 && built.Text.Contains("Replacement Cost:"))
                             {
                                 ReplacementCost = IYearBuiltTD[1].Text;
                             }
@@ -1982,219 +2523,504 @@ namespace ScrapMaricopa.Scrapsource
                     #region five Assessment Link
                     if (countAssess == "5") //
                     {
-
-                        string Gis = "", accountno = "", parcelid = "", owner = "", location = "", mailingaddress = "", uniqueId = "";
-                        string Parcel_ID = "", AssessedResult = "", AppraisedValue = "", AssessedValue = "", salesresult = "", salesinformation = "";
-                        IWebElement propertyDet = driver.FindElement(By.XPath("/html/body/table[1]/tbody"));
-                        IList<IWebElement> propertyRow = propertyDet.FindElements(By.TagName("tr"));
-                        IList<IWebElement> propertyTD;
-                        foreach (IWebElement line in propertyRow)
+                        if (townshipcode != "25")
                         {
-                            propertyTD = line.FindElements(By.TagName("td"));
-                            if (propertyTD.Count != 0 && line.Text.Contains("GIS ID"))
+                            gc.CreatePdf_WOP(orderNumber, "Site Load", driver, "CT", countynameCT);
+                            string Gis = "", accountno = "", parcelid = "", owner = "", location = "", mailingaddress = "", uniqueId = "";
+                            string Parcel_ID = "", AssessedResult = "", AppraisedValue = "", AssessedValue = "", salesresult = "", salesinformation = "";
+                            IWebElement propertyDet = driver.FindElement(By.XPath("/html/body/table[1]/tbody"));
+                            IList<IWebElement> propertyRow = propertyDet.FindElements(By.TagName("tr"));
+                            IList<IWebElement> propertyTD;
+                            foreach (IWebElement line in propertyRow)
                             {
-                                Gis = propertyTD[0].Text.Replace("GIS ID\r\n", "");
-                            }
-                            if (propertyTD.Count != 0 && line.Text.Contains("Parcel ID"))
-                            {
-                                parcelid = propertyTD[0].Text.Replace("Parcel ID\r\n", "");
-                                parcelNumber = parcelid;
-                            }
-                            if (propertyTD.Count != 0 && line.Text.Contains("Unique ID"))
-                            {
-                                uniqueId = propertyTD[0].Text.Replace("Unique ID\r\n", "");
-                                parcelNumber = uniqueId;
-
-                            }
-                            if (propertyTD.Count != 0 && line.Text.Contains("Account Number"))
-                            {
-                                accountno = propertyTD[0].Text.Replace("Account Number\r\n", "");
-                            }
-                            if (propertyTD.Count != 0 && line.Text.Contains("Acct#"))
-                            {
-                                accountno = propertyTD[0].Text.Replace("Acct#\r\n", "");
-                            }
-                            if (propertyTD.Count != 0 && line.Text.Contains("Owner"))
-                            {
-                                owner = propertyTD[0].Text.Replace("Owner\r\n", "");
-                                ownername = owner;
-                            }
-                            if (propertyTD.Count != 0 && line.Text.Contains("Location"))
-                            {
-                                location = propertyTD[0].Text.Replace("Location\r\n", "");
-                            }
-                            if (propertyTD.Count != 0 && line.Text.Contains("MAILING ADDRESS"))
-                            {
-                                mailingaddress = propertyTD[0].Text.Replace("MAILING ADDRESS\r\n", "").Replace("\r\n", " ");
-                            }
-
-                        }
-                        string[] splitAddress = location.Split(' ');
-                        streetno1 = splitAddress[0];
-                        if (splitAddress.Count() == 2)
-                        {
-                            streetname1 = splitAddress[1];
-                            streetname1 = streetname1.Trim();
-                        }
-
-                        if (splitAddress.Count() == 3)
-                        {
-                            streetname1 = splitAddress[1] + " " + splitAddress[2];
-                            streetname1 = streetname1.Trim();
-                        }
-
-                        if (splitAddress.Count() == 4)
-                        {
-                            streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
-                            streetname1 = streetname1.Trim();
-                        }
-
-                        if (splitAddress.Count() == 5)
-                        {
-                            streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3] + " " + splitAddress[4];
-                            streetname1 = streetname1.Trim();
-                        }
-                        string Propetyresult = Gis + "~" + parcelid + "~" + accountno + "~" + owner + "~" + location + "~" + mailingaddress;
-                        string property9 = "GIS ID~Parcel ID~Account Number~Owner~Property Address~Mailing Address";
-                        db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property9 + "' where Id = '" + 2174 + "'");
-                        gc.insert_date(orderNumber, parcelNumber, 2174, Propetyresult, 1, DateTime.Now);
-
-
-                        IWebElement Parcelvaluationtable = driver.FindElement(By.XPath("/html/body/table[3]/tbody"));
-                        IList<IWebElement> Parcelvaluationrow = Parcelvaluationtable.FindElements(By.TagName("tr"));
-                        IList<IWebElement> Parcelvaluationid;
-                        foreach (IWebElement Parcelvaluation in Parcelvaluationrow)
-                        {
-                            Parcelvaluationid = Parcelvaluation.FindElements(By.TagName("td"));
-                            if (Parcelvaluationid.Count != 0)
-                            {
-                                AssessedResult += Parcelvaluationid[0].Text + "~";
-                                AppraisedValue += Parcelvaluationid[1].Text + "~";
-                                AssessedValue += Parcelvaluationid[2].Text + "~";
-                            }
-                            //Buildings Appraised Value~Buildings Assessed Value
-                        }
-                        AssessedResult = "Assessment Info" + "~" + AssessedResult;
-                        AppraisedValue = "Appraised Value" + "~" + AppraisedValue;
-                        AssessedValue = "Assessed Value" + "~" + AssessedValue;
-
-                        db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + AssessedResult.Remove(AssessedResult.Length - 1, 1) + "' where Id = '" + 2176 + "'");
-                        gc.insert_date(orderNumber, parcelNumber, 2176, AppraisedValue.Remove(AppraisedValue.Length - 1, 1), 1, DateTime.Now);
-                        gc.insert_date(orderNumber, parcelNumber, 2176, AssessedValue.Remove(AssessedValue.Length - 1, 1), 1, DateTime.Now);
-
-                        string property = "", information = "";
-                        IWebElement Propertyinfotable = driver.FindElement(By.XPath("/html/body/table[5]/tbody"));
-                        IList<IWebElement> Propertyinforow = Propertyinfotable.FindElements(By.TagName("tr"));
-                        IList<IWebElement> Propertyinfoid;
-                        foreach (IWebElement Propertyinfo in Propertyinforow)
-                        {
-                            Propertyinfoid = Propertyinfo.FindElements(By.TagName("td"));
-                            if (Propertyinfoid.Count != 0)
-                            {
-                                property += Propertyinfoid[0].Text + "~";
-                                information += Propertyinfoid[1].Text + "~";
-                            }
-                        }
-                        //Total Acres~Land Use
-                        db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property.Remove(property.Length - 1, 1) + "' where Id = '" + 2177 + "'");
-                        gc.insert_date(orderNumber, parcelNumber, 2177, information.Remove(information.Length - 1, 1), 1, DateTime.Now);
-
-
-                        IWebElement Saleinfotable = driver.FindElement(By.XPath("/html/body/table[7]/tbody"));
-                        IList<IWebElement> Saleinforow = Saleinfotable.FindElements(By.TagName("tr"));
-                        IList<IWebElement> Saleinfoid;
-                        foreach (IWebElement Saleinfo in Saleinforow)
-                        {
-                            Saleinfoid = Saleinfo.FindElements(By.TagName("td"));
-                            if (Saleinfoid.Count != 0)
-                            {
-                                salesresult += Saleinfoid[0].Text + "~";
-                                salesinformation += Saleinfoid[1].Text + "~";
-                            }
-                            //Sale Date~Sale Price
-                        }
-                        db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + salesresult.Remove(salesresult.Length - 1, 1) + "' where Id = '" + 2178 + "'");
-                        gc.insert_date(orderNumber, parcelNumber, 2178, salesinformation.Remove(salesinformation.Length - 1, 1), 1, DateTime.Now);
-                        gc.CreatePdf(orderNumber, parcelNumber, "property Details", driver, "CT", countynameCT);
-                        //   hrefparcellink
-                        // gc.downloadfile(hrefparcellink, orderNumber, parcelNumber, "aas", "CT", countynameCT);
-                        string filename = "";
-
-                        var chromeOptions = new ChromeOptions();
-                        var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
-                        chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
-                        chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
-                        chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
-                        chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
-                        var driver1 = new ChromeDriver(chromeOptions);
-                        Array.ForEach(Directory.GetFiles(@downloadDirectory), File.Delete);
-                        try
-                        {
-
-                            driver1.Navigate().GoToUrl(hrefparcellink);
-                            Thread.Sleep(6000);
-                            try
-                            {
-                                gc.CreatePdf(orderNumber, parcelNumber, "property card", driver, "CT", countynameCT);
-                            }
-                            catch { }
-                            filename = latestfilename();
-                            gc.AutoDownloadFile(orderNumber, parcelNumber, countynameCT, "CT", filename);
-                            Thread.Sleep(2000);
-                            driver1.Quit();
-                        }
-                        catch
-                        {
-                            driver1.Quit();
-                        }
-                        if (townshipcode == "03")
-                        {
-                            uniqueidMap = uniqueId;
-                            assessment_id = uniqueId;
-                        }
-                        if (townshipcode == "14")
-                        {
-                            uniqueidMap = accountno;
-                            assessment_id = accountno;
-                        }
-                        if (townshipcode == "25")
-                        {
-                            uniqueidMap = accountno.TrimStart('0'); ;
-                            assessment_id = accountno.TrimStart('0'); ;
-                        }
-                        if (townshipcode == "01" || townshipcode == "06")
-                        {
-                            try
-                            {
-                                string FilePath = gc.filePath(orderNumber, parcelNumber) + filename;
-                                PdfReader reader;
-                                string pdfData;
-                                string pdftext = "";
-                                try
+                                propertyTD = line.FindElements(By.TagName("td"));
+                                if (propertyTD.Count != 0 && line.Text.Contains("GIS ID"))
                                 {
-
-                                    reader = new PdfReader(FilePath);
-                                    String textFromPage = PdfTextExtractor.GetTextFromPage(reader, 1);
-                                    System.Diagnostics.Debug.WriteLine("" + textFromPage);
-
-                                    pdftext = textFromPage;
-
+                                    Gis = propertyTD[0].Text.Replace("GIS ID\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Parcel ID"))
+                                {
+                                    parcelid = propertyTD[0].Text.Replace("Parcel ID\r\n", "");
+                                    parcelNumber = parcelid;
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Mblu"))
+                                {
+                                    parcelid = propertyTD[0].Text.Replace("Mblu\r\n", "");
+                                    parcelNumber = parcelid;
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Unique ID"))
+                                {
+                                    uniqueId = propertyTD[0].Text.Replace("Unique ID\r\n", "");
+                                    parcelNumber = uniqueId;
 
                                 }
-                                catch { }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Account Number"))
+                                {
+                                    accountno = propertyTD[0].Text.Replace("Account Number\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Acct#"))
+                                {
+                                    accountno = propertyTD[0].Text.Replace("Acct#\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Owner"))
+                                {
+                                    owner = propertyTD[0].Text.Replace("Owner\r\n", "");
+                                    ownername = owner;
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Location"))
+                                {
+                                    location = propertyTD[0].Text.Replace("Location\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("MAILING ADDRESS"))
+                                {
+                                    mailingaddress = propertyTD[0].Text.Replace("MAILING ADDRESS\r\n", "").Replace("\r\n", " ");
+                                }
+
+                            }
+                            string[] splitAddress = location.Split(' ');
+                            streetno1 = splitAddress[0];
+                            if (splitAddress.Count() == 2)
+                            {
+                                streetname1 = splitAddress[1];
+                                streetname1 = streetname1.Trim();
+                            }
+
+                            if (splitAddress.Count() == 3)
+                            {
+                                streetname1 = splitAddress[1] + " " + splitAddress[2];
+                                streetname1 = streetname1.Trim();
+                            }
+
+                            if (splitAddress.Count() == 4)
+                            {
+                                streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
+                                streetname1 = streetname1.Trim();
+                            }
+
+                            if (splitAddress.Count() == 5)
+                            {
+                                streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3] + " " + splitAddress[4];
+                                streetname1 = streetname1.Trim();
+                            }
+                            address = streetno1 + " " + streetname1;
+                            IWebElement Parcelvaluationtable = driver.FindElement(By.XPath("/html/body/table[3]/tbody"));
+                            IList<IWebElement> Parcelvaluationrow = Parcelvaluationtable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> Parcelvaluationid;
+                            foreach (IWebElement Parcelvaluation in Parcelvaluationrow)
+                            {
+                                Parcelvaluationid = Parcelvaluation.FindElements(By.TagName("td"));
+                                if (Parcelvaluationid.Count != 0)
+                                {
+                                    AssessedResult += Parcelvaluationid[0].Text + "~";
+                                    AppraisedValue += Parcelvaluationid[1].Text + "~";
+                                    AssessedValue += Parcelvaluationid[2].Text + "~";
+                                }
+                                //Buildings Appraised Value~Buildings Assessed Value
+                            }
+                            AssessedResult = "Assessment Info" + "~" + AssessedResult;
+                            AppraisedValue = "Appraised Value" + "~" + AppraisedValue;
+                            AssessedValue = "Assessed Value" + "~" + AssessedValue;
+
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + AssessedResult.Remove(AssessedResult.Length - 1, 1) + "' where Id = '" + 2176 + "'");
+                            gc.insert_date(orderNumber, parcelNumber, 2176, AppraisedValue.Remove(AppraisedValue.Length - 1, 1), 1, DateTime.Now);
+                            gc.insert_date(orderNumber, parcelNumber, 2176, AssessedValue.Remove(AssessedValue.Length - 1, 1), 1, DateTime.Now);
+
+                            string property = "", information = "";
+                            IWebElement Propertyinfotable = driver.FindElement(By.XPath("/html/body/table[5]/tbody"));
+                            IList<IWebElement> Propertyinforow = Propertyinfotable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> Propertyinfoid;
+                            foreach (IWebElement Propertyinfo in Propertyinforow)
+                            {
+                                Propertyinfoid = Propertyinfo.FindElements(By.TagName("td"));
+                                if (Propertyinfoid.Count != 0)
+                                {
+                                    property += Propertyinfoid[0].Text + "~";
+                                    information += Propertyinfoid[1].Text + "~";
+                                }
+                            }
+                            //Total Acres~Land Use
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property.Remove(property.Length - 1, 1) + "' where Id = '" + 2177 + "'");
+                            gc.insert_date(orderNumber, parcelNumber.Replace("Mblu", ""), 2177, information.Remove(information.Length - 1, 1), 1, DateTime.Now);
 
 
-                                string tableassess = gc.Between(pdftext, "Property Listing Report", "Property Information").Trim();
-                                string[] propid = tableassess.Split(' ');
-                                int arrayLength = propid.Length;
-                                uniqueidMap = propid[arrayLength - 1];
-                                assessment_id = uniqueidMap;
+                            IWebElement Saleinfotable = driver.FindElement(By.XPath("/html/body/table[7]/tbody"));
+                            IList<IWebElement> Saleinforow = Saleinfotable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> Saleinfoid;
+                            foreach (IWebElement Saleinfo in Saleinforow)
+                            {
+                                Saleinfoid = Saleinfo.FindElements(By.TagName("td"));
+                                if (Saleinfoid.Count != 0)
+                                {
+                                    salesresult += Saleinfoid[0].Text + "~";
+                                    salesinformation += Saleinfoid[1].Text + "~";
+                                }
+                                //Sale Date~Sale Price
+                            }
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + salesresult.Remove(salesresult.Length - 1, 1) + "' where Id = '" + 2178 + "'");
+                            gc.insert_date(orderNumber, parcelNumber, 2178, salesinformation.Remove(salesinformation.Length - 1, 1), 1, DateTime.Now);
+                            //gc.CreatePdf(orderNumber, parcelNumber, "property Details", driver, "CT", countynameCT);
+                            //   hrefparcellink
+                            // gc.downloadfile(hrefparcellink, orderNumber, parcelNumber, "aas", "CT", countynameCT);
+                            if (townshipcode == "03")
+                            {
+                                uniqueidMap = uniqueId;
+                                assessment_id = uniqueId;
+                            }
+                            if (townshipcode == "14")
+                            {
+                                uniqueidMap = accountno;
+                                assessment_id = accountno;
+                            }
+                            if (townshipcode == "25")
+                            {
+                                uniqueidMap = accountno.TrimStart('0'); ;
+                                assessment_id = accountno.TrimStart('0'); ;
+                            }
+                            try
+                            {
+                                IWebElement Equalitylink = driver.FindElement(By.XPath("/html/body/table[1]/tbody/tr[7]/td[2]/strong[2]")).FindElement(By.TagName("a"));
+                                string Equlityhref = Equalitylink.GetAttribute("href");
+                                driver.Navigate().GoToUrl(Equlityhref);
+                                IWebElement Equalitytable = driver.FindElement(By.XPath("//*[@id='tabParcel']/div[1]/div/table/tbody"));
+                                IList<IWebElement> Equalityrow = Equalitytable.FindElements(By.TagName("tr"));
+                                IList<IWebElement> Equalitytd;
+                                foreach (IWebElement Equality in Equalityrow)
+                                {
+                                    Equalitytd = Equality.FindElements(By.TagName("td"));
+                                    if (Equalitytd.Count() != 0)
+                                    {
+                                        if (Equalitytd[0].Text.Trim() == "Acres:")
+                                        {
+                                            Acres = Equalitytd[1].Text.Trim();
+                                        }
+                                        if (Equalitytd[2].Text.Trim() == "Acres:")
+                                        {
+                                            Acres = Equalitytd[3].Text.Trim();
+                                        }
+                                        if (Equalitytd[4].Text.Trim() == "Acres:")
+                                        {
+                                            Acres = Equalitytd[5].Text.Trim();
+                                        }
+                                    }
 
-                                uniqueidMap = uniqueidMap.PadLeft(uniqueidMap.Length + 8, '0');
-                                assessment_id = uniqueidMap;
+                                }
                             }
                             catch { }
+                            string Propetyresult = Gis + "~" + parcelid + "~" + accountno + "~" + owner + "~" + location + "~" + mailingaddress + "~" + Acres;
+                            string property9 = "GIS ID~Parcel ID~Account Number~Owner~Property Address~Mailing Address~Acres";
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property9 + "' where Id = '" + 2174 + "'");
+                            gc.insert_date(orderNumber, parcelNumber, 2174, Propetyresult, 1, DateTime.Now);
+                            string filename = "";
+
+                            var chromeOptions = new ChromeOptions();
+                            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
+                            chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
+                            chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
+                            chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+                            chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+                            var driver1 = new ChromeDriver(chromeOptions);
+                            Array.ForEach(Directory.GetFiles(@downloadDirectory), File.Delete);
+                            try
+                            {
+
+                                driver1.Navigate().GoToUrl(hrefparcellink);
+                                Thread.Sleep(6000);
+                                try
+                                {
+                                    gc.CreatePdf(orderNumber, parcelNumber, "property card", driver1, "CT", countynameCT);
+                                }
+                                catch { }
+                                filename = latestfilename();
+                                gc.AutoDownloadFile(orderNumber, parcelNumber, countynameCT, "CT", filename);
+                                Thread.Sleep(2000);
+                                driver1.Quit();
+                            }
+                            catch
+                            {
+                                driver1.Quit();
+                            }
+
+                            if (townshipcode == "01" || townshipcode == "06")
+                            {
+                                try
+                                {
+                                    string FilePath = gc.filePath(orderNumber, parcelNumber) + filename;
+                                    PdfReader reader;
+                                    string pdfData;
+                                    string pdftext = "";
+                                    try
+                                    {
+
+                                        reader = new PdfReader(FilePath);
+                                        String textFromPage = PdfTextExtractor.GetTextFromPage(reader, 1);
+                                        System.Diagnostics.Debug.WriteLine("" + textFromPage);
+
+                                        pdftext = textFromPage;
+
+
+                                    }
+                                    catch { }
+                                    string tableassess = gc.Between(pdftext, "Property Listing Report", "Property Information").Trim();
+                                    string[] propid = tableassess.Split(' ');
+                                    int arrayLength = propid.Length;
+                                    uniqueidMap = propid[arrayLength - 1];
+                                    assessment_id = uniqueidMap;
+
+                                    uniqueidMap = uniqueidMap.PadLeft(uniqueidMap.Length + 8, '0');
+                                    assessment_id = uniqueidMap;
+                                }
+                                catch { }
+                            }
                         }
+                        else
+                        {
+                            gc.CreatePdf_WOP(orderNumber, "Site Load", chromedriver, "CT", countynameCT);
+                            string Gis = "", accountno = "", parcelid = "", owner = "", location = "", mailingaddress = "", uniqueId = "";
+                            string Parcel_ID = "", AssessedResult = "", AppraisedValue = "", AssessedValue = "", salesresult = "", salesinformation = "";
+                            IWebElement propertyDet = chromedriver.FindElement(By.XPath("/html/body/table[1]/tbody"));
+                            IList<IWebElement> propertyRow = propertyDet.FindElements(By.TagName("tr"));
+                            IList<IWebElement> propertyTD;
+                            foreach (IWebElement line in propertyRow)
+                            {
+                                propertyTD = line.FindElements(By.TagName("td"));
+                                if (propertyTD.Count != 0 && line.Text.Contains("GIS ID"))
+                                {
+                                    Gis = propertyTD[0].Text.Replace("GIS ID\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Parcel ID"))
+                                {
+                                    parcelid = propertyTD[0].Text.Replace("Parcel ID\r\n", "");
+                                    parcelNumber = parcelid;
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Mblu"))
+                                {
+                                    parcelid = propertyTD[0].Text.Replace("Mblu\r\n", "");
+                                    parcelNumber = parcelid;
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Unique ID"))
+                                {
+                                    uniqueId = propertyTD[0].Text.Replace("Unique ID\r\n", "");
+                                    parcelNumber = uniqueId;
+
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Account Number"))
+                                {
+                                    accountno = propertyTD[0].Text.Replace("Account Number\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Acct#"))
+                                {
+                                    accountno = propertyTD[0].Text.Replace("Acct#\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Owner"))
+                                {
+                                    owner = propertyTD[0].Text.Replace("Owner\r\n", "");
+                                    ownername = owner;
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("Location"))
+                                {
+                                    location = propertyTD[0].Text.Replace("Location\r\n", "");
+                                }
+                                if (propertyTD.Count != 0 && line.Text.Contains("MAILING ADDRESS"))
+                                {
+                                    mailingaddress = propertyTD[0].Text.Replace("MAILING ADDRESS\r\n", "").Replace("\r\n", " ");
+                                }
+
+                            }
+                            string[] splitAddress = location.Split(' ');
+                            streetno1 = splitAddress[0];
+                            if (splitAddress.Count() == 2)
+                            {
+                                streetname1 = splitAddress[1];
+                                streetname1 = streetname1.Trim();
+                            }
+
+                            if (splitAddress.Count() == 3)
+                            {
+                                streetname1 = splitAddress[1] + " " + splitAddress[2];
+                                streetname1 = streetname1.Trim();
+                            }
+
+                            if (splitAddress.Count() == 4)
+                            {
+                                streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
+                                streetname1 = streetname1.Trim();
+                            }
+
+                            if (splitAddress.Count() == 5)
+                            {
+                                streetname1 = splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3] + " " + splitAddress[4];
+                                streetname1 = streetname1.Trim();
+                            }
+                            address = streetno1 + " " + streetname1;
+                            IWebElement Parcelvaluationtable = chromedriver.FindElement(By.XPath("/html/body/table[3]/tbody"));
+                            IList<IWebElement> Parcelvaluationrow = Parcelvaluationtable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> Parcelvaluationid;
+                            foreach (IWebElement Parcelvaluation in Parcelvaluationrow)
+                            {
+                                Parcelvaluationid = Parcelvaluation.FindElements(By.TagName("td"));
+                                if (Parcelvaluationid.Count != 0)
+                                {
+                                    AssessedResult += Parcelvaluationid[0].Text + "~";
+                                    AppraisedValue += Parcelvaluationid[1].Text + "~";
+                                    AssessedValue += Parcelvaluationid[2].Text + "~";
+                                }
+                                //Buildings Appraised Value~Buildings Assessed Value
+                            }
+                            AssessedResult = "Assessment Info" + "~" + AssessedResult;
+                            AppraisedValue = "Appraised Value" + "~" + AppraisedValue;
+                            AssessedValue = "Assessed Value" + "~" + AssessedValue;
+
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + AssessedResult.Remove(AssessedResult.Length - 1, 1) + "' where Id = '" + 2176 + "'");
+                            gc.insert_date(orderNumber, parcelNumber, 2176, AppraisedValue.Remove(AppraisedValue.Length - 1, 1), 1, DateTime.Now);
+                            gc.insert_date(orderNumber, parcelNumber, 2176, AssessedValue.Remove(AssessedValue.Length - 1, 1), 1, DateTime.Now);
+
+                            string property = "", information = "";
+                            IWebElement Propertyinfotable = chromedriver.FindElement(By.XPath("/html/body/table[5]/tbody"));
+                            IList<IWebElement> Propertyinforow = Propertyinfotable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> Propertyinfoid;
+                            foreach (IWebElement Propertyinfo in Propertyinforow)
+                            {
+                                Propertyinfoid = Propertyinfo.FindElements(By.TagName("td"));
+                                if (Propertyinfoid.Count != 0)
+                                {
+                                    property += Propertyinfoid[0].Text + "~";
+                                    information += Propertyinfoid[1].Text + "~";
+                                }
+                            }
+                            //Total Acres~Land Use
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property.Remove(property.Length - 1, 1) + "' where Id = '" + 2177 + "'");
+                            gc.insert_date(orderNumber, parcelNumber.Replace("Mblu", ""), 2177, information.Remove(information.Length - 1, 1), 1, DateTime.Now);
+
+
+                            IWebElement Saleinfotable = chromedriver.FindElement(By.XPath("/html/body/table[7]/tbody"));
+                            IList<IWebElement> Saleinforow = Saleinfotable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> Saleinfoid;
+                            foreach (IWebElement Saleinfo in Saleinforow)
+                            {
+                                Saleinfoid = Saleinfo.FindElements(By.TagName("td"));
+                                if (Saleinfoid.Count != 0)
+                                {
+                                    salesresult += Saleinfoid[0].Text + "~";
+                                    salesinformation += Saleinfoid[1].Text + "~";
+                                }
+                                //Sale Date~Sale Price
+                            }
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + salesresult.Remove(salesresult.Length - 1, 1) + "' where Id = '" + 2178 + "'");
+                            gc.insert_date(orderNumber, parcelNumber, 2178, salesinformation.Remove(salesinformation.Length - 1, 1), 1, DateTime.Now);
+                            //gc.CreatePdf(orderNumber, parcelNumber, "property Details", driver, "CT", countynameCT);
+                            //   hrefparcellink
+                            // gc.downloadfile(hrefparcellink, orderNumber, parcelNumber, "aas", "CT", countynameCT);
+                            if (townshipcode == "03")
+                            {
+                                uniqueidMap = uniqueId;
+                                assessment_id = uniqueId;
+                            }
+                            if (townshipcode == "14")
+                            {
+                                uniqueidMap = accountno;
+                                assessment_id = accountno;
+                            }
+                            if (townshipcode == "25")
+                            {
+                                uniqueidMap = accountno.TrimStart('0'); ;
+                                assessment_id = accountno.TrimStart('0'); ;
+                            }
+                            try
+                            {
+                                IWebElement Equalitylink = chromedriver.FindElement(By.XPath("/html/body/table[1]/tbody/tr[7]/td[2]/strong[2]")).FindElement(By.TagName("a"));
+                                string Equlityhref = Equalitylink.GetAttribute("href");
+                                chromedriver.Navigate().GoToUrl(Equlityhref);
+                                IWebElement Equalitytable = chromedriver.FindElement(By.XPath("//*[@id='tabParcel']/div[1]/div/table/tbody"));
+                                IList<IWebElement> Equalityrow = Equalitytable.FindElements(By.TagName("tr"));
+                                IList<IWebElement> Equalitytd;
+                                foreach (IWebElement Equality in Equalityrow)
+                                {
+                                    Equalitytd = Equality.FindElements(By.TagName("td"));
+                                    if (Equalitytd.Count() != 0)
+                                    {
+                                        if (Equalitytd[0].Text.Trim() == "Acres:")
+                                        {
+                                            Acres = Equalitytd[1].Text.Trim();
+                                        }
+                                        if (Equalitytd[2].Text.Trim() == "Acres:")
+                                        {
+                                            Acres = Equalitytd[3].Text.Trim();
+                                        }
+                                        if (Equalitytd[4].Text.Trim() == "Acres:")
+                                        {
+                                            Acres = Equalitytd[5].Text.Trim();
+                                        }
+                                    }
+
+                                }
+                            }
+                            catch { }
+                            string Propetyresult = Gis + "~" + parcelid + "~" + accountno + "~" + owner + "~" + location + "~" + mailingaddress + "~" + Acres;
+                            string property9 = "GIS ID~Parcel ID~Account Number~Owner~Property Address~Mailing Address~Acres";
+                            db.ExecuteQuery("update data_field_master set Data_Fields_Text='" + property9 + "' where Id = '" + 2174 + "'");
+                            gc.insert_date(orderNumber, parcelNumber, 2174, Propetyresult, 1, DateTime.Now);
+                            string filename = "";
+
+                            var chromeOptions = new ChromeOptions();
+                            var downloadDirectory = ConfigurationManager.AppSettings["AutoPdf"];
+                            chromeOptions.AddUserProfilePreference("download.default_directory", downloadDirectory);
+                            chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
+                            chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+                            chromeOptions.AddUserProfilePreference("plugins.always_open_pdf_externally", true);
+                            var driver1 = new ChromeDriver(chromeOptions);
+                            Array.ForEach(Directory.GetFiles(@downloadDirectory), File.Delete);
+                            try
+                            {
+
+                                driver1.Navigate().GoToUrl(hrefparcellink);
+                                Thread.Sleep(6000);
+                                try
+                                {
+                                    gc.CreatePdf(orderNumber, parcelNumber, "property card", driver, "CT", countynameCT);
+                                }
+                                catch { }
+                                filename = latestfilename();
+                                gc.AutoDownloadFile(orderNumber, parcelNumber, countynameCT, "CT", filename);
+                                Thread.Sleep(2000);
+                                driver1.Quit();
+                            }
+                            catch
+                            {
+                                driver1.Quit();
+                            }
+
+                            if (townshipcode == "01" || townshipcode == "06")
+                            {
+                                try
+                                {
+                                    string FilePath = gc.filePath(orderNumber, parcelNumber) + filename;
+                                    PdfReader reader;
+                                    string pdfData;
+                                    string pdftext = "";
+                                    try
+                                    {
+
+                                        reader = new PdfReader(FilePath);
+                                        String textFromPage = PdfTextExtractor.GetTextFromPage(reader, 1);
+                                        System.Diagnostics.Debug.WriteLine("" + textFromPage);
+
+                                        pdftext = textFromPage;
+
+
+                                    }
+                                    catch { }
+                                    string tableassess = gc.Between(pdftext, "Property Listing Report", "Property Information").Trim();
+                                    string[] propid = tableassess.Split(' ');
+                                    int arrayLength = propid.Length;
+                                    uniqueidMap = propid[arrayLength - 1];
+                                    assessment_id = uniqueidMap;
+                                    uniqueidMap = uniqueidMap.PadLeft(uniqueidMap.Length + 8, '0');
+                                    assessment_id = uniqueidMap;
+                                }
+                                catch { }
+                            }
+                        }
+
                     }
                     #endregion
                     #region seven Assessment Link
@@ -2842,51 +3668,64 @@ namespace ScrapMaricopa.Scrapsource
                                 string Propertyhead = "";
                                 string Propertyresult = "";
                                 int counttaxbill = 0;
-                                IWebElement multitableElement1 = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div[1]/table[2]/tbody/tr/td[1]/table/tbody"));
-                                IList<IWebElement> multitableRow1 = multitableElement1.FindElements(By.TagName("tr"));
-                                IList<IWebElement> multirowTD1;
-                                // IList<IWebElement> multirowTH1;
-                                foreach (IWebElement row in multitableRow1)
+                                try
                                 {
-                                    //multirowTH1 = row.FindElements(By.TagName("tH"));
-                                    multirowTD1 = row.FindElements(By.TagName("td"));
-                                    if (!row.Text.Contains("Total payments"))
+                                    try
                                     {
-                                        if (row.Text.Contains("Installment"))
+                                        multitableElement1 = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div[1]/table[2]/tbody/tr/td[1]/table/tbody"));
+                                    }
+                                    catch { }
+                                    try
+                                    {
+                                        multitableElement1 = driver.FindElement(By.XPath(" //*[@id='content']/div/div/div/div[1]/table[2]/tbody/tr/td[2]/table/tbody[2]"));
+                                    }
+                                    catch { }
+                                    IList<IWebElement> multitableRow1 = multitableElement1.FindElements(By.TagName("tr"));
+                                    IList<IWebElement> multirowTD1;
+                                    // IList<IWebElement> multirowTH1;
+                                    foreach (IWebElement row in multitableRow1)
+                                    {
+                                        //multirowTH1 = row.FindElements(By.TagName("tH"));
+                                        multirowTD1 = row.FindElements(By.TagName("td"));
+                                        if (!row.Text.Contains("Total payments"))
                                         {
-                                            for (int i = 0; i < multirowTD1.Count; i++)
+                                            if (row.Text.Contains("Installment"))
                                             {
+                                                for (int i = 0; i < multirowTD1.Count; i++)
+                                                {
 
-                                                Propertyhead += multirowTD1[i].Text + "~";
+                                                    Propertyhead += multirowTD1[i].Text + "~";
+                                                }
+                                                Propertyhead = Propertyhead.TrimEnd('~');
+                                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Propertyhead + "' where Id = '2188'");
+
                                             }
-                                            Propertyhead = Propertyhead.TrimEnd('~');
-                                            dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Propertyhead + "' where Id = '2188'");
-
+                                            else
+                                            {
+                                                for (int i = 0; i < multirowTD1.Count; i++)
+                                                {
+                                                    Propertyresult += multirowTD1[i].Text + "~";
+                                                }
+                                                Propertyresult = Propertyresult.TrimEnd('~');
+                                                gc.insert_date(orderNumber, assessment_id, 2188, Propertyresult, 1, DateTime.Now);
+                                                Propertyresult = "";
+                                                counttaxbill = multirowTD1.Count;
+                                            }
                                         }
                                         else
                                         {
-                                            for (int i = 0; i < multirowTD1.Count; i++)
+                                            for (int i = 0; i < counttaxbill; i++)
                                             {
                                                 Propertyresult += multirowTD1[i].Text + "~";
                                             }
                                             Propertyresult = Propertyresult.TrimEnd('~');
                                             gc.insert_date(orderNumber, assessment_id, 2188, Propertyresult, 1, DateTime.Now);
                                             Propertyresult = "";
-                                            counttaxbill = multirowTD1.Count;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        for (int i = 0; i < counttaxbill; i++)
-                                        {
-                                            Propertyresult += multirowTD1[i].Text + "~";
-                                        }
-                                        Propertyresult = Propertyresult.TrimEnd('~');
-                                        gc.insert_date(orderNumber, assessment_id, 2188, Propertyresult, 1, DateTime.Now);
-                                        Propertyresult = "";
 
+                                        }
                                     }
                                 }
+                                catch { }
                                 //Tax Payment Details     
 
                                 IWebElement IPaymentDetails;
@@ -2894,12 +3733,12 @@ namespace ScrapMaricopa.Scrapsource
                                 {
                                     try
                                     {
+                                        //*[@id="content"]/div/div/div/div[2]/table/tbody
                                         IPaymentDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/div[2]/table/tbody"));
                                     }
                                     catch
                                     {
                                         IPaymentDetails = driver.FindElement(By.XPath("//*[@id='content']/div/div/div/form[2]/div/table/tbody"));
-
                                     }
                                     IList<IWebElement> IPaymentDetailsRow = IPaymentDetails.FindElements(By.TagName("tr"));
                                     IList<IWebElement> IPaymentDetailsTD;
@@ -2935,23 +3774,23 @@ namespace ScrapMaricopa.Scrapsource
                                 foreach (IWebElement due in IDueDetailsRow)
                                 {
                                     IDueDetailsTD = due.FindElements(By.TagName("td"));
-                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Tax/Princ/Bint Due"))
+                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Tax/Princ/Bint Due"))
                                     {
                                         TaxPrincBint = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Interest Due"))
+                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Interest Due"))
                                     {
                                         InterestDue = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Lien Due"))
+                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Lien Due"))
                                     {
                                         LienDue = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Fee Due"))
+                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Fee Due"))
                                     {
                                         FeeDue = IDueDetailsTD[1].Text;
                                     }
-                                    if (IDueDetailsTD.Count != 0 && due.Text.Contains("Total Due Now"))
+                                    if (IDueDetailsTD.Count != 0 && !due.Text.Contains("Tax/Princ/Bint Due"))
                                     {
                                         TotalDue = IDueDetailsTD[1].Text;
                                     }
@@ -2963,7 +3802,6 @@ namespace ScrapMaricopa.Scrapsource
                             catch { }
                             string tax5 = "Tax/Princ/Bint Due~Interest Due~Lien Due~Fee Due~Total Due";
                             dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + tax5 + "' where Id = '2190'");
-
                         }
                         foreach (string strhistory in HistoryURL)
                         {
@@ -3014,8 +3852,8 @@ namespace ScrapMaricopa.Scrapsource
                                 IWebElement ITaxSelect = driver1.FindElement(By.Id("actionType"));
                                 SelectElement sTaxSelect = new SelectElement(ITaxSelect);
                                 sTaxSelect.SelectByText("Property Location");
-                                driver1.FindElement(By.Name("propertyNumber")).SendKeys(streetno);
-                                driver1.FindElement(By.Name("propertyName")).SendKeys(streetname.Trim().ToUpper() + " " + streettype.Trim().ToUpper());
+                                driver1.FindElement(By.Name("propertyNumber")).SendKeys(streetno1);
+                                driver1.FindElement(By.Name("propertyName")).SendKeys(streetname1.Trim().ToUpper());
                                 driver1.FindElement(By.Id("searchbtn2")).SendKeys(Keys.Enter);
                                 Thread.Sleep(3000);
                             }
@@ -3297,6 +4135,10 @@ namespace ScrapMaricopa.Scrapsource
                         //    address = streetno + " " + streetname + " " + streettype;
                         //}
                         //Thread.Sleep(3000);
+                        if (address.Trim() == "")
+                        {
+                            address = streetno1 + " " + streetname1;
+                        }
                         if (townshipcode != "06")
                         {
                             driver.FindElement(By.Id("LISTNUM")).SendKeys(parcelNumber);
@@ -3321,16 +4163,7 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement property in IpropertyDetailsRow)
                         {
                             IpropertyDetailsTD = property.FindElements(By.TagName("td"));
-                            if (IpropertyDetailsTD.Count != 0 && IpropertyDetailsRow.Count < 2 && !property.Text.Contains("Last Name / Company") && property.Text.Contains(ownername) && property.Text.Contains("REAL ESTATE"))
-                            {
-                                IWebElement AddressClick = IpropertyDetailsTD[0].FindElement(By.TagName("a"));
-                                if (AddressClick.Text.Contains("show details"))
-                                {
-                                    string link = AddressClick.GetAttribute("href");
-                                    TaxPaymentLink.Add(link);
-                                }
-                            }
-                            if (IpropertyDetailsTD.Count != 0 && IpropertyDetailsRow.Count > 2 && !property.Text.Contains("Last Name / Company") && property.Text.Contains(ownername) && property.Text.Contains("REAL ESTATE"))
+                            if (IpropertyDetailsTD.Count != 0 && !property.Text.Contains("Last Name / Company") && IpropertyDetailsTD[1].Text.ToUpper().Contains(ownername.ToUpper()) && IpropertyDetailsTD[3].Text.Contains("REAL"))
                             {
                                 IWebElement AddressClick = IpropertyDetailsTD[0].FindElement(By.TagName("a"));
                                 if (AddressClick.Text.Contains("show details"))

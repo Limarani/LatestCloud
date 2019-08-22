@@ -160,7 +160,7 @@ namespace ScrapMaricopa.Scrapsource
                         try
                         {
                             IWebElement INodata = driver.FindElement(By.Id("AddressInfo"));
-                            if(INodata.Text.Contains("No results found"))
+                            if (INodata.Text.Contains("No results found"))
                             {
                                 HttpContext.Current.Session["Zero_cuyahoga"] = "Zero";
                                 driver.Quit();
@@ -396,9 +396,15 @@ namespace ScrapMaricopa.Scrapsource
                             Halfyeardue = GlobalClass.After(Halfyeardue1, "HALF YEAR DUE");
                         }
                         catch { }
-                        string Total_Charges = driver.FindElement(By.XPath("//*[@id='form1']/table[1]/tbody/tr[2]/td/table[2]/tbody/tr[21]/td[2]")).Text;
-                        string TatalPayment = driver.FindElement(By.XPath("//*[@id='form1']/table[1]/tbody/tr[2]/td/table[2]/tbody/tr[21]/td[3]")).Text;
-                        string Full_yearbal = driver.FindElement(By.XPath("//*[@id='form1']/table[1]/tbody/tr[2]/td/table[2]/tbody/tr[21]/td[4]")).Text;
+                        string Total_Charges = "", TatalPayment = "", Full_yearbal = "";
+                        try
+                        {
+                            Total_Charges = driver.FindElement(By.XPath("//*[@id='form1']/table[1]/tbody/tr[2]/td/table[2]/tbody/tr[21]/td[2]")).Text;
+                            TatalPayment = driver.FindElement(By.XPath("//*[@id='form1']/table[1]/tbody/tr[2]/td/table[2]/tbody/tr[21]/td[3]")).Text;
+                            Full_yearbal = driver.FindElement(By.XPath("//*[@id='form1']/table[1]/tbody/tr[2]/td/table[2]/tbody/tr[21]/td[4]")).Text;
+                        }
+                        catch { }
+
                         string taxinforesult = taxyear + "~" + taxbill + "~" + Halfyeardue + "~" + Total_Charges + "~" + TatalPayment + "~" + Full_yearbal + "~" + Tax_Authority;
                         gc.insert_date(orderNumber, Parcel_number, 1403, taxinforesult, 1, DateTime.Now);
                         //1403

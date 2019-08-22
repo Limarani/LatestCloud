@@ -268,7 +268,6 @@ namespace ScrapMaricopa.Scrapsource
                                         }
                                     }
 
-
                                 }
                                 catch { }
                                 AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
@@ -320,8 +319,6 @@ namespace ScrapMaricopa.Scrapsource
                                         }
                                     }
                                 }
-
-
 
                                 //Redemptions 
                                 try

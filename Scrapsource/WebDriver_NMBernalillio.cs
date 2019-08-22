@@ -24,6 +24,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_NMBernalillio
     {
+        Amrock amck = new Amrock();
         IWebDriver driver;
         IWebElement LinkSearch;
         DBconnection db = new DBconnection();
@@ -53,9 +54,9 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            //driver = new ChromeDriver();
-            //driver = new PhantomJSDriver();
-            using (driver = new PhantomJSDriver())
+           //driver = new ChromeDriver();
+           // driver = new PhantomJSDriver();
+              using (driver = new PhantomJSDriver())
             {
                 try
                 {
@@ -208,6 +209,7 @@ namespace ScrapMaricopa.Scrapsource
                     strLotSize = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/div[3]/div/div/table/tbody/tr/td/table/tbody/tr[2]/td/div/div[6]/table[2]/tbody/tr[3]/td[2]")).Text;
                     strLandUseCode = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/div[3]/div/div/table/tbody/tr/td/table/tbody/tr[2]/td/div/div[6]/table[2]/tbody/tr[4]/td[2]")).Text;
                     strStyle = driver.FindElement(By.XPath("/html/body/div/div[3]/section/div/form/div[3]/div/div/table/tbody/tr/td/table/tbody/tr[2]/td/div/div[6]/table[2]/tbody/tr[5]/td[2]")).Text;
+                    amck.TaxId = outparcelno;
 
                     string property_details = strClassname + "~" + strTaxdistrcit + "~" + strTaxyear + "~" + strOwnername + "~" + strLocationaddrss + "~" + strCity + "~" + strProprtydescription + "~" + strRealproperty + "~" + strYearBuilt + "~" + strLotSize + "~" + strLandUseCode + "~" + strStyle;
                     gc.insert_date(orderNumber, outparcelno, 100, property_details, 1, DateTime.Now);
@@ -383,7 +385,8 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
-
+                    int k = 0, s=0, m=0, p=0, t=0;
+                    List<string> tax_year = new List<string>();
                     //Tax And Payment History
                     IWebElement ITaxpay = driver.FindElement(By.Id("ctl03_TemplateBody_ctl00_PageLayout_ctl00_Placeholder3_ctl00_pageContent_ctl00_PlaceHolder2_ctl00_taxPaymentHistory"));
                     //js1.ExecuteScript("arguments[0].click();", ITaxpay);
@@ -426,7 +429,51 @@ namespace ScrapMaricopa.Scrapsource
                                             Fees = TDinstallment[5].Text;
                                             Paid = TDinstallment[6].Text;
                                             AmountDue = TDinstallment[7].Text;
+                                            if (taxYear != "" && taxYear != " ")
+                                            {
+                                                tax_year.Add(taxYear);
+                                            }
+                                            if (netTaxable == "1ST HALF DUE" || netTaxable == "2ND HALF DUE")
+                                            {
+                                               
+                                                if (k == 0)
+                                                {
+                                                    amck.Instamount1 = tax;
+                                                    amck.Instamountpaid1 = Paid;
+                                                    k++;
+                                                }
+                                                if (k == 1 && netTaxable != "1ST HALF DUE")
+                                                {
+                                                    amck.Instamount2 = tax;
+                                                    amck.Instamountpaid2 = Paid;
+                                                    k++;
+                                                }
 
+                                                // Delinquent
+                                                if (Interest != "0.00" || Penalty != "0.00")
+                                                {
+                                                    s++;
+                                                    
+                                                }
+                                                //Due
+                                                if (Interest == "0.00" && Penalty == "0.00" && Fees=="0.00" && Paid=="0.00")
+                                                {
+                                                    m++;
+                                                    
+                                                }
+
+                                                // Paid
+                                                if (Interest == "0.00" && Penalty == "0.00" && Paid != "0.00")
+                                                {
+                                                    p++;
+                                                }
+                                                if (t == 0)
+                                                {
+                                                    var strTaxyear1 = tax_year[tax_year.Count - 1];
+                                                    amck.TaxYear = strTaxyear1;
+                                                    t++;
+                                                }
+                                            }
                                         }
 
                                         if (taxYear == "")
@@ -473,6 +520,40 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
+                    // Amrock Starting
+                    if (t != 0)
+                    {
+                       
+                        if (p != 0)
+                        {
+                            amck.InstPaidDue1 = "Paid";
+                            amck.IsDelinquent = "No";
+                        }
+                        else if (s != 0)
+                        {
+                            amck.IsDelinquent = "Yes";
+                        }
+                        else
+                        {
+                            if (m != 0)
+                            {
+                                amck.InstPaidDue1 = "Due";
+                                amck.IsDelinquent = "No";
+                            }
+
+                        }
+                        if (amck.IsDelinquent != "Yes")
+                        {
+                            gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                        }
+                        else
+                        {
+                            gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                        }
+                    }
+                        // Amrock Ending
+                    
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
 
                     LastEndTime = DateTime.Now.ToString("HH:mm:ss");

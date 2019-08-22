@@ -26,6 +26,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_MauiHI
     {
+        Amrock amck = new Amrock();
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
@@ -732,6 +733,7 @@ namespace ScrapMaricopa.Scrapsource
                             if (row.Text.Contains("Parcel Number"))
                             {
                                 parcelNumber = TDmulti11[1].Text;
+                                amck.TaxId = parcelNumber;
                             }
                             if (row.Text.Contains("Location Address"))
                             {
@@ -861,7 +863,8 @@ namespace ScrapMaricopa.Scrapsource
                             //Sale Date~Price~Instrument Number~Instrument Type~Valid Sale or Reason~Document Type~Record Date~Land Court~Land Court Cert
                         }
                     }
-
+                    int i = 0;
+                    string TotalAmountDue = "", TaxAmount = "", TaxPayment = "";
                     IWebElement ITaxHistory = driver.FindElement(By.XPath("//*[@id='ctlBodyPane_ctl05_ctl01_gvwHistoricalTax']/tbody"));
                     IList<IWebElement> ITaxHistoryTr = ITaxHistory.FindElements(By.TagName("tr"));
                     IList<IWebElement> ITaxHistoryTd;
@@ -873,9 +876,52 @@ namespace ScrapMaricopa.Scrapsource
                             string TaxHistoryDetails = ITaxHistoryTd[0].Text + "~" + ITaxHistoryTd[1].Text + "~" + ITaxHistoryTd[2].Text + "~" + ITaxHistoryTd[3].Text + "~" + ITaxHistoryTd[4].Text + "~" + ITaxHistoryTd[5].Text + "~" + ITaxHistoryTd[6].Text;
                             gc.insert_date(orderNumber, parcelNumber, 1738, TaxHistoryDetails, 1, DateTime.Now);
                             //Year~Tax~Payment and Credits~Penalty~Interest~Other~Amount Due
+
+                            if (i == 0)
+                            {
+                                amck.TaxYear = ITaxHistoryTd[0].Text;
+                                TaxAmount = ITaxHistoryTd[1].Text;
+                                amck.Instamount1 = TaxAmount;
+                                TaxPayment = ITaxHistoryTd[2].Text.Replace("(","").Replace(")", "");
+                                amck.Instamountpaid1 = TaxPayment;
+                                TotalAmountDue = ITaxHistoryTd[6].Text;
+                                i++;
+                            }
                         }
                     }
 
+                    if (i == 1)
+                    {
+                        if (TaxAmount == TaxPayment)
+                        {
+                            amck.InstPaidDue1 = "Paid";
+                            amck.IsDelinquent = "No";
+                        }
+                        if (TaxAmount == TotalAmountDue)
+                        {
+                            amck.InstPaidDue1 = "Due";
+                            amck.IsDelinquent = "No";
+                        }
+                        if (TaxPayment != "$0.00" && TaxAmount != TaxPayment)
+                        {
+                            amck.IsDelinquent = "Yes";
+                        }
+                        if (TotalAmountDue != "$0.00" && TaxAmount != TotalAmountDue)
+                        {
+                            amck.IsDelinquent = "Yes";
+                        }
+
+                        if (amck.IsDelinquent != "Yes")
+                        {
+                            gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                        }
+                        else
+                        {
+                            gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                        }
+
+                    }
 
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
 

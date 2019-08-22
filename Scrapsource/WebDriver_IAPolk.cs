@@ -27,6 +27,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_IAPolk
     {
+        Amrock amck = new Amrock();
         string Outparcelno = "", outputPath = "";
         IWebDriver driver;
         DBconnection db = new DBconnection();
@@ -59,6 +60,7 @@ namespace ScrapMaricopa.Scrapsource
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             using (driver = new PhantomJSDriver())
+           // driver = new ChromeDriver();
             {
                 try
                 {
@@ -201,7 +203,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         IWebElement ImultiTable = driver.FindElement(By.XPath("/html/body/center/table/tbody/tr[3]"));
-                        if(ImultiTable.Text.Contains("0 Records"))
+                        if (ImultiTable.Text.Contains("0 Records"))
                         {
                             HttpContext.Current.Session["Nodata_IAPlok"] = "Yes";
                             driver.Quit();
@@ -213,6 +215,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         strparcel = driver.FindElement(By.XPath("/html/body/center/table[1]/tbody/tr[2]/td/table/tbody/tr[2]/th[1]/font")).Text;
+                        amck.TaxId = strparcel;
                         parcelNumber = strparcel.Replace("/", "").Replace("-", "").Replace(".", "");
                         strGeoParcel = driver.FindElement(By.XPath("/html/body/center/table[1]/tbody/tr[2]/td/table/tbody/tr[2]/th[2]/font")).Text;
                         strMap = driver.FindElement(By.XPath("/html/body/center/table[1]/tbody/tr[2]/td/table/tbody/tr[2]/td[1]")).Text.Trim();
@@ -494,6 +497,7 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
+                    amck.TaxYear = strTaxYear;
                     try
                     {
                         strBill = driver.FindElement(By.XPath("/html/body/div[1]/div/div[4]/div[1]/div[2]")).Text;
@@ -501,6 +505,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
+                    string TotalDue1 = "", TotalDue2 = "", TotalDue3="", TotalDue4="";
                     for (int i = 3; i < 9; i++)
                     {
                         try
@@ -518,10 +523,96 @@ namespace ScrapMaricopa.Scrapsource
 
                             string strTaxInstallment = "Real Estate Tax Installment" + "~" + strTaxYear + "~" + strTaxBil + "~" + strIntallment + "~" + strTax + "~" + strTaxFee + "~" + "-" + "~" + "-" + "~" + strTaxInterest + "~" + strTaxTotal + "~" + strTaxDate;
                             gc.insert_date(orderNumber, strTaxParcel, 193, strTaxInstallment, 1, DateTime.Now);
+                            if (i == 3)
+                            {
+                                amck.Instamount1 = strTax;
+                            }
+                            if (i == 4)
+                            {
+                                amck.Instamountpaid1 = strTaxTotal;
+                            }
+                            if (i == 5)
+                            {
+                                TotalDue1 = strTaxTotal;
+                            }
+                            if (i == 6)
+                            {
+                                amck.Instamount2 = strTax;
+                            }
+                            if (i == 7)
+                            {
+                                amck.Instamountpaid2 = strTaxTotal;
+                            }
+                            if (i == 8)
+                            {
+                                TotalDue2 = strTaxTotal;
+                            }
                         }
                         catch { }
                     }
+                    string strIntallment2 = "", strTax2 = "", strTaxFee2 = "", strTaxInterest2 = "", strTaxTotal2 = "", strTaxDate2 = "";
+                    string str_tax1 = "", str_tax2 = "", strtaxamountpaid1 = "", strtaxamountpaid2 = "";
+                    for (int i = 11; i < 17; i++)
+                    {
+                        try
+                        {
+                            strIntallment2 = driver.FindElement(By.XPath("/html/body/div[1]/div/div[4]/div[" + i + "]/div[1]")).Text;
+                            strTax2 = driver.FindElement(By.XPath("/html/body/div[1]/div/div[4]/div[" + i + "]/div[3]")).Text;
+                            strTaxFee2 = driver.FindElement(By.XPath("/html/body/div[1]/div/div[4]/div[" + i + "]/div[5]")).Text;
+                            strTaxInterest2 = driver.FindElement(By.XPath("/html/body/div[1]/div/div[4]/div[" + i + "]/div[7]")).Text;
+                            strTaxTotal2 = driver.FindElement(By.XPath("/html/body/div[1]/div/div[4]/div[" + i + "]/div[9]")).Text;
+                            try
+                            {
+                                strTaxDate2 = driver.FindElement(By.XPath("/html/body/div[1]/div/div[4]/div[" + i + "]/div[11]")).Text;
+                            }
+                            catch { }
 
+                            //string strTaxInstallment2 = "Real Estate Tax Installment" + "~" + strTaxYear + "~" + strTaxBil + "~" + strIntallment + "~" + strTax + "~" + strTaxFee + "~" + "-" + "~" + "-" + "~" + strTaxInterest + "~" + strTaxTotal + "~" + strTaxDate;
+                            //gc.insert_date(orderNumber, strTaxParcel, 193, strTaxInstallment2, 1, DateTime.Now);
+                            if (i == 11)
+                            {
+                                str_tax1 = strTax2;
+                            }
+                            if (i == 12)
+                            {
+                                strtaxamountpaid1 = strTaxTotal2;
+                            }
+                            if (i == 13)
+                            {
+                                TotalDue3 = strTaxTotal2;
+                            }
+                            if (i == 14)
+                            {
+                                str_tax2 = strTax2;
+                            }
+                            if (i == 15)
+                            {
+                                strtaxamountpaid2 = strTaxTotal2;
+                            }
+                            if (i == 16)
+                            {
+                                TotalDue4 = strTaxTotal2;
+                            }
+                        }
+                        catch { }
+                    }
+                    string Privious_Tax = "";
+                    if (str_tax1 == strtaxamountpaid1 && str_tax2 == strtaxamountpaid2 && TotalDue3 == "$0.00" && TotalDue4 == "$0.00")
+                    {
+                        Privious_Tax = "Paid";
+                    }
+                    else
+                    {
+                        Privious_Tax = "Due";
+                    }
+                    string strTaxsale1 = "", strTaxsale2 = "";
+                    try
+                    {
+                        strTaxsale1 = driver.FindElement(By.XPath("//*[@id='page-wrapper']/div[4]/div[12]/div[11]/i")).Text;
+                        strTaxsale2 = driver.FindElement(By.XPath("//*[@id='page-wrapper']/div[4]/div[15]/div[11]/i")).Text;
+                    }
+                    catch { }
+                   
 
                     //PaymentHistory(Real Estate)
                     IWebElement IRealTaxPayment = driver.FindElement(By.XPath("/html/body/div[1]/nav/div[3]/ul/li[5]/a"));
@@ -611,9 +702,64 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
 
                     //Special Assessment Tax Dis Year Wise 
+                    string splyear = "";
                     IWebElement IRealTaxSADisYear = driver.FindElement(By.XPath("/html/body/div[1]/nav/div[3]/ul/li[7]/a"));
                     js.ExecuteScript("arguments[0].click();", IRealTaxSADisYear);
                     Thread.Sleep(5000);
+                    try
+                    {
+                        splyear = driver.FindElement(By.XPath("//*[@id='page-wrapper']/div[3]/div[1]/div[5]")).Text;
+                    }
+                    catch { }
+                    int currentyear = 0, Previousyear = 0;
+                    currentyear = DateTime.Now.Year;
+                    Previousyear = currentyear - 1;
+                    
+                    if (splyear == Convert.ToString(currentyear) || splyear == Convert.ToString(Previousyear))
+                    {
+                        amck.IsDelinquent = "Yes";
+                    }
+                    else if (strTaxsale1.Contains("Sold at Tax Sale") && strTaxsale2.Contains("Sold at Tax Sale"))
+                    {
+                        amck.IsDelinquent = "Yes";
+                    }
+                    else
+                    {
+                        if (amck.Instamount1 == TotalDue1 && amck.Instamount2 == TotalDue2 && amck.Instamountpaid1 == "$0.00" && amck.Instamountpaid2 == "$0.00")
+                        {
+                            amck.InstPaidDue1 = "Due";
+                            amck.IsDelinquent = "No";
+                            if(Privious_Tax.Contains("Due"))
+                            {
+                                amck.IsDelinquent = "Yes";
+                            }
+                            else
+                            {
+
+                            }
+                        }
+                        else if (amck.Instamount1 == amck.Instamountpaid1 && amck.Instamount2 == amck.Instamountpaid2 && TotalDue1 == "$0.00" && TotalDue2 == "$0.00")
+                        {
+                            amck.InstPaidDue1 = "Paid";
+                            amck.IsDelinquent = "No";
+                        }
+                        else
+                        {
+                            amck.IsDelinquent = "Yes";
+                        }
+                    }
+                   
+
+                    if (amck.IsDelinquent != "Yes")
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                    }
+                    else
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                    }
+
                     gc.CreatePdf(orderNumber, parcelNumber, "Special Assessment Tax Installment Year Wise", driver, "IA", "Polk");
                     try
                     {

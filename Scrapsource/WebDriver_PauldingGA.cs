@@ -45,7 +45,7 @@ namespace ScrapMaricopa.Scrapsource
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-                    //Tax Authority
+
 
                     driver.Navigate().GoToUrl("https://qpublic.schneidercorp.com/Application.aspx?App=PauldingCountyGA&Layer=Parcels&PageType=Search");
                     try
@@ -81,7 +81,10 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     if (searchType == "address")
                     {
-                        driver.FindElement(By.Id("ctlBodyPane_ctl01_ctl01_txtAddress")).SendKeys(streetNo + " " + streetName);
+                        //ctlBodyPane_ctl01_ctl01_txtAddress
+                        driver.FindElement(By.Id("ctlBodyPane_ctl01_ctl01_txtAddress")).Click();
+                        driver.FindElement(By.Id("ctlBodyPane_ctl01_ctl01_txtAddress")).SendKeys(streetNo + " " + streetName.Trim() + " " + streetType);
+                        Thread.Sleep(3000);
                         gc.CreatePdf_WOP(orderNumber, "Address Search Before", driver, "GA", "Paulding");
                         driver.FindElement(By.Id("ctlBodyPane_ctl01_ctl01_btnSearch")).SendKeys(Keys.Enter);
                         Thread.Sleep(2000);

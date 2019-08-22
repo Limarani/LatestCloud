@@ -33,6 +33,7 @@ namespace ScrapMaricopa.Scrapsource
         IWebElement Yearclick;
         public string FTP_ElPaso_TX(string streetno, string direction, string streetname, string streettype, string unitnumber, string ownername, string parcelNumber, string searchType, string orderNumber, string directParcel)
         {
+            Amrock amck = new Amrock();
             GlobalClass.global_orderNo = orderNumber;
             HttpContext.Current.Session["orderNo"] = orderNumber;
             GlobalClass.global_parcelNo = parcelNumber;
@@ -264,6 +265,7 @@ namespace ScrapMaricopa.Scrapsource
                     Parcel_number = gc.Between(propertytable, "Property ID:", "Geographic ID:");
                     string PropertyUseCode = gc.Between(propertytable, "Agent Code:", "Legal Description:");
                     string GeographicID = gc.Between(propertytable, "Geographic ID:", "Agent Code:");
+                    amck.TaxId = GeographicID;
                     string LegalDescription = gc.Between(propertytable, "Legal Description:", "Property Use Code:");
                     string PropertyUse_Description = GlobalClass.After(propertytable, "Property Use Description:");
                     IWebElement Locationrow = driver.FindElement(By.XPath("//*[@id='property']/div/div[3]/div"));
@@ -432,7 +434,6 @@ namespace ScrapMaricopa.Scrapsource
                     //tax Site
                     driver.Navigate().GoToUrl("https://actweb.acttax.com/act_webdev/elpaso/index.jsp");
                     Thread.Sleep(3000);
-                    gc.CreatePdf(orderNumber, Parcel_number, "Tax Site", driver, "TX", "El Paso");
                     IWebElement PropertyInformation = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td/div[2]/table/tbody/tr/td/center/form/table/tbody/tr[3]/td[2]/div[3]/select"));
                     SelectElement PropertyInformationSelect = new SelectElement(driver.FindElement(By.Name("searchby")));
                     PropertyInformationSelect.SelectByValue("4");
@@ -513,6 +514,7 @@ namespace ScrapMaricopa.Scrapsource
                     string jurd = "", pendingpayment = "", accountNo = "", AppraisalDistrict = "", OwnerNametax = "", OwnerAddress = "", PropertyAddresstax = "", legal = "", CurrentTax = "", CurrentAmount = "", PriorYearAmount = "", TotalAmount = "", LastPaymentAmount = "", LastPayer = "", LastPaymentDate = "", ActiveLawsuitsTax = "", GrossValue = "", LandValue = "", ImprovementValue = "", CappedValue = "", AgriculturalValue = "", ExemptionsTax = "";
                     string taxyeartax1 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td/center[1]/table/tbody/tr/td/h5/b")).Text;
                     string taxyear = gc.Between(taxyeartax1, "information for", ". All").Trim();
+                    amck.TaxYear = taxyear;
                     string fullTaxeBill1 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td/center[2]/table/tbody/tr/td[1]")).Text.Replace("\r\n", " ");
                     accountno = gc.Between(fullTaxeBill1, "Account Number:", "Prop. Id.");
                     string market = "";
@@ -521,7 +523,7 @@ namespace ScrapMaricopa.Scrapsource
                     OwnerNametax = Ownersplit[1].Replace("\n", "").Trim();
                     PropertyAddress = gc.Between(fullTaxeBill1, "Property Site Address:", " Legal Description:");
                     //legal = gc.Between(fullTaxeBill1, "Legal Description:", " Current Tax Levy:");
-                    // CurrentTax = gc.Between(fullTaxeBill1, " Current Tax Levy:", "Current Amount Due:");
+                    CurrentTax = gc.Between(fullTaxeBill1, " Current Tax Levy:", "Current Amount Due:");
                     CurrentAmount = gc.Between(fullTaxeBill1, "Current Amount Due:", "Prior Year Amount Due:");
                     PriorYearAmount = gc.Between(fullTaxeBill1, "Prior Year Amount Due:", "Total Amount Due:");
                     TotalAmount = gc.Between(fullTaxeBill1, "Total Amount Due:", "Last Payment Amount:");
@@ -545,6 +547,45 @@ namespace ScrapMaricopa.Scrapsource
                     string taxbill = taxyear + "~" + accountno + "~" + OwnerNametax + "~" + PropertyAddress + "~" + TotalAmount + "~" + CurrentAmount + "~" + PriorYearAmount + "~" + TotalAmount + "~" + LastPaymentAmount + "~" + LastPayer + "~" + LastPaymentDate + "~" + ActiveLawsuitsTax + "~" + pendingpayment + "~" + market + "~" + LandValue + "~" + ImprovementValue + "~" + CappedValue + "~" + AgriculturalValue + "~" + ExemptionsTax + "~" + Taxauthority;
                     gc.insert_date(orderNumber, Parcel_number, 1138, taxbill, 1, DateTime.Now);
 
+
+                    if(TotalAmount.Trim()=="$0.00")
+                    {
+                        if (CurrentTax == LastPaymentAmount)
+                        {
+                            amck.Instamount1 = CurrentTax;
+                            amck.Instamountpaid1 = LastPaymentAmount;
+                            amck.InstPaidDue1 = "Paid";
+                            amck.IsDelinquent = "No";
+                        }
+                        else
+                        {
+                            amck.IsDelinquent = "Yes";
+                        }
+                    }
+                    else
+                    {
+                        if(CurrentTax== TotalAmount)
+                        {
+                            amck.Instamount1 = CurrentTax;
+                            amck.InstPaidDue1 = "Due";
+                            amck.IsDelinquent = "No";
+                        }
+                        else
+                        {
+                            amck.IsDelinquent = "Yes";
+
+                        }
+
+                    }
+                    if (amck.IsDelinquent != "Yes")
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                    }
+                    else
+                    {
+                        gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                    }
                     IWebElement Itaxstmt1 = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[2]/td/center[2]/table/tbody/tr/td[2]/h3[2]/a"));
                     Thread.Sleep(2000);
                     string stmt11 = Itaxstmt1.GetAttribute("href");

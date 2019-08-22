@@ -26,6 +26,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_HonoluluHI
     {
+        Amrock amck = new Amrock();
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
@@ -50,9 +51,9 @@ namespace ScrapMaricopa.Scrapsource
             string multi = "", TaxAuthority = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+           // using (driver = new PhantomJSDriver())
             {
-                // driver = new ChromeDriver();
+                 driver = new ChromeDriver();
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
@@ -161,6 +162,7 @@ namespace ScrapMaricopa.Scrapsource
                                     try
                                     {
                                         Parcelno = TDmultiaddress[0].Text.Trim();
+                                        //amck.TaxId = Parcelno;
                                         Ownername = TDmultiaddress[1].Text.Trim();
                                         parcellocation = TDmultiaddress[2].Text.Trim();
                                         string Multi = Ownername + "~" + parcellocation;
@@ -408,6 +410,7 @@ namespace ScrapMaricopa.Scrapsource
                     LocationAddress = gc.Between(propertydata, "Location Address", "Plat Map").Trim();
                     Propertyclass = gc.Between(propertydata, "Property Class", "Parcel Map").Trim();
                     LandArea_Feet = gc.Between(propertydata, "Land Area (approximate sq ft)", "Legal Information").Trim();
+                    amck.TaxId = parcelNumber;
                     try
                     {
                         LandArea_Acres = GlobalClass.After(propertydata, "Land Area (acres)").Trim();
@@ -464,6 +467,10 @@ namespace ScrapMaricopa.Scrapsource
 
 
                     // Current tax details
+                    int j = 0, s=0;
+                    string Penalty = "";
+                    string Interest = "";
+                    
                     try
                     {
                         IWebElement CurrentTax = driver.FindElement(By.XPath("/html/body/center[2]/table[11]/tbody"));
@@ -473,18 +480,39 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement row in TRCurrentTax)
                         {
                             TDCurrentTax = row.FindElements(By.TagName("td"));
-                            if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 10)
+                            if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online"))
                             {
-                                string CurrentTaxDetail1 = TDCurrentTax[0].Text + "~" + TDCurrentTax[1].Text + "~" + TDCurrentTax[2].Text + "~" + TDCurrentTax[3].Text + "~" + TDCurrentTax[4].Text + "~" + TDCurrentTax[5].Text + "~" + TDCurrentTax[6].Text + "~" + TDCurrentTax[7].Text + "~" + TDCurrentTax[8].Text + "~" + TDCurrentTax[9].Text;
-                                gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail1, 1, DateTime.Now);
+                                if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 10)
+                                {
+                                    string CurrentTaxDetail1 = TDCurrentTax[0].Text + "~" + TDCurrentTax[1].Text + "~" + TDCurrentTax[2].Text + "~" + TDCurrentTax[3].Text + "~" + TDCurrentTax[4].Text + "~" + TDCurrentTax[5].Text + "~" + TDCurrentTax[6].Text + "~" + TDCurrentTax[7].Text + "~" + TDCurrentTax[8].Text + "~" + TDCurrentTax[9].Text;
+                                    gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail1, 1, DateTime.Now);
 
-                            }
-                            if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 2)
-                            {
-                                string CurrentTaxDetail2 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + TDCurrentTax[1].Text;
-                                gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail2, 1, DateTime.Now);
+                                }
+                                if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 2)
+                                {
+                                    string CurrentTaxDetail2 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + TDCurrentTax[1].Text;
+                                    gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail2, 1, DateTime.Now);
 
+                                }
+                                Penalty = TDCurrentTax[6].Text.Trim();
+                                Interest = TDCurrentTax[7].Text.Trim();
+                                if (Penalty != "$ 0.00" || Interest != "$ 0.00")
+                                {
+                                    s++;
+                                }
+                                //if (j == 0)
+                                //{
+                                //    string[] taxyear = TDCurrentTax[0].Text.Split('-');
+                                //    amck.TaxYear = taxyear[0];
+                                //    amck.Instamount1 = TDCurrentTax[5].Text;
+                                //}
+                                //if (j == 1)
+                                //{
+                                //    amck.Instamount2 = TDCurrentTax[5].Text;
+                                //}
+                                //j++;
                             }
+
                         }
 
                     }
@@ -498,17 +526,37 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement row in TRCurrentTax)
                         {
                             TDCurrentTax = row.FindElements(By.TagName("td"));
-                            if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 10)
+                            if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online"))
                             {
-                                string CurrentTaxDetail1 = TDCurrentTax[0].Text + "~" + TDCurrentTax[1].Text + "~" + TDCurrentTax[2].Text + "~" + TDCurrentTax[3].Text + "~" + TDCurrentTax[4].Text + "~" + TDCurrentTax[5].Text + "~" + TDCurrentTax[6].Text + "~" + TDCurrentTax[7].Text + "~" + TDCurrentTax[8].Text + "~" + TDCurrentTax[9].Text;
-                                gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail1, 1, DateTime.Now);
+                                if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 10)
+                                {
+                                    string CurrentTaxDetail1 = TDCurrentTax[0].Text + "~" + TDCurrentTax[1].Text + "~" + TDCurrentTax[2].Text + "~" + TDCurrentTax[3].Text + "~" + TDCurrentTax[4].Text + "~" + TDCurrentTax[5].Text + "~" + TDCurrentTax[6].Text + "~" + TDCurrentTax[7].Text + "~" + TDCurrentTax[8].Text + "~" + TDCurrentTax[9].Text;
+                                    gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail1, 1, DateTime.Now);
 
-                            }
-                            if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 2)
-                            {
-                                string CurrentTaxDetail2 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + TDCurrentTax[1].Text;
-                                gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail2, 1, DateTime.Now);
+                                }
+                                if (TDCurrentTax.Count != 0 && !row.Text.Contains("Current Tax") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("pay online") && TDCurrentTax.Count == 2)
+                                {
+                                    string CurrentTaxDetail2 = "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + "" + "~" + TDCurrentTax[1].Text;
+                                    gc.insert_date(orderNumber, parcelNumber, 1557, CurrentTaxDetail2, 1, DateTime.Now);
 
+                                }
+                                Penalty=TDCurrentTax[6].Text.Trim();
+                                Interest=TDCurrentTax[7].Text.Trim();
+                                if (Penalty != "$ 0.00" || Interest != "$ 0.00")
+                                {
+                                    s++;
+                                }
+                                //if (j == 0)
+                                //{
+                                //    string[] taxyear = TDCurrentTax[0].Text.Split('-');
+                                //    amck.TaxYear = taxyear[0];
+                                //    amck.Instamount1 = TDCurrentTax[5].Text;
+                                //}
+                                //if (j == 1)
+                                //{
+                                //    amck.Instamount2 = TDCurrentTax[5].Text;
+                                //}
+                                //j++;
                             }
                         }
 
@@ -552,7 +600,9 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
                     string current = driver.CurrentWindowHandle;
-
+                    string TotalAmount = "";
+                    string Current_Tax = "";
+                    int t = 0;
                     for (int i = 0; i < 3; i++)
                     {
                         try
@@ -566,9 +616,15 @@ namespace ScrapMaricopa.Scrapsource
                                 TDTaxHistroy = row.FindElements(By.TagName("td"));
                                 if (TDTaxHistroy.Count != 0 && !row.Text.Contains("Historical Tax") && row.Text.Trim() != "" && !row.Text.Contains("Penalty") && !row.Text.Contains("Click") && TDTaxHistroy[0].Text.Trim() == Convert.ToString(tyear) && TDTaxHistroy.Count == 7)
                                 {
+                                    if (t == 0)
+                                    {
+                                        TotalAmount = TDTaxHistroy[6].Text.Trim();
+                                        Current_Tax = TDTaxHistroy[1].Text.Trim();
+                                    }
                                     IWebElement IRealEstate = TDTaxHistroy[0].FindElement(By.TagName("a"));
                                     IRealEstate.Click();
                                     Thread.Sleep(4000);
+                                    t++;
                                     break;
                                 }
 
@@ -621,6 +677,10 @@ namespace ScrapMaricopa.Scrapsource
 
 
                         //  Tax Information Details
+
+                        int k = 0, m=0;
+                        int Currentyear = DateTime.Now.Year;
+                        string strPenalty = "", strInterest="";
                         try
                         {
                             IWebElement TaxDetails = driver.FindElement(By.XPath("/html/body/center[2]/table[3]/tbody"));
@@ -630,23 +690,84 @@ namespace ScrapMaricopa.Scrapsource
                             foreach (IWebElement row in TRTaxDetails)
                             {
                                 TDTaxDetails = row.FindElements(By.TagName("td"));
-                                if (TDTaxDetails.Count != 0 && !row.Text.Contains("Tax Details") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("Totals") && TDTaxDetails.Count == 7)
+                                if (TDTaxDetails.Count != 0 && !row.Text.Contains("Tax Details") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period"))
                                 {
-                                    string TaxInfoDetail1 = TDTaxDetails[0].Text + "~" + TDTaxDetails[1].Text + "~" + TDTaxDetails[2].Text + "~" + TDTaxDetails[3].Text + "~" + TDTaxDetails[4].Text + "~" + TDTaxDetails[5].Text + "~" + TDTaxDetails[6].Text + "~" + TaxAuthority;
-                                    gc.insert_date(orderNumber, parcelNumber, 1558, TaxInfoDetail1, 1, DateTime.Now);
+                                    if (TDTaxDetails.Count != 0 && !row.Text.Contains("Tax Details") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && !row.Text.Contains("Totals") && TDTaxDetails.Count == 7)
+                                    {
+                                        string TaxInfoDetail1 = TDTaxDetails[0].Text + "~" + TDTaxDetails[1].Text + "~" + TDTaxDetails[2].Text + "~" + TDTaxDetails[3].Text + "~" + TDTaxDetails[4].Text + "~" + TDTaxDetails[5].Text + "~" + TDTaxDetails[6].Text + "~" + TaxAuthority;
+                                        gc.insert_date(orderNumber, parcelNumber, 1558, TaxInfoDetail1, 1, DateTime.Now);
 
-                                }
-                                if (TDTaxDetails.Count != 0 && !row.Text.Contains("Tax Details") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && row.Text.Contains("Totals") && TDTaxDetails.Count == 6)
-                                {
-                                    string TaxInfoDetail2 = "" + "~" + TDTaxDetails[0].Text + "~" + TDTaxDetails[1].Text + "~" + TDTaxDetails[2].Text + "~" + TDTaxDetails[3].Text + "~" + TDTaxDetails[4].Text + "~" + TDTaxDetails[5].Text + "~" + TaxAuthority;
-                                    gc.insert_date(orderNumber, parcelNumber, 1558, TaxInfoDetail2, 1, DateTime.Now);
+                                    }
+                                    if (TDTaxDetails.Count != 0 && !row.Text.Contains("Tax Details") && row.Text.Trim() != "" && !row.Text.Contains("Tax Period") && row.Text.Contains("Totals") && TDTaxDetails.Count == 6)
+                                    {
+                                        string TaxInfoDetail2 = "" + "~" + TDTaxDetails[0].Text + "~" + TDTaxDetails[1].Text + "~" + TDTaxDetails[2].Text + "~" + TDTaxDetails[3].Text + "~" + TDTaxDetails[4].Text + "~" + TDTaxDetails[5].Text + "~" + TaxAuthority;
+                                        gc.insert_date(orderNumber, parcelNumber, 1558, TaxInfoDetail2, 1, DateTime.Now);
 
+                                    }
+                                    strPenalty = TDTaxDetails[4].Text.Trim();
+                                    strInterest = TDTaxDetails[5].Text.Trim();
+                                    if (strPenalty != "0.00" || strInterest != "0.00")
+                                    {
+                                        m++;
+                                    }
+                                    if (k == 0 && TDTaxDetails[1].Text.Contains("Beginning Tax") && Currentyear ==tyear)
+                                    {
+                                        string[] Staxyear = TDTaxDetails[0].Text.Split('-');
+                                        amck.TaxYear = Staxyear[0];
+                                        amck.Instamount1 = TDTaxDetails[2].Text;
+                                    }
+                                    if (k == 1 && TDTaxDetails[1].Text.Contains("Payment") && Currentyear == tyear)
+                                    {
+                                        amck.Instamountpaid1 = TDTaxDetails[3].Text;
+                                    }
+                                    else if((k == 1 && TDTaxDetails[1].Text.Contains("Beginning Tax") && Currentyear == tyear))
+                                    {
+                                        amck.Instamount2 = TDTaxDetails[2].Text;
+                                    }
+                                    if (k == 2 && TDTaxDetails[1].Text.Contains("Beginning Tax") && Currentyear == tyear)
+                                    {
+                                        amck.Instamount2 = TDTaxDetails[2].Text;
+                                    }
+                                    if (k == 3 && TDTaxDetails[1].Text.Contains("Payment") && Currentyear == tyear)
+                                    {
+                                        amck.Instamountpaid2 = TDTaxDetails[3].Text;
+                                    }
+                                    k++;
                                 }
                             }
 
-
                         }
                         catch { }
+                        if (t == 1)
+                        {
+                            if (TotalAmount.Trim() == "$0.00")
+                            {
+                                amck.InstPaidDue1 = "Paid";
+                                amck.IsDelinquent = "No";
+                            }
+                            else if (s!= 0 || m!=0)
+                            {
+                                amck.IsDelinquent = "Yes";
+                            }
+                            else
+                            {
+                                if (Current_Tax == TotalAmount)
+                                {
+                                    amck.InstPaidDue1 = "Due";
+                                    amck.IsDelinquent = "No";
+                                }
+                              
+                            }
+                            if (amck.IsDelinquent != "Yes")
+                            {
+                                gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                            }
+                            else
+                            {
+                                gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                            }
+                        }
 
                         //  Tax Credit Details
 

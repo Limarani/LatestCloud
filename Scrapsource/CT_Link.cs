@@ -741,7 +741,7 @@ namespace ScrapMaricopa.Scrapsource
                 {
                     iA = "12";
                     iT = "0";
-                    urlAssessment = "https://info.townofwindsorct.com/gis/";
+                    urlAssessment = "https://townofwindsorct.com/assessor/property-card.php/";
                     urlTax = "https://www.mytaxbill.org/inet/bill/home.do?town=windsor";
                     result = "Town of Windsor 275 Broad Street  Windsor, CT 06095 Phone:860-285-1810";
                 }

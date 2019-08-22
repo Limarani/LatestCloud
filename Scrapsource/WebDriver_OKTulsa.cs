@@ -26,6 +26,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class Webdriver_OKTulsa
     {
+        Amrock amck = new Amrock();
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
@@ -46,7 +47,8 @@ namespace ScrapMaricopa.Scrapsource
             IJavaScriptExecutor js = driver as IJavaScriptExecutor;
 
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+              using (driver = new PhantomJSDriver())
+            //driver = new ChromeDriver();
             {
                 try
                 {
@@ -209,6 +211,7 @@ namespace ScrapMaricopa.Scrapsource
                     string fullqucikfacts = driver.FindElement(By.XPath("//*[@id='quick']/table/tbody")).Text;
                     //Parcel_No = driver.FindElement(By.XPath("//*[@id='quick']/table/tbody/tr[1]/td[2]")).Text;
                     Parcel_No = gc.Between(fullqucikfacts, "Parcel #", "Situs address").Trim();
+                    amck.TaxId = Parcel_No;
                     //Account_No = driver.FindElement(By.XPath("//*[@id='quick']/table/tbody/tr[1]/td[2]")).Text;
                     Account_No = gc.Between(fullqucikfacts, "Account #", "Parcel #").Trim();
                     //Owner_Name = driver.FindElement(By.XPath("//*[@id='quick']/table/tbody/tr[4]/td[2]")).Text;
@@ -236,7 +239,7 @@ namespace ScrapMaricopa.Scrapsource
                     if (Legal_Description.Contains("\r\n"))
                     {
                         Legal_Description = Legal_Description.Replace("\r\n", "");
-                    }
+                     }
                     string prop = Account_No + "~" + Owner_Name + "~" + Property_Address + "~" + Mailing_Address + "~" + Legal_Description + "~" + Year_Built;
                     gc.insert_date(orderNumber, Parcel_No, 111, prop, 1, DateTime.Now);
 
@@ -436,6 +439,7 @@ namespace ScrapMaricopa.Scrapsource
                         var firstString = s.Substring(0, firstSpaceIndex); // INAGX4
                         var secondString = s.Substring(firstSpaceIndex + 1);
                         Tax_Year = firstString;
+                        amck.TaxYear = Tax_Year;
                         gc.CreatePdf(orderNumber, Parcel_No, "Detailed Tax Information" + Tax_Year, driver, "OK", "Tulsa");
 
 
@@ -459,10 +463,12 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             Tax_Type = secondString;
                             Tax_Amount = driver.FindElement(By.XPath("/html/body/form/div[3]/div[2]/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[5]/td[2]/span")).Text;
+                            amck.Instamount1 = Tax_Amount;
                             Tax_Balance = driver.FindElement(By.XPath("/html/body/form/div[3]/div[2]/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[9]/td[2]/span")).Text;
                             Interest = driver.FindElement(By.XPath("/html/body/form/div[3]/div[2]/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[10]/td[2]/span")).Text;
                             Costs = driver.FindElement(By.XPath("/html/body/form/div[3]/div[2]/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[11]/td[2]")).Text;
                             Total_Due = driver.FindElement(By.XPath("/html/body/form/div[3]/div[2]/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[12]/td[2]/span")).Text;
+                            
                             string ta = driver.FindElement(By.XPath("/html/body/form/div[3]/div[1]/table/tbody/tr[2]/td")).Text;
                             string ta1 = driver.FindElement(By.XPath("/html/body/form/div[3]/div[1]/table/tbody/tr[3]/td")).Text;
                             string ta2 = driver.FindElement(By.XPath("/html/body/form/div[3]/div[1]/table/tbody/tr[4]")).Text;
@@ -472,6 +478,8 @@ namespace ScrapMaricopa.Scrapsource
                         {
 
                         }
+                        int k = 0;
+                        string totalpaid1 = "", totalpaid2 = "";
                         try
                         {
                             IWebElement TBtax = driver.FindElement(By.XPath("/html/body/form/div[3]/div[2]/table/tbody/tr/td/table[4]/tbody/tr[1]/td/table[2]/tbody"));
@@ -487,10 +495,25 @@ namespace ScrapMaricopa.Scrapsource
                                     Interest_Paid = TDtax[3].Text;
                                     Costs_Paid = TDtax[4].Text;
                                     Total_Paid = TDtax[5].Text;
+                                    amck.Instamountpaid1 = Total_Paid;
                                     Reference_Number = TDtax[6].Text;
                                     Paid_By = TDtax[7].Text;
                                     string tax_auth = t_Owner_Name + "~" + T_Property_Address + "~" + Tax_Year + "~" + Tax_Type + "~" + Tax_Amount + "~" + Tax_Balance + "~" + Interest + "~" + Costs + "~" + Total_Due + "~" + Taxing_Authority + "~" + Paid_Date + "~" + Tax_Amount_Paid + "~" + Interest_Paid + "~" + Costs_Paid + "~" + Total_Paid + "~" + Reference_Number + "~" + Paid_By;
                                     gc.insert_date(orderNumber, Parcel_ID, 116, tax_auth, 1, DateTime.Now);
+                                    if (k == 0)
+                                    {
+                                        totalpaid1 = Total_Paid;
+                                    }
+                                    if (k == 1)
+                                    {
+                                        totalpaid2 = Total_Paid;
+                                        if (totalpaid1 == totalpaid2)
+                                        {
+                                            amck.IsDelinquent = "Yes";
+                                        }
+
+                                    }
+                                    k++;
                                 }
 
                             }
@@ -499,7 +522,49 @@ namespace ScrapMaricopa.Scrapsource
                         {
 
                         }
+                       
+                        string Deli_invoice = "";
+                        if (a == 2)
+                        {
+                            try
+                            {
+                                Deli_invoice = driver.FindElement(By.XPath("//*[@id='form1']/div[3]/div[2]/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[9]/td[3]/span")).Text;
+                            }
+                            catch { }
+                            if (Deli_invoice.Contains("INVOICE-NO"))
+                            {
+                                amck.IsDelinquent = "Yes";
+                            }
+                            else
+                            {
+                                if (Tax_Amount == Total_Paid)
+                                {
+                                    amck.InstPaidDue1 = "Paid";
+                                    amck.IsDelinquent = "No";
+                                }
+                                else if (Total_Due != "$0.00" && Total_Due == Tax_Amount)
+                                {
+                                    amck.InstPaidDue1 = "Due";
+                                    amck.IsDelinquent = "No";
+                                }
+                                else
+                                {
+                                    amck.IsDelinquent = "Yes";
+                                }
+                            }
 
+                            if (amck.IsDelinquent != "Yes")
+                            {
+                                gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                            }
+                            else
+                            {
+                                gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                            }
+                        }
+
+                       
                         driver.FindElement(By.XPath("/html/body/form/div[3]/div[2]/table/tbody/tr/td/table[2]/tbody/tr[1]/td/table[1]/tbody/tr/td[3]/span/a[1]")).SendKeys(Keys.Enter);
                         Thread.Sleep(4000);
                         gc.CreatePdf(orderNumber, Parcel_No, "Tax History details", driver, "OK", "Tulsa");

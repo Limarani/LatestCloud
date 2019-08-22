@@ -243,15 +243,16 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         driver.FindElement(By.Id("BodyContent_ownertransferhistoryLb")).Click();
                         Thread.Sleep(4000);
+
+                        IWebElement Propertyvalue1 = driver.FindElement(By.XPath("//*[@id='content']/div/div[2]/table/tbody/tr/td[1]/table/tbody"));
+                        string[] propersplit = Propertyvalue1.Text.Split('\r');
+                        OwnerName = propersplit[1].Trim();
+                        MailingAddress1 = propersplit[2].Trim();
+                        MailingAddress2 = propersplit[3].Trim();
+                        MailingAddress = MailingAddress1 + " " + MailingAddress2;
                     }
-                    catch { }
-                    IWebElement Propertyvalue1 = driver.FindElement(By.XPath("//*[@id='content']/div/div[2]/table/tbody/tr/td[1]/table/tbody"));
-                    string[] propersplit = Propertyvalue1.Text.Split('\r');
-                    OwnerName = propersplit[1].Trim();
-                    MailingAddress1 = propersplit[2].Trim();
-                    MailingAddress2 = propersplit[3].Trim();
-                    MailingAddress = MailingAddress1 + " " + MailingAddress2;
-                    try
+                catch { }
+                try
                     {
                         driver.FindElement(By.Id("BodyContent_improvementinformationLb")).Click();
                         Thread.Sleep(4000);
@@ -262,31 +263,39 @@ namespace ScrapMaricopa.Scrapsource
                         Yearbuilt = driver.FindElement(By.XPath("//*[@id='BodyContent_GridView10']/tbody/tr[3]/td[4]")).Text.Trim();
                     }
                     catch { }
+                    try
+                    {////*[@id="BodyContent_GridView10"]/tbody/tr[3]/td[4]
+                        Yearbuilt = driver.FindElement(By.XPath("//*[@id='BodyContent_GridView10']/tbody/tr[2]/td[4]")).Text.Trim();
+                    }
+                    catch { }
 
                     string Propertydetails = TaxID + "~" + OwnerName + "~" + PropertyAddress + "~" + MailingAddress + "~" + Yearbuilt + "~" + LegalDescription + "~" + PropertyClass;
                     gc.insert_date(orderNumber, ParcelID, 1718, Propertydetails, 1, DateTime.Now);
                     //Assessment Details
-
-                    driver.FindElement(By.Id("BodyContent_valuationhistoryLb")).Click();
-                    Thread.Sleep(4000);
-                    gc.CreatePdf(orderNumber, parcelNumber, "Assessment Deatil", driver, "IN", "Lake");
-
-                    string title = "", value = "";
-                    int s = 0;
-
-                    IWebElement Bigdata2 = driver.FindElement(By.XPath("//*[@id='Valuation']/td/table/tbody"));
-                    IList<IWebElement> TRBigdata2 = Bigdata2.FindElements(By.TagName("tr"));
-                    IList<IWebElement> TDBigdata2;
-                    foreach (IWebElement row2 in TRBigdata2)
+                    try
                     {
-                        TDBigdata2 = row2.FindElements(By.TagName("td"));
+                        driver.FindElement(By.Id("BodyContent_valuationhistoryLb")).Click();
+                        Thread.Sleep(4000);
+                        gc.CreatePdf(orderNumber, parcelNumber, "Assessment Deatil", driver, "IN", "Lake");
 
-                        if (TDBigdata2.Count != 0 && TDBigdata2.Count == 14 && !row2.Text.Contains("Assess. Year"))
+                        string title = "", value = "";
+                        int s = 0;
+
+                        IWebElement Bigdata2 = driver.FindElement(By.XPath("//*[@id='Valuation']/td/table/tbody"));
+                        IList<IWebElement> TRBigdata2 = Bigdata2.FindElements(By.TagName("tr"));
+                        IList<IWebElement> TDBigdata2;
+                        foreach (IWebElement row2 in TRBigdata2)
                         {
-                            value = TDBigdata2[0].Text + "~" + TDBigdata2[1].Text + "~" + TDBigdata2[2].Text + "~" + TDBigdata2[3].Text + "~" + TDBigdata2[4].Text + "~" + TDBigdata2[5].Text + "~" + TDBigdata2[6].Text + "~" + TDBigdata2[7].Text + "~" + TDBigdata2[8].Text + "~" + TDBigdata2[9].Text + "~" + TDBigdata2[10].Text + "~" + TDBigdata2[11].Text + "~" + TDBigdata2[12].Text + "~" + TDBigdata2[13].Text;
-                            gc.insert_date(orderNumber, ParcelID, 1719, value, 1, DateTime.Now);                            
+                            TDBigdata2 = row2.FindElements(By.TagName("td"));
+
+                            if (TDBigdata2.Count != 0 && TDBigdata2.Count == 14 && !row2.Text.Contains("Assess. Year"))
+                            {
+                                value = TDBigdata2[0].Text + "~" + TDBigdata2[1].Text + "~" + TDBigdata2[2].Text + "~" + TDBigdata2[3].Text + "~" + TDBigdata2[4].Text + "~" + TDBigdata2[5].Text + "~" + TDBigdata2[6].Text + "~" + TDBigdata2[7].Text + "~" + TDBigdata2[8].Text + "~" + TDBigdata2[9].Text + "~" + TDBigdata2[10].Text + "~" + TDBigdata2[11].Text + "~" + TDBigdata2[12].Text + "~" + TDBigdata2[13].Text;
+                                gc.insert_date(orderNumber, ParcelID, 1719, value, 1, DateTime.Now);
+                            }
                         }
                     }
+                    catch { }
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
                     //Tax Information Details
 
@@ -332,11 +341,24 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (TDTaxCurrent2.Count == 2 && TDTaxCurrent2.Count != 0 && row2.Text.Trim() != "")
                         {
-                            string[] splitt = TDTaxCurrent2[0].Text.Split('\r');
-                            Ownername = splitt[1].Trim();
-                            string Prop1 = splitt[2].Trim();
-                            string Prop2 = splitt[3].Trim();
-                            Propertyadd = Prop1 + " " + Prop2;
+                            try
+                            {
+                                string[] splitt = TDTaxCurrent2[0].Text.Split('\r');
+                                Ownername = splitt[1].Trim();
+                                string Prop1 = splitt[2].Trim();
+                                string Prop2 = splitt[3].Trim();
+                                Propertyadd = Prop1 + " " + Prop2;
+                            }
+                            catch { }
+                            try
+                            {
+                                string[] splitt = TDTaxCurrent2[0].Text.Split('\r');
+                                Ownername = splitt[1].Replace("\n","").Trim();                               
+
+                                Propertyadd = "";
+                            }
+                            catch { }
+
                         }
                         if (TDTaxCurrent2.Count == 1 && TDTaxCurrent2.Count != 0 && row2.Text.Trim() != "" && !row2.Text.Contains("Legal Description:") && !row2.Text.Contains("Our records"))
                         {

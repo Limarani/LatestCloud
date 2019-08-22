@@ -78,6 +78,16 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf_WOP(orderNumber, "SearchBefore", driver, "SC", "Lexington");
                         driver.FindElement(By.XPath("//*[@id='parcelINQ']/table/tbody/tr[11]/td/input")).Click();
                         Thread.Sleep(2000);
+                        try {
+                            string Nodata = driver.FindElement(By.XPath("//*[@id='divcenter']/p[2]/font")).Text.Trim();
+                            if (Nodata.Contains("Your search produced"))
+                            {
+                                HttpContext.Current.Session["Nodata_LexingtonSC"] = "Yes";
+                                driver.Quit();
+                                return "No Data Found";
+                            }
+                        }
+                        catch { }
                         int Max = 0;
                         try
                         {
@@ -369,9 +379,9 @@ namespace ScrapMaricopa.Scrapsource
                         gc.CreatePdf(orderNumber, parcelNumber, "Tax search Result" + TaxYear, driver, "SC", "Lexington");
                         //property type
                         string HomesteadPercentage = "";
-                        IWebElement IHome = null;
                         try
                         {
+                            IWebElement IHome = null;
                             try
                             {
                                 IHome = driver.FindElement(By.XPath("//*[@id='divcenter']/center[2]/table/tbody"));

@@ -27,6 +27,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_UTUtah
     {
+        Amrock amck = new Amrock();
         string Outparcelno = "", outputPath = "";
         IWebDriver driver;
         DBconnection db = new DBconnection();
@@ -51,8 +52,8 @@ namespace ScrapMaricopa.Scrapsource
             using (driver = new PhantomJSDriver())
             {
                 try
-                {
-                    StartTime = DateTime.Now.ToString("HH:mm:ss");
+                  {
+                     StartTime = DateTime.Now.ToString("HH:mm:ss");
                     if (searchType == "titleflex")
                     {
                         string address = houseno + " " + direction + " " + sname + " " + sttype;
@@ -73,7 +74,7 @@ namespace ScrapMaricopa.Scrapsource
                     }
 
                     driver.Navigate().GoToUrl("http://www.utahcountyonline.org/LandRecords/Index.asp");
-                    if (searchType == "address")
+                        if (searchType == "address")
                     {
                         driver.Navigate().GoToUrl("http://www.utahcountyonline.org/LandRecords/AddressSearchForm.asp");
                         Thread.Sleep(2000);
@@ -409,13 +410,80 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
                     int i1 = 0;
+                    string Delinquent = "", Paymentdetails="";
                     foreach (string URL in taxurllist)
                     {
                         if (i1 < 3)
                         {
                             driver.Navigate().GoToUrl(URL);
                             Thread.Sleep(4000);
-                            string year = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[1]/td/strong[2]")).Text;
+                            string SerialNo = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[1]/td/strong[1]")).Text.Trim();
+                            string year = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[1]/td/strong[2]")).Text.Trim();
+                            string Nettax = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[9]/td[2]")).Text.Trim();
+                            string Payments = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[12]/td[2]")).Text.Trim();
+                            string Taxbalance = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[14]/td[2]")).Text.Trim();
+                            try
+                            {
+                                Delinquent = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[10]/td[4]/table/tbody/tr[1]/td")).Text.Trim();
+                            }
+                            catch { }
+                            try
+                            {
+                                Paymentdetails = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[16]/td[1]/table/tbody")).Text;
+                            }
+                            catch { }
+                            if (i1==0)
+                            {
+                                amck.TaxId = SerialNo.Replace(":","").Trim();
+                                amck.TaxYear = year;
+                                amck.Instamount1 = Nettax;
+                                amck.Instamountpaid1 = Payments;
+
+                                if (Delinquent.Contains("Delinquent Tax Information"))
+                                {
+                                    amck.IsDelinquent = "Yes";
+                                }
+                                else
+                                {
+                                    //amck.IsDelinquent = "No";
+                                    if (Taxbalance == "$0.00" && Paymentdetails.Contains("None"))
+                                    {
+
+                                    }
+                                    else
+                                   {
+                                        if (amck.Instamount1 == amck.Instamountpaid1)
+                                        {
+                                            amck.InstPaidDue1 = "Paid";
+                                            amck.IsDelinquent = "No";
+                                        }
+                                        else
+                                        {
+                                            amck.IsDelinquent = "Yes";
+                                        }
+                                        if (Nettax == Taxbalance)
+                                        {
+                                            amck.InstPaidDue1 = "Due";
+                                            amck.IsDelinquent = "No";
+                                        }
+                                    }
+                                }
+
+                               
+
+                              
+
+                                if (amck.IsDelinquent != "Yes")
+                                {
+                                    gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                                }
+                                else
+                                {
+                                    gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                                }
+                            }
+
                             gc.CreatePdf_Chrome(orderNumber, Parcel_ID, "TaxDeailInformation" + year, driver, "UT", "Utah");
                             IWebElement URL1 = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/table/tbody/tr[17]/td/a"));
                             string Url = URL1.GetAttribute("href");

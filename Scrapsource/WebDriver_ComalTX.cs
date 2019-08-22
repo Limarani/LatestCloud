@@ -420,7 +420,18 @@ namespace ScrapMaricopa.Scrapsource
                     driver.FindElement(By.XPath("//*[@id='searchForm']/div[1]/div/span/button")).Click();
                     Thread.Sleep(2000);
                     gc.CreatePdf(orderNumber, PropertyID, "tax search result1", driver, "TX", "Comal");
-
+                    try
+                    {
+                        IWebElement Counttr=driver.FindElement(By.XPath("//*[@id='avalon']/div/div[4]/div[2]/table/tbody"));
+                        IList<IWebElement> Counttr1=Counttr.FindElements(By.TagName("tr"));
+                        if(Counttr1.Count()==0)
+                        {
+                        HttpContext.Current.Session["Nodata_ComalTX"] = "Zero";
+                            driver.Quit();
+                            return "No Data Found";
+                        }
+                    }
+                    catch { }
                     string mul = "";
                     try
                     {

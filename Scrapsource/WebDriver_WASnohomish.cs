@@ -58,7 +58,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     if (searchType == "titleflex")
                     {
-                        gc.TitleFlexSearch(orderNumber, "", ownerName, address.Trim(), "WA", "Snohomish");
+                        gc.TitleFlexSearch(orderNumber, "", ownerName, address, "WA", "Snohomish");
                         if ((HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes"))
                         {
                             driver.Quit();
@@ -73,12 +73,14 @@ namespace ScrapMaricopa.Scrapsource
                         parcelNumber = HttpContext.Current.Session["titleparcel"].ToString();
                         searchType = "parcel";
                     }
-                    string Taxauthority = "", Taxauthority1 = "";
+                    string Taxauthority = "", Taxauthority1 = "", Taxauthority2 = "";
                     try
                     {
                         driver.Navigate().GoToUrl("https://snohomishcountywa.gov/1939/Contact-the-Treasurer");
-                        Taxauthority1 = driver.FindElement(By.XPath("//*[@id='divEditora2843f18-3f97-4b0b-82fa-db3573a4564a']/div/p[3]")).Text.Trim();
-                        Taxauthority = gc.Between(Taxauthority1, "Mailing Address:", "Location:").Trim();
+                        ////*[@id="divEditorc0c85979-2e14-473d-b6df-6ffdc361f933"]/div/p[3]
+                        Taxauthority1 = driver.FindElement(By.XPath("//*[@id='divEditorc0c85979-2e14-473d-b6df-6ffdc361f933']/div/p[3]")).Text.Trim();
+                        Taxauthority2 = gc.Between(Taxauthority1, "Mailing Address:", "Location:").Trim();
+                        Taxauthority = "Snohomish County" + " " + Taxauthority2.Trim();
                     }
                     catch { }
                     //*[@id="divInfoAdvde1c891c-1514-4aa8-a077-aa893157d9c0"]/div[1]/div/div/ol/li/iframe
@@ -123,7 +125,7 @@ namespace ScrapMaricopa.Scrapsource
 
                                 }
                             }
-                            if (searchcount == 1)
+                            if (searchcount == 0)
                             {
                                 IWebElement element2 = driver.FindElement(By.XPath("//*[@id='mGrid']/tbody/tr[2]/td[1]/a"));
                                 IJavaScriptExecutor js2 = driver as IJavaScriptExecutor;
@@ -147,15 +149,7 @@ namespace ScrapMaricopa.Scrapsource
                                     HttpContext.Current.Session["multiparcel_SnohomishWA_Multicount"] = "Maximum";
                                     driver.Quit();
                                     return "Maximum";
-                                }
-                                if (searchcount == 0)
-                                {
-                                    //No Data Found
-                                       HttpContext.Current.Session["Nodata_SnohomishWA"] = "Yes";
-                                        driver.Quit();
-                                        return "No Data Found";
-                                   
-                                }
+                                }                              
                             }
                         }
                         catch { }

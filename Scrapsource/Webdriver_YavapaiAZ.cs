@@ -41,7 +41,7 @@ namespace ScrapMaricopa.Scrapsource
             string StartTime = "", AssessmentTime = "", TaxTime = "", CitytaxTime = "", LastEndTime = "";
             string As_of = "", Total_Due = "", MillLevy = "", Class = "", Built = "";
             List<string> pdflink = new List<string>();
-            string Parcel_number = "", Tax_Authority = "", type = "", AddressCombain = "", Addresshrf = "", Pin = "", Multiaddressadd = "", MailingAddress = "", Constructed="";
+            string Parcel_number = "", Tax_Authority = "", type = "", AddressCombain = "", Addresshrf = "", Pin = "", Multiaddressadd = "", MailingAddress = "", Constructed = "";
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             //driver = new PhantomJSDriver();
@@ -185,7 +185,7 @@ namespace ScrapMaricopa.Scrapsource
                     catch { }
                     try
                     {
-                        if (countyzoning =="")
+                        if (countyzoning == "")
                         {
                             countyzoning = driver.FindElement(By.Id("ctyZoneType")).Text;
                         }
@@ -298,52 +298,58 @@ namespace ScrapMaricopa.Scrapsource
                     IWebElement Taxyeardue = driver.FindElement(By.XPath("//*[@id='PanelBar']/li[1]/ul/li[3]")).FindElement(By.TagName("a"));
                     string taxyearhref = Taxyeardue.GetAttribute("href");
                     driver.Navigate().GoToUrl(taxyearhref);
+
                     for (int i = 0; i < 3; i++)
                     {
-                        if (i == 1)
+                        try
                         {
-                            IWebElement javaclick = driver.FindElement(By.XPath("//*[@id='taxYear_listbox']/li[2]"));
-                            IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                            js1.ExecuteScript("arguments[0].click();", javaclick);
-                            Thread.Sleep(9000);
-                        }
-                        if (i == 2)
-                        {
-                            IWebElement javaclick = driver.FindElement(By.XPath("//*[@id='taxYear_listbox']/li[3]"));
-                            IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
-                            js1.ExecuteScript("arguments[0].click();", javaclick);
-                            Thread.Sleep(9000);
-                        }
-                        gc.CreatePdf(orderNumber, Parcel_number, "Taxyeardue" + i, driver, "AZ", "Yavapai");
-                        IWebElement TaxYeartable = driver.FindElement(By.XPath("//*[@id='Grid']/table/tbody"));
-                        IList<IWebElement> TaxYearorow = TaxYeartable.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TaxYearid;
-                        foreach (IWebElement TaxYearweb in TaxYearorow)
-                        {
-                            TaxYearid = TaxYearweb.FindElements(By.TagName("td"));
-                            if (TaxYearid.Count > 1)
+                            if (i == 1)
                             {
-                                string TaxYearresult = TaxYearid[1].Text + "~" + TaxYearid[2].Text + "~" + TaxYearid[3].Text;
-                                gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1808, TaxYearresult, 1, DateTime.Now);
+                                IWebElement javaclick = driver.FindElement(By.XPath("//*[@id='taxYear_listbox']/li[2]"));
+                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                js1.ExecuteScript("arguments[0].click();", javaclick);
+                                Thread.Sleep(9000);
                             }
-                        }
-                        IWebElement TotalDuetable = driver.FindElement(By.XPath("//*[@id='Grid']/table/tfoot"));
-                        IList<IWebElement> TotalDuerow = TotalDuetable.FindElements(By.TagName("tr"));
-                        IList<IWebElement> TotalDueid;
-                        foreach (IWebElement TotalDue in TotalDuerow)
-                        {
-                            TotalDueid = TotalDue.FindElements(By.TagName("td"));
-                            if (TotalDueid.Count > 1)
+                            if (i == 2)
                             {
-                                string TaxYearresult = TotalDueid[1].Text + "~" + TotalDueid[2].Text + "~" + TotalDueid[3].Text;
-                                gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1808, TaxYearresult, 1, DateTime.Now);
+                                IWebElement javaclick = driver.FindElement(By.XPath("//*[@id='taxYear_listbox']/li[3]"));
+                                IJavaScriptExecutor js1 = driver as IJavaScriptExecutor;
+                                js1.ExecuteScript("arguments[0].click();", javaclick);
+                                Thread.Sleep(9000);
                             }
+                            gc.CreatePdf(orderNumber, Parcel_number, "Taxyeardue" + i, driver, "AZ", "Yavapai");
+                            IWebElement TaxYeartable = driver.FindElement(By.XPath("//*[@id='Grid']/table/tbody"));
+                            IList<IWebElement> TaxYearorow = TaxYeartable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TaxYearid;
+                            foreach (IWebElement TaxYearweb in TaxYearorow)
+                            {
+                                TaxYearid = TaxYearweb.FindElements(By.TagName("td"));
+                                if (TaxYearid.Count > 1)
+                                {
+                                    string TaxYearresult = TaxYearid[1].Text + "~" + TaxYearid[2].Text + "~" + TaxYearid[3].Text;
+                                    gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1808, TaxYearresult, 1, DateTime.Now);
+                                }
+                            }
+                            IWebElement TotalDuetable = driver.FindElement(By.XPath("//*[@id='Grid']/table/tfoot"));
+                            IList<IWebElement> TotalDuerow = TotalDuetable.FindElements(By.TagName("tr"));
+                            IList<IWebElement> TotalDueid;
+                            foreach (IWebElement TotalDue in TotalDuerow)
+                            {
+                                TotalDueid = TotalDue.FindElements(By.TagName("td"));
+                                if (TotalDueid.Count > 1)
+                                {
+                                    string TaxYearresult = TotalDueid[1].Text + "~" + TotalDueid[2].Text + "~" + TotalDueid[3].Text;
+                                    gc.insert_date(orderNumber, Parcel_number.Replace("-", ""), 1808, TaxYearresult, 1, DateTime.Now);
+                                }
+                            }
+                            IWebElement Viwebill = driver.FindElement(By.XPath("//*[@id='main']/table/tbody/tr/td[2]/form/table/tbody/tr/td[5]")).FindElement(By.TagName("a"));
+                            string Viewhref = Viwebill.GetAttribute("href");
+                            pdflink.Add(Viewhref);
+                            //gc.downloadfile(Viewhref, orderNumber, Parcel_number, "TaxBill" + i, "AZ", "Yavapai");
                         }
-                        IWebElement Viwebill = driver.FindElement(By.XPath("//*[@id='main']/table/tbody/tr/td[2]/form/table/tbody/tr/td[5]")).FindElement(By.TagName("a"));
-                        string Viewhref = Viwebill.GetAttribute("href");
-                        pdflink.Add(Viewhref);
-                        //gc.downloadfile(Viewhref, orderNumber, Parcel_number, "TaxBill" + i, "AZ", "Yavapai");
+                        catch { }
                     }
+
                     int m = 0;
                     foreach (string pdf in pdflink)
                     {

@@ -15,7 +15,7 @@ using System.Drawing;
 using System.Data;
 using HtmlAgilityPack;
 using iTextSharp.text;
-using System.Text.RegularExpressions;   
+using System.Text.RegularExpressions;
 using OpenQA.Selenium.PhantomJS;
 using OpenQA.Selenium.Support.Extensions;
 using System.Net;
@@ -242,6 +242,9 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
+                    //Amrock Mapping
+                    Amrock amc = new Amrock();
+
                     //Thread.Sleep(3000);
                     //driver.SwitchTo().DefaultContent();
                     //iframeElement1 = driver.FindElement(By.XPath("/html/frameset/frameset/frame[2]"));
@@ -258,6 +261,7 @@ namespace ScrapMaricopa.Scrapsource
                     Thread.Sleep(3000);
                     //assessment details
                     locator_no = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_OwnLeg_labLocatorNum']")).Text;
+                    amc.TaxId = locator_no;
                     int k = 0, j = 0;
                     IWebElement TBAssessment = driver.FindElement(By.XPath("/html/body/table/tbody/tr[2]/td/table/tbody/tr[3]/td/form/table/tbody/tr/td[2]/div[3]/div[4]/div[2]/div[1]/div[2]/table/tbody"));
                     IList<IWebElement> TRAssessment = TBAssessment.FindElements(By.TagName("tr"));
@@ -354,7 +358,8 @@ namespace ScrapMaricopa.Scrapsource
                         IList<IWebElement> TDTaxDue;
                         int i = 0;
                         int count = TRTaxDue.Count;
-
+                        //Amcrock
+                        int assess = 0;
 
                         //if condition used for display two tables
 
@@ -370,6 +375,18 @@ namespace ScrapMaricopa.Scrapsource
                                     //insert details
                                     string Tax_details = TDTaxDue[0].Text.Trim() + "~" + TDTaxDue[1].Text.Trim() + "~" + TDTaxDue[2].Text.Trim() + "~" + TDTaxDue[3].Text.Trim() + "~" + TDTaxDue[4].Text.Trim() + "~" + TDTaxDue[5].Text.Trim() + "~" + TDTaxDue[6].Text.Trim() + "~" + TDTaxDue[7].Text.Trim() + "~" + "-" + "~" + "-";
                                     gc.insert_date(orderNumber, locator_no, 24, Tax_details, 1, DateTime.Now);
+                                    //Amcrock
+                                    if (assess < 2 && row1.Text.Contains("Total:"))
+                                    {
+                                        assess++;
+                                        if (assess == 1)
+                                        {
+                                            //amc.Land = TDTaxDue[5].Text.Trim();
+                                            //amc.Building = TDTaxDue[6].Text.Trim();
+                                            //amc.Assess = TDTaxDue[7].Text.Trim();
+                                        }
+                                    }
+
                                 }
 
                                 if (TDcount == 6 || TDcount == 2)
@@ -384,7 +401,7 @@ namespace ScrapMaricopa.Scrapsource
                                     if (i == count - 3)
                                     {
                                         //insert details
-                                        string Tax_details = TDTaxDue[0].Text.Trim() + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + TDTaxDue[1].Text.Trim();
+                                        string Tax_details = TDTaxDue[0].Text.Replace(">>", "").Trim() + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + TDTaxDue[1].Text.Trim();
                                         gc.insert_date(orderNumber, locator_no, 24, Tax_details, 1, DateTime.Now);
                                     }
 
@@ -412,7 +429,7 @@ namespace ScrapMaricopa.Scrapsource
                     locator_num = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_RealEstateHistoryData1_labelLocatorNum']")).Text;
                     owner_name = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_RealEstateHistoryData1_labelOwner']")).Text;
                     prop_location = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_RealEstateHistoryData1_labelLocation']")).Text;
-
+                   
                     IWebElement TBTax_History = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_RealEstateHistoryData1_tableTaxHistory']/tbody"));
                     IList<IWebElement> TRTax_History = TBTax_History.FindElements(By.TagName("tr"));
                     IList<IWebElement> TDTax_History;
@@ -434,6 +451,101 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                     }
+
+                    driver.Navigate().Back();
+                    Thread.Sleep(3000);
+                    //Tax Due
+                    driver.SwitchTo().DefaultContent();
+                    Thread.Sleep(3000);
+                    IWebElement iframeEle = driver.FindElement(By.XPath("/html/frameset/frame"));
+                    driver.SwitchTo().Frame(iframeEle);
+                    Thread.Sleep(3000);
+                    driver.FindElement(By.Id("ctl00_LeftMargin_MarginLinks_aTaxDue")).SendKeys(Keys.Enter);
+                    Thread.Sleep(3000);
+                    //Amcrock Tax Details
+                    string TaxesDueStatus = driver.FindElement(By.Id("ctl00_MainContent_TaxesDueData1_labelPageHeader")).Text;
+                    int countdue = 0;
+                    IWebElement ITaxes = null;
+                    try
+                    {
+                        ITaxes = driver.FindElement(By.XPath("//*[@id='ctl00_MainContent_TaxesDueData1_tableTaxPaidRE']/tbody"));
+                    }
+                    catch { }
+                    try
+                    {
+                        ITaxes = driver.FindElement(By.Id("ctl00_MainContent_TaxesDueData1_panelTaxesDueRE"));
+                    }
+                    catch { }
+                    IList<IWebElement> TRITaxes = ITaxes.FindElements(By.TagName("tr"));
+                    IList<IWebElement> TDITaxes;
+                    foreach (IWebElement row1 in TRITaxes)
+                    {
+                        TDITaxes = row1.FindElements(By.XPath("td"));
+                        if (!row1.Text.Contains("Tax Year") && TDITaxes.Count != 0 && TDITaxes.Count == 8 && TRITaxes.Count == 3)
+                        {
+                            string taxyear = TDITaxes[0].Text;
+                            string Interest = TDITaxes[2].Text;
+                            string penality = TDITaxes[3].Text;
+                            if (Interest == ("$0.00") && penality == ("$0.00"))
+                            {
+                                amc.Instamount1 = TDITaxes[5].Text;  //Total Tax
+                                amc.Instamountpaid1 = TDITaxes[6].Text; //Amount Paid
+                            }
+                            if (TaxesDueStatus.Contains("No Taxes Are Due"))
+                            {
+                                amc.InstPaidDue1 = "Paid";
+                                amc.IsDelinquent = "No";
+                            }
+                        }
+                        if (!row1.Text.Contains("Tax Year") && TDITaxes.Count != 0 && TDITaxes.Count == 6 && TRITaxes.Count >= 3)
+                        {
+                            string Interest = TDITaxes[2].Text;
+                            string penality = TDITaxes[3].Text;
+                            string total = TDITaxes[5].Text;
+                            if (Interest != ("$0.00") && penality != ("$0.00") && !total.Contains("$0.00"))
+                            {
+                                countdue++;
+                            }
+                        }
+                        if (!row1.Text.Contains("Tax Year") && TDITaxes.Count != 0 && TDITaxes.Count == 6 && TRITaxes.Count == 3)
+                        {
+                            string Interest = TDITaxes[2].Text;
+                            string penality = TDITaxes[3].Text;
+                            string total = TDITaxes[5].Text;
+                            if (Interest == ("$0.00") && penality == ("$0.00") && !total.Contains("$0.00"))
+                            {
+                                amc.Instamountpaid1 = TDITaxes[6].Text; //Amount Paid
+                                amc.InstPaidDue1 = "Due";
+                                amc.IsDelinquent = "No";
+                            }
+                        }
+                        if (!row1.Text.Contains("Tax Year") && TDITaxes.Count != 0 && TDITaxes.Count == 8 && TRITaxes.Count == 3)
+                        {
+                            string Interest = TDITaxes[2].Text;
+                            string penality = TDITaxes[3].Text;
+                            if (Interest != ("$0.00") && penality != ("$0.00") && TaxesDueStatus.Contains("No Taxes Are Due"))
+                            {
+                                amc.IsDelinquent = "Yes";
+                            }
+                        }
+
+                    }
+
+                    if (countdue > 0)
+                    {
+                        amc.IsDelinquent = "Yes";
+                    }
+
+                    if (amc.IsDelinquent == "Yes")
+                    {
+                        gc.InsertAmrockTax(orderNumber, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                    }
+
+                    if (amc.IsDelinquent == "No")
+                    {
+                        gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+                    }
+
 
                     gc.CreatePdf(orderNumber, locator_no, "Tax_History", driver, "MO", "Saint Louis");
 
@@ -476,7 +588,7 @@ namespace ScrapMaricopa.Scrapsource
             }
 
             HttpContext.Current.Session["multiparcel_StLouis"] = "Yes";
-        }     
+        }
 
     }
 }

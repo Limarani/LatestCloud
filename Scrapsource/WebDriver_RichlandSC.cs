@@ -23,7 +23,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_RichlandSC
     {
-
+        Amrock amck = new Amrock();
         IWebDriver driver;
         DBconnection db = new DBconnection();
         GlobalClass gc = new GlobalClass();
@@ -40,9 +40,10 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-             using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver())
+           // using (driver = new ChromeDriver())
             {
-               // driver = new ChromeDriver();
+
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
@@ -113,7 +114,7 @@ namespace ScrapMaricopa.Scrapsource
                                         }
 
                                     }
-                                    loopend:;
+                                loopend:;
 
 
                                 }
@@ -199,7 +200,7 @@ namespace ScrapMaricopa.Scrapsource
                                         }
 
                                     }
-                                    loopend:;
+                                loopend:;
 
 
                                 }
@@ -211,7 +212,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         IWebElement INodata = driver.FindElement(By.Id("lblResponse"));
-                        if(INodata.Text.Contains("no matches found"))
+                        if (INodata.Text.Contains("no matches found"))
                         {
                             HttpContext.Current.Session["Nodata_Richland"] = "Yes";
                             driver.Quit();
@@ -224,6 +225,7 @@ namespace ScrapMaricopa.Scrapsource
                     string OwnerName1 = "", OwnerName2 = "", OwnerName = "", Propertylocation = "", legaldesc = "", landtype = "";
                     IWebElement parcelNo = driver.FindElement(By.Id("txtOwnerAcct"));
                     parcelNumber = parcelNo.GetAttribute("value").Trim();
+                    amck.TaxId = parcelNumber;
                     string Fname = "";
 
                     var chromeOptions = new ChromeOptions();
@@ -273,7 +275,7 @@ namespace ScrapMaricopa.Scrapsource
                                         }
 
                                     }
-                                    loopend:;
+                                loopend:;
 
 
                                 }
@@ -617,6 +619,7 @@ namespace ScrapMaricopa.Scrapsource
                         {
 
                             strtax_Year = driver.FindElement(By.Id("lblRealEstateTaxYear")).Text;
+                            amck.TaxYear = strtax_Year;
                             StrMap = driver.FindElement(By.Id("lblRealEstateTMSNo")).Text;
                             StrLoc1 = driver.FindElement(By.Id("lblRealEstateTaxLoc1")).Text;
                             StrLoc2 = driver.FindElement(By.Id("lblRealEstateTaxLoc2")).Text;
@@ -632,6 +635,7 @@ namespace ScrapMaricopa.Scrapsource
                             str_No = driver.FindElement(By.Id("lblRealEstateTaxRefNo")).Text;
                             Bill = driver.FindElement(By.Id("lblRealEstateTaxNoticeNo")).Text;
                             CurrentPayment = driver.FindElement(By.Id("lblRealEstateTaxCurrentPayment")).Text;
+                            amck.Instamount1 = CurrentPayment;
                             CountyTax = driver.FindElement(By.Id("lblRealEstateTaxCountyTax")).Text;
                             CountySalesCr = driver.FindElement(By.Id("lblRealEstateTaxCountySalesCr")).Text;
                             str_Homestead = driver.FindElement(By.Id("lblRealEstateTaxHomestead")).Text;
@@ -642,6 +646,7 @@ namespace ScrapMaricopa.Scrapsource
                             CitySalesCr = driver.FindElement(By.Id("lblRealEstateTaxCitySalesCr")).Text;
                             CityPen = driver.FindElement(By.Id("lblRealEstateTaxCityPen")).Text;
                             PaidtoDate = driver.FindElement(By.Id("lblRealEstateTaxPaidToDate")).Text;
+                            amck.Instamountpaid1 = PaidtoDate;
                             DatePaid = driver.FindElement(By.Id("lblRealEstateTaxPaidDate")).Text;
                             StrAmountDue = driver.FindElement(By.Id("lblRealEstateTaxBalanceDue")).Text;
                             Remark1 = driver.FindElement(By.Id("lblRealEstateTaxRemarkMessage")).Text;
@@ -649,6 +654,38 @@ namespace ScrapMaricopa.Scrapsource
                             Remark = Remark1 + " " + Remark2;
                             string TaxInformation = strtax_Year + "~" + StrMap + "~" + StrLocation + "~" + Millage + "~" + Dist + "~" + Tot_Asm + "~" + Where + "~" + Batch + "~" + Check + "~" + Clerk + "~" + StrTran + "~" + str_No + "~" + Bill + "~" + CurrentPayment + "~" + CountyTax + "~" + CountySalesCr + "~" + str_Homestead + "~" + CountyRelief + "~" + SolidWaste + "~" + Pen + "~" + CityTax + "~" + CitySalesCr + "~" + CityPen + "~" + PaidtoDate + "~" + DatePaid + "~" + StrAmountDue + "~" + Remark;
                             gc.insert_date(orderNumber, parcelNumber, 1503, TaxInformation, 1, DateTime.Now);
+
+                            if (i == 0)
+                            {
+                                if (CurrentPayment == PaidtoDate)
+                                {
+                                    amck.InstPaidDue1 = "Paid";
+                                    amck.IsDelinquent = "No";
+                                }
+                                if (CurrentPayment == StrAmountDue)
+                                {
+                                    amck.InstPaidDue1 = "Due";
+                                    amck.IsDelinquent = "No";
+                                }
+                                if (PaidtoDate != "0.00" && CurrentPayment != PaidtoDate)
+                                {
+                                    amck.IsDelinquent = "Yes";
+                                }
+                                if (StrAmountDue != "0.00" && CurrentPayment != StrAmountDue)
+                                {
+                                    amck.IsDelinquent = "Yes";
+                                }
+                                if (amck.IsDelinquent != "Yes")
+                                {
+                                    gc.InsertAmrockTax(orderNumber, amck.TaxId, amck.Instamount1, amck.Instamount2, amck.Instamount3, amck.Instamount4, amck.Instamountpaid1, amck.Instamountpaid2, amck.Instamountpaid3, amck.Instamountpaid4, amck.InstPaidDue1, amck.InstPaidDue2, amck.instPaidDue3, amck.instPaidDue4, amck.IsDelinquent);
+                                }
+                                else
+                                {
+                                    gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
+
+                                }
+                            }
+
                         }
                         catch { }
                         iyear--;

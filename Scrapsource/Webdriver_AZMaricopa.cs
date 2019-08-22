@@ -49,20 +49,20 @@ namespace ScrapMaricopa.Scrapsource
             string newaddr = "";
             if (Address.ToUpper().Contains("UNIT") || Address.ToUpper().Contains("APT"))
             {
-              newaddr =  Address.ToUpper().Replace("UNIT ", "#").Replace("APT ", "#");
+                newaddr = Address.ToUpper().Replace("UNIT ", "#").Replace("APT ", "#");
             }
             else
             {
                 newaddr = Address.ToUpper();
             }
 
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver())//PhantomJSDriver
 
             {
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-                    
+
                     if (searchType == "titleflex")
                     {
 
@@ -91,7 +91,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         driver.FindElement(By.Id("searchBar")).SendKeys(newaddr.ToUpper());
 
-                        gc.CreatePdf_WOP(orderNumber, "Address search", driver, "AZ", "Maricopa");                       
+                        gc.CreatePdf_WOP(orderNumber, "Address search", driver, "AZ", "Maricopa");
                         driver.FindElement(By.XPath("/html/body/div[1]/div[3]/div/form/div/button")).SendKeys(Keys.Enter);
 
                         //IWebElement TaxSewer = driver.FindElement(By.Id("/html/body/div[1]/div[3]/div/form/div[2]/button"));
@@ -269,10 +269,12 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
-
+                    //Amcrock
+                    Amrock amc = new Amrock();
                     string MCR = "", Description = "", HighSchoolDistrict = "", ElementarySchoolDistrict = "", LocalJurisdiction = "", STR = "", Subdivision = "", ConstructionYear = "";
 
                     parcelNumber = driver.FindElement(By.XPath("//*[@id='header']/div[1]/table/tbody/tr/td[1]/h3")).Text;
+                    amc.TaxId = parcelNumber;
                     gc.CreatePdf(orderNumber, parcelNumber, "Propety Deatil", driver, "AZ", "Maricopa");
 
                     try
@@ -301,7 +303,7 @@ namespace ScrapMaricopa.Scrapsource
                         STR = gc.Between(tablefulltext, "S/T/R", "Market Area/Neighborhood").Trim();
                         Subdivision = driver.FindElement(By.XPath("//*[@id='property-details']/table/tbody/tr[12]/td[2]")).Text.Trim();
                         ConstructionYear = driver.FindElement(By.XPath("//*[@id='r-c-property-details']/table/tbody/tr[1]/td[2]")).Text.Trim();
-
+                        //Year Built
                     }
                     catch
                     {
@@ -328,7 +330,7 @@ namespace ScrapMaricopa.Scrapsource
                     int iRowsCount = driver.FindElements(By.XPath(" //*[@id='valuation-details']/table/thead/tr/th")).Count;
                     string[] TaxYear1 = new string[iRowsCount];
                     string[] FullCashValue = new string[iRowsCount];
-                    string[] LimitedPropertyValue = new string[iRowsCount];
+                    string[] LimitedPropertyValue = new string[iRowsCount];//[0] -- Total Tax
                     string[] LegalClass = new string[iRowsCount];
                     string[] Descrip = new string[iRowsCount];
                     string[] AssessmentRatio = new string[iRowsCount];
@@ -554,6 +556,9 @@ namespace ScrapMaricopa.Scrapsource
                     }
                     catch { }
 
+                    //Amcrock
+                    string strFirstInterest = "", strSecondInterest = "", strFirstTotal = "", strSecondTotal = "", strFirstFee = "", strSecondFee = "", strFirstDue = "", strSecondDue = "";
+
                     try
                     {
                         driver.Navigate().GoToUrl("https://treasurer.maricopa.gov/Parcel/Summary.aspx");
@@ -577,6 +582,7 @@ namespace ScrapMaricopa.Scrapsource
                             IWebElement IGoodDate = driver.FindElement(By.Id("cphMainContent_cphRightColumn_datePicker"));
                             string strGoodDate = IGoodDate.GetAttribute("value");
                             strDueDate = strGoodDate;
+                            amc.TaxYear = strDueDate;
                         }
                         catch { }
                         IWebElement ITaxdueTable = driver.FindElement(By.XPath("//*[@id='cphMainContent_cphRightColumn_pnlOpen']/table/tbody"));
@@ -598,6 +604,63 @@ namespace ScrapMaricopa.Scrapsource
                                 secodnhalf += ITaxTd[2].Text + "~";
                                 Total += ITaxTd[3].Text + "~";
                             }
+                            if (due.Text.Contains("Interest Due:"))
+                            {
+                                if (!ITaxTd[1].Text.Contains("$0.00"))
+                                {
+                                    strFirstInterest = "Yes";
+                                }
+                                if (ITaxTd[1].Text.Contains("$0.00"))
+                                {
+                                    strFirstInterest = "No";
+                                }
+                                if (!ITaxTd[2].Text.Contains("$0.00"))
+                                {
+                                    strSecondInterest = "Yes";
+                                }
+                                if (ITaxTd[2].Text.Contains("$0.00"))
+                                {
+                                    strSecondInterest = "No";
+                                }
+                            }
+                            if (due.Text.Contains("Fees Due:"))
+                            {
+                                if (!ITaxTd[1].Text.Contains("$0.00"))
+                                {
+                                    strFirstFee = "Yes";
+                                }
+                                if (ITaxTd[1].Text.Contains("$0.00"))
+                                {
+                                    strFirstFee = "No";
+                                }
+                                if (!ITaxTd[2].Text.Contains("$0.00"))
+                                {
+                                    strSecondFee = "Yes";
+                                }
+                                if (ITaxTd[2].Text.Contains("$0.00"))
+                                {
+                                    strSecondFee = "No";
+                                }
+                            }
+                            if (due.Text.Contains("Tax Due:"))
+                            {
+                                if (!ITaxTd[1].Text.Contains("$0.00"))
+                                {
+                                    strFirstDue = "Yes";
+                                }
+                                if (ITaxTd[1].Text.Contains("$0.00"))
+                                {
+                                    strFirstDue = "No";
+                                }
+                                if (!ITaxTd[2].Text.Contains("$0.00"))
+                                {
+                                    strSecondDue = "Yes";
+                                }
+                                if (ITaxTd[2].Text.Contains("$0.00"))
+                                {
+                                    strSecondDue = "No";
+                                }
+                            }
                         }
                         IWebElement ITaxdueTotalTable = driver.FindElement(By.XPath("//*[@id='cphMainContent_cphRightColumn_pnlOpen']/table/tfoot"));
                         IList<IWebElement> ITaxTotalDueRow = ITaxdueTotalTable.FindElements(By.TagName("tr"));
@@ -611,7 +674,49 @@ namespace ScrapMaricopa.Scrapsource
                                 secodnhalf += ITaxTotalTd[2].Text + "~";
                                 Total += ITaxTotalTd[3].Text + "~";
                             }
+                            if (due.Text.Contains("Total Due:"))
+                            {
+                                if (!ITaxTotalTd[1].Text.Contains("$0.00"))
+                                {
+                                    strFirstTotal = "Yes";
+                                }
+                                if (ITaxTotalTd[1].Text.Contains("$0.00"))
+                                {
+                                    amc.InstPaidDue1 = "Paid";
+                                }
+                                if (!ITaxTotalTd[2].Text.Contains("$0.00"))
+                                {
+                                    strSecondTotal = "Yes";
+                                }
+                                if (ITaxTotalTd[2].Text.Contains("$0.00"))
+                                {
+                                    amc.InstPaidDue2 = "Paid";
+                                }
+                            }
                         }
+
+                        if (strFirstDue == "Yes" && strFirstTotal == "Yes" && strFirstInterest == "No" && strFirstFee == "No")
+                        {
+                            amc.InstPaidDue1 = "Due";
+                            amc.IsDelinquent = "No";
+                        }
+
+                        if (strSecondDue == "Yes" && strSecondTotal == "Yes" && strSecondInterest == "No" && strSecondFee == "No")
+                        {
+                            amc.InstPaidDue2 = "Due";
+                            amc.IsDelinquent = "No";
+                        }
+
+                        if (strFirstInterest == "Yes" && strFirstTotal == "Yes")
+                        {
+                            amc.IsDelinquent = "Yes";
+                        }
+
+                        if (strSecondInterest == "Yes" && strSecondTotal == "Yes")
+                        {
+                            amc.IsDelinquent = "Yes";
+                        }
+
 
                         string firstTaxdueDetails = firsthalf.Remove(firsthalf.Length - 1, 1);
                         gc.insert_date(orderNumber, strTaxParcel, 550, strDueDate + "~" + "First Half" + "~" + firstTaxdueDetails, 1, DateTime.Now);
@@ -759,6 +864,9 @@ namespace ScrapMaricopa.Scrapsource
                         catch { }
                     }
 
+                    List<string> strActivities = new List<string>();
+                    int activecount = 0;
+                    string activestatus = "";
                     driver.Navigate().GoToUrl("https://treasurer.maricopa.gov/Parcel/Activities.aspx");
                     gc.CreatePdf(orderNumber, parcelNumber, " Tax Activities Deatil", driver, "AZ", "Maricopa");
                     try
@@ -783,6 +891,17 @@ namespace ScrapMaricopa.Scrapsource
 
                                     string TaxHis = TaxYear + "~" + Activity + "~" + Amount + "~" + ActivityDate + "~" + PaymentDate + "~" + Transaction;
                                     gc.insert_date(orderNumber, strTaxParcel, 455, TaxHis, 1, DateTime.Now);
+                                }
+
+                                if (MultiAssessTD.Count != 0 && row1.Text.Trim() != "" && activecount < 2)
+                                {
+                                    try
+                                    {
+                                        strActivities.Add(MultiAssessTD[1].FindElement(By.TagName("a")).GetAttribute("href"));
+                                    }
+                                    catch { }
+                                    activestatus += MultiAssessTD[1].Text+"~";
+                                    activecount++;
                                 }
                             }
                         }
@@ -828,6 +947,73 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
+
+                    try
+                    {
+                        if(activestatus.Contains("Available Tax Lien"))
+                        {
+                            amc.IsDelinquent = "Yes";
+                        }
+                        if (amc.IsDelinquent == "No")
+                        {
+                            foreach (string active in strActivities)
+                            {
+                                driver.Navigate().GoToUrl(active);
+                                IWebElement MultiActivities = driver.FindElement(By.XPath("//*[@id='cphMainContent_cphRightColumn_pnlTaxPaymentActivity']/table[2]/tbody"));
+                                IList<IWebElement> MultiTRActivities = MultiActivities.FindElements(By.TagName("tr"));
+                                IList<IWebElement> MultiTDActivities;
+                                if (!MultiActivities.Text.Contains("No activity records"))
+                                {
+                                    foreach (IWebElement row1 in MultiTRActivities)
+                                    {
+                                        MultiTDActivities = row1.FindElements(By.TagName("td"));
+                                        if (MultiTDActivities.Count != 0 && row1.Text.Trim() != "" && row1.Text.Contains("Tax"))
+                                        {
+                                            if (MultiTDActivities[1].Text != "" && !MultiTDActivities[1].Text.Contains("$0.00") && MultiTDActivities[2].Text.Contains("$0.00"))
+                                            {
+                                                amc.Instamount1 = MultiTDActivities[1].Text.Trim();
+                                            }
+                                            if (MultiTDActivities[2].Text != "" && !MultiTDActivities[2].Text.Contains("$0.00") && MultiTDActivities[1].Text.Contains("$0.00"))
+                                            {
+                                                amc.Instamount2 = MultiTDActivities[2].Text.Trim();
+                                            }
+                                        }
+                                        if (MultiTDActivities.Count != 0 && row1.Text.Trim() != "" && row1.Text.Contains("TOTAL"))
+                                        {
+                                            if (MultiTDActivities[1].Text != "" && !MultiTDActivities[1].Text.Contains("$0.00") && MultiTDActivities[2].Text.Contains("$0.00"))
+                                            {
+                                                amc.Instamountpaid1 = MultiTDActivities[1].Text.Trim();
+                                            }
+                                            if (MultiTDActivities[2].Text != "" && !MultiTDActivities[2].Text.Contains("$0.00") && MultiTDActivities[1].Text.Contains("$0.00"))
+                                            {
+                                                amc.Instamountpaid2 = MultiTDActivities[2].Text.Trim();
+                                            }
+                                        }
+                                        if (MultiTDActivities.Count != 0 && row1.Text.Trim() != "" && row1.Text.Contains("Interest"))
+                                        {
+                                            if(MultiTDActivities[1].Text.Trim() != "$0.00" || MultiTDActivities[2].Text.Trim() != "$0.00")
+                                            {
+                                                amc.IsDelinquent = "Yes";
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
+                        if (amc.IsDelinquent == "Yes")
+                        {
+                            gc.InsertAmrockTax(orderNumber, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                        }
+
+                        if (amc.IsDelinquent == "No")
+                        {
+                            gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+                        }
+                    }
+                    catch { }
+
 
                     TaxTime = DateTime.Now.ToString("HH:mm:ss");
 

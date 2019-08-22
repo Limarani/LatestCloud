@@ -302,7 +302,14 @@ namespace ScrapMaricopa.Scrapsource
                     driver.FindElement(By.Id("LastRollHyperLink2")).Click();
                     Thread.Sleep(2000);
                     IWebElement Assessedyear1 = driver.FindElement(By.Id("LastRollHyperLink2"));
-                    Assessedyear = gc.Between(Assessedyear1.Text, "Values (", "Tax Roll)").Trim();
+                    if(Assessedyear1.Text.Contains("Tax Roll"))
+                    {
+                        Assessedyear = gc.Between(Assessedyear1.Text, "Values (", "Tax Roll)").Trim();
+                    }
+                    if (Assessedyear1.Text.Contains("TRIM"))
+                    {
+                        Assessedyear = gc.Between(Assessedyear1.Text, "Values (", "TRIM)").Trim();
+                    }
 
                     IWebElement Bigdata3 = driver.FindElement(By.XPath("//*[@id='taxRollTable']/tbody/tr[2]/td[1]/table/tbody"));
                     IList<IWebElement> TRBigdata3 = Bigdata3.FindElements(By.TagName("tr"));

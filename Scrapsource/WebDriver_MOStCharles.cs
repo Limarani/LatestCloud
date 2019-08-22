@@ -24,7 +24,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_MOStCharles
     {
-
+        Amrock amck = new Amrock();
         string outputPath = "";
         IWebDriver driver;
         DBconnection db = new DBconnection();
@@ -45,6 +45,7 @@ namespace ScrapMaricopa.Scrapsource
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             using (driver = new PhantomJSDriver())
+            //driver = new ChromeDriver();
             {
 
 
@@ -185,14 +186,16 @@ namespace ScrapMaricopa.Scrapsource
                             parcelNumber = parcelNumber.Replace("-", "").Trim();
                             parcelNumber = parcelNumber.Replace(".", "").Trim();
                         }
-
-                        parcelText1 = parcelNumber.Substring(0, 1);
-                        parcelText2 = parcelNumber.Substring(1, 4);
-                        parcelText3 = parcelNumber.Substring(5, 4);
-                        parcelText4 = parcelNumber.Substring(9, 2);
-                        parcelText5 = parcelNumber.Substring(11, 4);
-                        parcelText6 = parcelNumber.Substring(15, 7);
-
+                        try
+                        {
+                            parcelText1 = parcelNumber.Substring(0, 1);
+                            parcelText2 = parcelNumber.Substring(1, 4);
+                            parcelText3 = parcelNumber.Substring(5, 4);
+                            parcelText4 = parcelNumber.Substring(9, 2);
+                            parcelText5 = parcelNumber.Substring(11, 4);
+                            parcelText6 = parcelNumber.Substring(15, 7);
+                        }
+                        catch { }
 
 
 
@@ -456,7 +459,8 @@ namespace ScrapMaricopa.Scrapsource
                         var splitted = AccountnumberDuplicate.Split(':');
                         AccountnumberDuplicate = splitted[1];
 
-                        Accountnumber = AccountnumberDuplicate;
+                        Accountnumber = AccountnumberDuplicate.Trim();
+                        amck.TaxId = Accountnumber;
                         //Split 2
 
                         var splitted1 = ParcellNumberDuplicate.Split(':');
@@ -597,6 +601,7 @@ namespace ScrapMaricopa.Scrapsource
                         }
 
                     }
+                    string Status = "";
                     for (int i = 1; i < 4; i++)
                     {
                         try
@@ -644,6 +649,7 @@ namespace ScrapMaricopa.Scrapsource
                             string classess = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[2]/div[3]/table/tbody/tr[1]/td")).Text;
                             string Peoprtyinfotable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[2]/div[1]/table/tbody")).Text;
                             string Taxyear = gc.Between(Peoprtyinfotable, "Tax Year", "Account # / PIN");
+                            amck.TaxYear = Taxyear;
                             string Account = gc.Between(Peoprtyinfotable, "Account # / PIN", "Description");
                             string Description = "", Acres = "";
                             if (!Peoprtyinfotable.Contains("Acres"))
@@ -658,14 +664,16 @@ namespace ScrapMaricopa.Scrapsource
                             string GeoCD = gc.Between(Peoprtyinfotable, "Geo CD", "Situs Address");
                             string SitusAddress = GlobalClass.After(Peoprtyinfotable, "Situs Address");
                             string Paymentinfotable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[1]/div[2]/table/tbody")).Text;
-                            string Status = gc.Between(Paymentinfotable, "Status", "Last Payment Date");
+                            Status = gc.Between(Paymentinfotable, "Status", "Last Payment Date");
                             string LastPaymentDate = gc.Between(Paymentinfotable, "Last Payment Date", "Amount Paid");
                             string AmountPaid = gc.Between(Paymentinfotable, "Amount Paid", "Payer Name");
+                            amck.Instamountpaid1 = AmountPaid;
                             string PayerName = gc.Between(Paymentinfotable, "Payer Name", "Receipt Number");
                             string ReceiptNumber = GlobalClass.After(Paymentinfotable, "Receipt Number");
                             string Billinfomation = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[2]/div[2]/table/tbody")).Text;
                             string BillNumber = gc.Between(Billinfomation, "Bill Number", "Base Taxes");
                             string BaseTaxes = gc.Between(Billinfomation, "Base Taxes", "Penalty");
+                            amck.Instamount1 = BaseTaxes;
                             string Penalty = gc.Between(Billinfomation, "Penalty", "Interest");
                             string Interest = gc.Between(Billinfomation, "Interest", "Discount");
                             string Discount = gc.Between(Billinfomation, "Discount", "Total Due");
@@ -673,6 +681,33 @@ namespace ScrapMaricopa.Scrapsource
                             string TaxBillresult = ownernametax + "~" + MailingAddress + "~" + classess + "~" + Taxyear + "~" + Account + "~" + Description + "~" + Acres + "~" + GeoCD + "~" + SitusAddress + "~" + Status + "~" + LastPaymentDate + "~" + AmountPaid + "~" + PayerName + "~" + ReceiptNumber + "~" + BillNumber + "~" + BaseTaxes + "~" + Penalty + "~" + Interest + "~" + Discount + "~" + TotalDue + "~" + TaxAuthorityDuplicate;
                             gc.insert_date(orderNumber, ParcellNumber, 1224, TaxBillresult, 1, DateTime.Now);
 
+                            if(i==1)
+                            {
+                                if(Status=="Paid")
+                                {
+                                    if(BaseTaxes== AmountPaid)
+                                    {
+                                        amck.InstPaidDue1 = "Paid";
+                                        amck.IsDelinquent = "No";
+                                    }
+                                    else
+                                    {
+                                        amck.IsDelinquent = "Yes";
+                                    }
+                                }
+                                else if(Status == "Unpaid")
+                                {
+                                    if (BaseTaxes == TotalDue)
+                                    {
+                                        amck.InstPaidDue1 = "Due";
+                                        amck.IsDelinquent = "No";
+                                    }
+                                    else
+                                    {
+                                        amck.IsDelinquent = "Yes";
+                                    }
+                                }
+                            }
 
                             IWebElement taxinstalmenttable = driver.FindElement(By.XPath("//*[@id='avalon']/div/div/div/div[1]/div[3]/div/table/tbody"));
 

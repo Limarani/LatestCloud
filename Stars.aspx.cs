@@ -1704,7 +1704,7 @@ namespace ScrapMaricopa
                     }
 
                     WebDriver_GADekalp deKalp = new WebDriver_GADekalp();
-                    deKalp.FTP_Dekalb(txtAddress.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
+                    deKalp.FTP_Dekalb(txtstreetno.Text.Trim(), txtdirection.Text.Trim(), txtstreetname.Text.Trim(), txtstreettype.Text.Trim(), txtcity.Text.Trim(), txtparcelno.Text.Trim(), txtownername.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
                     if (HttpContext.Current.Session["Nodata_GADekalb"] != null && HttpContext.Current.Session["Nodata_GADekalb"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["Nodata_GADekalb"] = null;
@@ -1738,14 +1738,20 @@ namespace ScrapMaricopa
                     {
                         Label7.Text = "Property Details:";
                         BindGrid(GridView7, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label2.Text = "Assessment Details:";
+                        Label2.Text = "Exemptions";
                         BindGrid(GridView2, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label4.Text = "Tax History Details:";
-                        BindGrid(GridView4, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label5.Text = "Current Year Tax Details:";
-                        BindGrid(GridView5, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label6.Text = "Delinquent Taxes/Tax Sale Details:";
-                        BindGrid(GridView6, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                        Label4.Text = "Appraised Values";
+                        BindGrid(GridView4, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label5.Text = "Assessed Values";
+                        BindGrid(GridView5, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                        Label6.Text = "Tax History Details:";
+                        BindGrid(GridView6, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label8.Text = "Current Year Tax Details:";
+                        BindGrid(GridView8, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label9.Text = "Delinquent Taxes/Tax Sale Details:";
+                        BindGrid(GridView9, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
 
                         MessageBox("Data Inserted Successfully....");
                     }
@@ -10373,10 +10379,10 @@ namespace ScrapMaricopa
 
                     Webdriver_CitrusFL CitrusFL = new Webdriver_CitrusFL();
                     CitrusFL.FTP_CitrusFL(txtstreetno.Text, txtdirection.Text.Trim(), txtstreetname.Text, txtstreettype.Text, txtunitnumber.Text, txtownername.Text, txtparcelno.Text.Trim(), searchType, txtorderno.Text.Trim(), dierctSearch);
-                    if (HttpContext.Current.Session["Zero_Citrus"] != null && HttpContext.Current.Session["Zero_Citrus"].ToString() == "Zero")
+                    if (HttpContext.Current.Session["Nodata_Citrus"] != null && HttpContext.Current.Session["Nodata_Citrus"].ToString() == "Yes")
                     {
-                        HttpContext.Current.Session["Zero_Citrus"] = "";
-                        MessageBox("No Record Found");
+                        HttpContext.Current.Session["Nodata_Citrus"] = "";
+                        MessageBox("No Data Found");
                         return;
                     }
                     if (HttpContext.Current.Session["alert_msg"] != null && HttpContext.Current.Session["alert_msg"].ToString() == "Yes")
@@ -14732,6 +14738,25 @@ namespace ScrapMaricopa
 
                     WebDriver_DallasTX Dallas = new WebDriver_DallasTX();
                     Dallas.FTP_DallasTX(txtstreetno.Text.Trim(), txtstreetname.Text, txtdirection.Text, txtstreettype.Text.Trim(), txtunitnumber.Text.Trim(), txtparcelno.Text, txtownername.Text, searchType, txtorderno.Text.Trim(), txtdirection.Text.Trim());
+
+                    string Link0 = "", Link1 = "", Link2 = "", Link4 = "";
+                    if (HttpContext.Current.Session["Link0"] != null)
+                    {
+                        Link0 = HttpContext.Current.Session["Link0"].ToString();
+                    }
+                    if (HttpContext.Current.Session["Link1"] != null)
+                    {
+                        Link1 = HttpContext.Current.Session["Link1"].ToString();
+                    }
+                    if (HttpContext.Current.Session["Link2"] != null)
+                    {
+                        Link2 = HttpContext.Current.Session["Link2"].ToString();
+                    }
+                    if (HttpContext.Current.Session["Link4"] != null)
+                    {
+                        Link4 = HttpContext.Current.Session["Link4"].ToString();
+                    }
+
                     if (HttpContext.Current.Session["TitleFlex_Search"] != null && HttpContext.Current.Session["TitleFlex_Search"].ToString() == "Yes")
                     {
                         HttpContext.Current.Session["TitleFlex_Search"] = "";
@@ -14762,18 +14787,39 @@ namespace ScrapMaricopa
                     }
                     BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                     BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Information Details");
-                    //Garland
-                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "City of Garland Pay Taxes Details");
-                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "City of Garland Pay Taxes Information Details");
+                    BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Jurisdiction Estimates Details");
+                    //Link 2 Thillai
+                    BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, Link2 + "Pay Taxes Details");
+                    BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, Link2 + "Pay Taxes Information Details");
+                    //Link4 Thillai
+                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, Link4 + "Property Tax Record Details");
+                    BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, Link4 + "Payment Information Details");
+                    //Link 0 Dominic
+                    BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, Link0 + "Property TaxInformation Details");
+                    BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, Link0 + "Taxes Due Detail by Year");
+                    BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, Link0 + "Payment Information Details");
+                    BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, Link0 + "Request an address Correction Details");
 
-                    BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "City of Mesquite Property Details");
-                    BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "City of Mesquite Tax Information Details");
-                    BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "City of Coppell Property Tax Details");
-                    BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "City of Coppell  Year and Jurisdiction Details ");
-                    BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "City of Coppell Payment Information");
-                    BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "City of Coppell Request an address Correction");
+                    //Link 1 Deva Working
+                    BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, Link1 + "Tax Information Details");
+                    BindGridDisplay(GridView15, Label15, statecountyid, "14", txtorderno.Text, Link1 + "Payment Information Details");
+
+                    //Link 7 Dominic
+                    BindGridDisplay(GridView16, Label16, statecountyid, "15", txtorderno.Text, "Tax Information Details");
+                    BindGridDisplay(GridView17, Label17, statecountyid, "16", txtorderno.Text, "Payments Details ");
+                    BindGridDisplay(GridView18, Label18, statecountyid, "17", txtorderno.Text, "Tax Summary Details");
+                    BindGridDisplay(GridView19, Label19, statecountyid, "18", txtorderno.Text, "Tax Comments Details");
+
+                    //Link 8 Dominic
+                    BindGridDisplay(GridView20, Label20, statecountyid, "19", txtorderno.Text, "Property Tax Record Details");
+                    BindGridDisplay(GridView21, Label21, statecountyid, "20", txtorderno.Text, "Payment Information Details");
+
+                    //Link 5,6,9,10 Thillai
+                    BindGridDisplay(GridView22, Label22, statecountyid, "21", txtorderno.Text, "TaxProperty Tax Record Details");
+                    BindGridDisplay(GridView23, Label23, statecountyid, "22", txtorderno.Text, "Payment Information Details");
+
                     MessageBox("Data Inserted Successfully....");
+
 
                 }
 
@@ -14865,6 +14911,10 @@ namespace ScrapMaricopa
                     if (countnoAssess == "2")
                     {
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                        BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales History");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
+
 
                     }
                     if (countnoAssess == "3")
@@ -14878,6 +14928,7 @@ namespace ScrapMaricopa
                     {
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                        BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales History");
 
                     }
                     if (countnoAssess == "5")
@@ -15092,7 +15143,10 @@ namespace ScrapMaricopa
                         MessageBox("Select Township...");
                         return;
                     }
-
+                    if ((txtstreetno.Text == "" && txtstreetname.Text == "" && txtownername.Text == "" && txtunitnumber.Text != ""))
+                    {
+                        searchType = "accountno";
+                    }
                     string countynameNJ = "", township = "", countynameCT = "";
                     countynameCT = dropCounty.SelectedItem.Text;
                     township = dropTownship.SelectedItem.Text;
@@ -15227,6 +15281,7 @@ namespace ScrapMaricopa
                         BindGridDisplay(GridView11, Label11, statecountyid, "11", txtorderno.Text, "Tax Payment Details");
                         BindGridDisplay(GridView12, Label12, statecountyid, "12", txtorderno.Text, "Tax Total Due ");
                         BindGridDisplay(GridView13, Label13, statecountyid, "13", txtorderno.Text, "Tax Bill History");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "15", txtorderno.Text, "sewer Detail");
                     }
                     if (countnoTax == "1")
                     {
@@ -16587,17 +16642,23 @@ namespace ScrapMaricopa
                     else if (statecountyid == "29")
                     {
                         WebDriver_GADekalp deKalp = new WebDriver_GADekalp();
-                        deKalp.FTP_Dekalb("", number, "", "parcel", txtorderno.Text, "");
+                        deKalp.FTP_Dekalb("", "", "", "", "", number, "", "parcel", txtorderno.Text, "");
                         Label7.Text = "Property Details:";
                         BindGrid(GridView7, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 1 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label2.Text = "Assessment Details:";
+                        Label2.Text = "Exemptions";
                         BindGrid(GridView2, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 2 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label4.Text = "Tax History Details:";
-                        BindGrid(GridView4, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label5.Text = "Current Year Tax Details:";
-                        BindGrid(GridView5, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
-                        Label6.Text = "Delinquent Taxes/Tax Sale Details:";
-                        BindGrid(GridView6, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                        Label4.Text = "Appraised Values";
+                        BindGrid(GridView4, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 8 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label5.Text = "Assessed Values";
+                        BindGrid(GridView5, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 9 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+
+                        Label6.Text = "Tax History Details:";
+                        BindGrid(GridView6, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 5 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label8.Text = "Current Year Tax Details:";
+                        BindGrid(GridView8, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 4 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
+                        Label9.Text = "Delinquent Taxes/Tax Sale Details:";
+                        BindGrid(GridView9, "select order_no,parcel_no,DVM.Data_Field_Text_Id,DVM.Data_Field_value from data_value_master DVM join data_field_master DFM on DFM.ID = DVM.Data_Field_Text_Id join state_county_master SCM on SCM.ID = DFM.State_County_ID and SCM.State_County_Id = '" + statecountyid + "' where DFM.Category_Id = 6 and DVM.Order_No = '" + txtorderno.Text + "' order by 1");
                         MessageBox("Data Inserted Successfully....");
                     }
 
@@ -21950,29 +22011,69 @@ namespace ScrapMaricopa
                         MessageBox("Data Inserted Successfully....");
                     }
                     // dallas
-                    //Multiparce
+                    //Multiparcel
                     else if (statecountyid == "220")
                     {
 
                         WebDriver_DallasTX Dallas = new WebDriver_DallasTX();
                         Dallas.FTP_DallasTX("", "", "", "", "", number, "", "parcel", txtorderno.Text.Trim(), "");
+                        string Link0 = "", Link1 = "", Link2 = "", Link4 = "";
+                        if (HttpContext.Current.Session["Link0"] != null)
+                        {
+                            Link0 = HttpContext.Current.Session["Link0"].ToString();
+                        }
+                        if (HttpContext.Current.Session["Link1"] != null)
+                        {
+                            Link1 = HttpContext.Current.Session["Link1"].ToString();
+                        }
+                        if (HttpContext.Current.Session["Link2"] != null)
+                        {
+                            Link2 = HttpContext.Current.Session["Link2"].ToString();
+                        }
+                        if (HttpContext.Current.Session["Link4"] != null)
+                        {
+                            Link4 = HttpContext.Current.Session["Link4"].ToString();
+                        }
+
                         BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
                         BindGridDisplay(GridView2, Label2, statecountyid, "2", txtorderno.Text, "Assessment Details");
-                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Information Details");
-                        //Garland
-                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, "City of Garland Pay Taxes Details");
-                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, "City of Garland Pay Taxes Information Details");
+                        BindGridDisplay(GridView4, Label4, statecountyid, "3", txtorderno.Text, "Tax Jurisdiction Estimates Details");
+                        //Link 2 Thillai
+                        BindGridDisplay(GridView5, Label5, statecountyid, "4", txtorderno.Text, Link2 + "Pay Taxes Details");
+                        BindGridDisplay(GridView6, Label6, statecountyid, "5", txtorderno.Text, Link2 + "Pay Taxes Information Details");
+                        //Link4 Thillai
+                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, Link4 + "Property Tax Record Details");
+                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, Link4 + "Payment Information Details");
+                        //Link 0 Dominic
+                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, Link0 + "Property TaxInformation Details");
+                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, Link0 + "Taxes Due Detail by Year");
+                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, Link0 + "Payment Information Details");
+                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, Link0 + "Request an address Correction Details");
 
-                        BindGridDisplay(GridView8, Label8, statecountyid, "6", txtorderno.Text, "City of Mesquite Property Details");
-                        BindGridDisplay(GridView9, Label9, statecountyid, "8", txtorderno.Text, "City of Mesquite Tax Information Details");
-                        BindGridDisplay(GridView10, Label10, statecountyid, "9", txtorderno.Text, "City of Coppell Property Tax Details");
-                        BindGridDisplay(GridView11, Label11, statecountyid, "10", txtorderno.Text, "City of Coppell  Year and Jurisdiction Details ");
-                        BindGridDisplay(GridView12, Label12, statecountyid, "11", txtorderno.Text, "City of Coppell Payment Information");
-                        BindGridDisplay(GridView13, Label13, statecountyid, "12", txtorderno.Text, "City of Coppell Request an address Correction");
+                        //Link 1 Deva Working
+                        BindGridDisplay(GridView14, Label14, statecountyid, "13", txtorderno.Text, Link1 + "Tax Information Details");
+                        BindGridDisplay(GridView15, Label15, statecountyid, "14", txtorderno.Text, Link1 + "Payment Information Details");
+
+                        //Link 7 Dominic
+                        BindGridDisplay(GridView16, Label16, statecountyid, "15", txtorderno.Text, "Tax Information Details");
+                        BindGridDisplay(GridView17, Label17, statecountyid, "16", txtorderno.Text, "Payments Details ");
+                        BindGridDisplay(GridView18, Label18, statecountyid, "17", txtorderno.Text, "Tax Summary Details");
+                        BindGridDisplay(GridView19, Label19, statecountyid, "18", txtorderno.Text, "Tax Comments Details");
+
+                        //Link 8 Dominic
+                        BindGridDisplay(GridView20, Label20, statecountyid, "19", txtorderno.Text, "Property Tax Record Details");
+                        BindGridDisplay(GridView21, Label21, statecountyid, "20", txtorderno.Text, "Payment Information Details");
+
+                        //Link 5,6,9,10 Thillai
+                        BindGridDisplay(GridView22, Label22, statecountyid, "21", txtorderno.Text, "TaxProperty Tax Record Details");
+                        BindGridDisplay(GridView23, Label23, statecountyid, "22", txtorderno.Text, "Payment Information Details");
+
+                        Link0 = ""; HttpContext.Current.Session["Link0"] = null;
+                        Link1 = ""; HttpContext.Current.Session["Link1"] = null;
+                        Link2 = ""; HttpContext.Current.Session["Link2"] = null;
+                        Link4 = ""; HttpContext.Current.Session["Link4"] = null;
+
                         MessageBox("Data Inserted Successfully....");
-
-                        MessageBox("Data Inserted Successfully....");
-
                     }
 
                     //CT Fairfield
@@ -22019,6 +22120,9 @@ namespace ScrapMaricopa
                         if (countnoAssess == "2")
                         {
                             BindGridDisplay(GridView7, Label7, statecountyid, "1", txtorderno.Text, "Property Details");
+                            BindGridDisplay(GridView1, Label1, statecountyid, "2", txtorderno.Text, "Assessment Details");
+                            BindGridDisplay(GridView2, Label2, statecountyid, "3", txtorderno.Text, "Sales History");
+                            BindGridDisplay(GridView4, Label4, statecountyid, "4", txtorderno.Text, "Sales Information");
 
                         }
                         if (countnoAssess == "3")
@@ -22190,6 +22294,12 @@ namespace ScrapMaricopa
                         string countynameNJ = "", township = "", countynameCT = "";
                         countynameCT = dropCounty.SelectedItem.Text;
                         township = dropTownship.SelectedItem.Text;
+
+                        if (townshipcode == "12")
+                        {
+                            MessageBox("No Parcel Search Available");
+                            return;
+                        }
 
                         Webdriver_CTHartford CTHartford = new Webdriver_CTHartford();
                         CTHartford.FTP_CTHartford("", "", "", "", "", number, "parcel", txtorderno.Text.Trim(), "", "", dropCounty.SelectedItem.Text, statecountyid, dropTownship.SelectedItem.Text, townshipcode);

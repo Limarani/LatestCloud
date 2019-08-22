@@ -40,6 +40,7 @@ namespace ScrapMaricopa.Scrapsource
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
             // driver = new ChromeDriver();
+            // driver = new PhantomJSDriver();
             using (driver = new PhantomJSDriver())
             {
                 string AlterNateID = "", PropertyAddress = "", owner = "", strowner = "", straddress = "", strproperty = "";
@@ -722,7 +723,7 @@ namespace ScrapMaricopa.Scrapsource
                     foreach (IWebElement row1 in CurrentTaxHistoryTR)
                     {
                         CurrentTaxHistoryTD = row1.FindElements(By.TagName("td"));
-                        if (CurrentTaxHistoryTD.Count != 0 && !row1.Text.Contains("Book"))
+                        if (CurrentTaxHistoryTD.Count >4 && !row1.Text.Contains("Book"))
                         {
                             Receipt = CurrentTaxHistoryTD[0].Text;
                             Status = CurrentTaxHistoryTD[1].Text;
@@ -736,6 +737,19 @@ namespace ScrapMaricopa.Scrapsource
                             string TaxPay = Receipt + "~" + Status + "~" + TaxYear + "~" + ReceiptDate + "~" + CashAmt + "~" + CheckAmt + "~" + CreditAmt + "~" + Total;
                             gc.insert_date(orderNumber, parcelNumber, 504, TaxPay, 1, DateTime.Now);
 
+                        }
+                        if (CurrentTaxHistoryTD.Count == 4 && !row1.Text.Contains("Book"))
+                        {
+                            Receipt = CurrentTaxHistoryTD[0].Text;
+                            Status = "";
+                            TaxYear = "";
+                            ReceiptDate = "";
+                            CashAmt = "";
+                            CheckAmt = CurrentTaxHistoryTD[1].Text;
+                            CreditAmt = CurrentTaxHistoryTD[2].Text;
+                            Total = CurrentTaxHistoryTD[3].Text;
+                            string TaxPay = Receipt + "~" + Status + "~" + TaxYear + "~" + ReceiptDate + "~" + CashAmt + "~" + CheckAmt + "~" + CreditAmt + "~" + Total;
+                            gc.insert_date(orderNumber, parcelNumber, 504, TaxPay, 1, DateTime.Now);
                         }
                     }
 

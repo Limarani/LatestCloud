@@ -43,7 +43,9 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            var option = new ChromeOptions();
+            option.AddArgument("No-Sandbox");
+            using (driver = new ChromeDriver(option))
             {
                 //  driver = new ChromeDriver();
                 // driver = new PhantomJSDriver();

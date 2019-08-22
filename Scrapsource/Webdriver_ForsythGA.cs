@@ -443,10 +443,25 @@ namespace ScrapMaricopa.Scrapsource
                     string parcel = p_no.Split(' ')[0];
                     string parcel_num = p_no.Split(' ')[1];
 
-                    driver.FindElement(By.Id("Body_MapParcelID1")).SendKeys(parcel);
-                    driver.FindElement(By.Id("Body_MapParcelID2")).SendKeys(parcel_num);
-                    gc.CreatePdf(orderNumber, Parcel_ID, "Tax Parcel", driver, "GA", "Forsyth");
-                    driver.FindElement(By.Id("Body_MapParcelIDGo")).Click();
+                    IWebElement IParcelSearch = driver.FindElement(By.Id("taxesSearchForm"));
+                    IList<IWebElement> IParcelRow = IParcelSearch.FindElements(By.TagName("input"));
+                    foreach (IWebElement IParcelTax in IParcelRow)
+                    {
+                        string strParcel = IParcelTax.GetAttribute("name").Trim();
+                        if (strParcel.Trim() == "map_code")
+                        {
+                            driver.ExecuteJavaScript("document.getElementByName('map_code').setAttribute('value','" + p_no + "')");
+                        }
+                        if (strParcel.Trim() == "search2")
+                        {
+                            gc.CreatePdf(orderNumber, Parcel_ID, "Tax Parcel", driver, "GA", "Forsyth");
+                            IParcelTax.Click();
+                        }
+                    }
+                    //driver.FindElement(By.Id("Body_MapParcelID1")).SendKeys(parcel);
+                    //driver.FindElement(By.Id("Body_MapParcelID2")).SendKeys(parcel_num);
+                    //gc.CreatePdf(orderNumber, Parcel_ID, "Tax Parcel", driver, "GA", "Forsyth");
+                    //driver.FindElement(By.Id("Body_MapParcelIDGo")).Click();
                     Thread.Sleep(2000);
                     gc.CreatePdf(orderNumber, Parcel_ID, "Tax Parcel click", driver, "GA", "Forsyth");
                     IWebElement Percelhref = driver.FindElement(By.XPath("//*[@id='Body_GridView1']/tbody/tr[2]/td[1]/a"));
