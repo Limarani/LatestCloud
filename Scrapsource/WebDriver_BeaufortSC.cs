@@ -194,14 +194,14 @@ namespace ScrapMaricopa.Scrapsource
                                 return "Maximum";
                             }
                         }
-                        catch { }
+                        catch { }                       
                         try
                         {
                             //No Data Found
-                            string nodata = driver.FindElement(By.Id("ctl00_BodyContentPlaceHolder_ErrorLabel")).Text;
-                            if (nodata.Contains("Returned 0 records."))
+                            string nodata = driver.FindElement(By.XPath("//*[@id='main']/tbody/tr[2]/td[2]/table/tbody/tr/td/table[1]/tbody/tr/td/table/tbody/tr[2]/td")).Text;
+                            if (nodata.Contains("No Records Found"))
                             {
-                                HttpContext.Current.Session["Nodata_LeeFL"] = "Yes";
+                                HttpContext.Current.Session["Nodata_BeaufortSC"] = "Yes";
                                 driver.Quit();
                                 return "No Data Found";
                             }

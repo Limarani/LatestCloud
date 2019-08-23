@@ -29,6 +29,7 @@ namespace ScrapMaricopa.Scrapsource
         DBconnection db = new DBconnection();
         MySqlParameter[] mParam;
         MySqlConnection con = new MySqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ToString());
+        Amrock amc = new Amrock();
         private object driverIE;
         private int multicount;
         private string strMultiAddress;
@@ -372,7 +373,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         IWebElement Inodata = driver.FindElement(By.XPath("/html/body/form/table[1]"));
-                        if(Inodata.Text.Contains("search returned no records"))
+                        if (Inodata.Text.Contains("search returned no records"))
                         {
                             HttpContext.Current.Session["Nodata_PinellasFL"] = "Yes";
                             driver.Quit();
@@ -393,6 +394,7 @@ namespace ScrapMaricopa.Scrapsource
                     try
                     {
                         Parcel_ID = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr[1]/td/table/tbody/tr[1]/th/table/tbody/tr/td/font[1]")).Text.Trim();
+                        amc.TaxId = Parcel_ID;
                     }
                     catch { }
 
@@ -499,10 +501,22 @@ namespace ScrapMaricopa.Scrapsource
                     gc.CreatePdf(orderNumber, outparcelno, "Tax Search Results", driver, "FL", "Pinellas");
 
                     //full bill historyFull bill history
-                    IWebElement ITaxSearch = driver.FindElement(By.LinkText("Full bill history"));
-                    string strITaxSearch = ITaxSearch.GetAttribute("href");
-                    driver.Navigate().GoToUrl(strITaxSearch);
-                    Thread.Sleep(3000);
+                    try
+                    {
+                        IWebElement ITaxSearch = driver.FindElement(By.LinkText("Full bill history"));
+                        string strITaxSearch = ITaxSearch.GetAttribute("href");
+                        driver.Navigate().GoToUrl(strITaxSearch);
+                        Thread.Sleep(3000);
+                    }
+                    catch { }
+                    try
+                    {
+                        IWebElement ITaxSearch = driver.FindElement(By.LinkText("View/Print full bill history"));
+                        string strITaxSearch = ITaxSearch.GetAttribute("href");
+                        driver.Navigate().GoToUrl(strITaxSearch);
+                        Thread.Sleep(3000);
+                    }
+                    catch { }
                     taxparcel = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[1]")).Text;
                     taxparcel = GlobalClass.After(taxparcel, "Real Estate Account #");
                     gc.CreatePdf(orderNumber, outparcelno, "Full Bill History", driver, "FL", "Pinellas");
@@ -914,7 +928,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         i++;
                     }
-
+                    int amccount = 0;
                     int q = 0; string TaxYear = "";
                     foreach (string URL in taxhistorylink)
                     {
@@ -930,6 +944,8 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 IWebElement ITaxYear = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[3]/div[2]/ul/li[1]/a"));
                                 TaxYear = ITaxYear.Text;
+                                amc.TaxYear = TaxYear;
+                                amc.TaxId = Parcel_ID;
                             }
                             catch { }
                             if (q == 0)
@@ -1042,6 +1058,7 @@ namespace ScrapMaricopa.Scrapsource
                                                     var IfpaySplit = IfPaidBy.Split('~');
                                                     IfPaidBy = IfpaySplit[0];
                                                     PlesePay = IfpaySplit[1];
+                                                    amc.DiscountDate1 = IfPaidBy;
                                                     DueDate = cctaxyear + "~" + IfPaidBy + "~" + PlesePay + "~" + TaxAuthority;
                                                     gc.insert_date(orderNumber, Parcel_ID, 1532, DueDate, 1, DateTime.Now);
 
@@ -1077,10 +1094,11 @@ namespace ScrapMaricopa.Scrapsource
 
                             }
                             catch { }
+                            string paidbulk = "";
                             try
                             {
 
-                                string paidbulk = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[8]/div/div[3]/div[1]/div")).Text.Trim();
+                                paidbulk = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[8]/div/div[3]/div[1]/div")).Text.Trim();
                                 cpaiddate = gc.Between(paidbulk, "PAID ", " $").Trim();
                                 cpaidamount = gc.Between(paidbulk, "$", "Receipt ").Trim();
                                 cpaidamount = "$" + cpaidamount;
@@ -1090,6 +1108,83 @@ namespace ScrapMaricopa.Scrapsource
                                     cpaidamount = GlobalClass.Before(cpaidamount, "Effective").Trim();
                                 }
                                 creceipt = GlobalClass.After(paidbulk, "Receipt #");
+                            }
+                            catch { }
+
+                            try
+                            {
+                                if (amccount < 1 && cctaxyear.Contains("Annual Bill"))
+                                {
+                                    //string strstatus = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[6]")).Text;
+                                    string[] paiddue = paidbulk.Split('\r');
+
+                                    if ((paidbulk.Contains("Paid") || paidbulk.Contains("PAID")) && !paidbulk.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        amc.IsDelinquent = "No";
+                                        amc.InstPaidDue1 = "Paid";
+                                        amc.Instamountpaid1 = due[2];
+                                        amccount++;
+                                    }
+                                    if (!paidbulk.Contains("Paid") && !paidbulk.Contains("PAID") && paidbulk.Contains("due") && !paidbulk.Contains("Pay this bill") && !paidbulk.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        //amc.IsDelinquent = "No";
+                                        //amc.InstPaidDue1 = "Paid";
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        double amount = Convert.ToDouble(due[2].Replace("$", "").Trim());
+                                        if (Combine > amount)
+                                        {
+                                            amc.IsDelinquent = "No";
+                                            amc.InstPaidDue1 = "Due";
+                                            amc.Instamountpaid1 = due[2];
+                                        }
+                                        if (Combine < amount)
+                                        {
+                                            amc.IsDelinquent = "Yes";
+                                            amc.InstPaidDue1 = "Due";
+                                        }
+                                        amccount++;
+                                    }
+                                    if (paidbulk.Contains("Pay this bill") && !paidbulk.Contains("No taxes due"))
+                                    {
+                                        double amount = 0.00;
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        if (paidbulk.Contains("PLEASE NOTE"))
+                                        {
+                                            string dueamount = gc.Between(paidbulk, "Pay this bill:", "PLEASE NOTE");
+                                            amount = Convert.ToDouble(dueamount.Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        else
+                                        {
+                                            amount = Convert.ToDouble(paidbulk.Replace("Pay this bill:", "").Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        if (amount != 0)
+                                        {
+                                            if (Combine > amount)
+                                            {
+                                                amc.IsDelinquent = "No";
+                                                amc.InstPaidDue1 = "Due";
+                                                amc.Instamountpaid1 = "$" + Convert.ToString(amount);
+                                            }
+                                            if (Combine < amount)
+                                            {
+                                                amc.IsDelinquent = "Yes";
+                                                amc.InstPaidDue1 = "Due";
+                                            }
+                                        }
+                                        amccount++;
+                                    }
+                                    if (amc.IsDelinquent == "Yes")
+                                    {
+                                        gc.InsertAmrockTax(orderNumber, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                                    }
+
+                                    if (amc.IsDelinquent == "No")
+                                    {
+                                        gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+                                    }
+                                }
                             }
                             catch { }
 
@@ -1124,6 +1219,8 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 IWebElement ITaxYear = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[3]/div[2]/ul/li[1]/a"));
                                 TaxYear = ITaxYear.Text;
+                                amc.TaxYear = TaxYear;
+                                amc.TaxId = Parcel_ID;
                             }
                             catch { }
                             cctaxyear = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[1]/div[2]")).Text.Trim().Replace("Real Estate", "").Replace("Print this bill (PDF)", "").Replace("\r\n", "");
@@ -1239,9 +1336,9 @@ namespace ScrapMaricopa.Scrapsource
                                                     var IfpaySplit = IfPaidBy.Split('~');
                                                     IfPaidBy = IfpaySplit[0];
                                                     PlesePay = IfpaySplit[1];
+                                                    amc.DiscountDate1 = IfPaidBy;
                                                     DueDate = cctaxyear + "~" + IfPaidBy + "~" + PlesePay + "~" + TaxAuthority;
                                                     gc.insert_date(orderNumber, Parcel_ID, 1532, DueDate, 1, DateTime.Now);
-
                                                 }
                                             }
                                         }
@@ -1274,16 +1371,95 @@ namespace ScrapMaricopa.Scrapsource
 
                             }
                             catch { }
+                            string paidbulk = "";
                             try
                             {
-
-                                string paidbulk = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[3]/div[1]/div")).Text.Trim();
+                                paidbulk = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[3]/div[1]/div")).Text.Trim();
                                 cpaiddate = gc.Between(paidbulk, "PAID ", " $").Trim();
                                 cpaidamount = gc.Between(paidbulk, "$", "Receipt ").Trim();
                                 cpaidamount = "$" + cpaidamount;
                                 creceipt = GlobalClass.After(paidbulk, "Receipt #");
                             }
                             catch { }
+
+                            try
+                            {
+                                if (amccount < 1 && cctaxyear.Contains("Annual Bill"))
+                                {
+                                    //string strstatus = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[6]")).Text;
+                                    string[] paiddue = paidbulk.Split('\r');
+
+                                    if ((paidbulk.Contains("Paid") || paidbulk.Contains("PAID")) && !paidbulk.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        amc.IsDelinquent = "No";
+                                        amc.InstPaidDue1 = "Paid";
+                                        amc.Instamountpaid1 = due[2];
+                                        amccount++;
+                                    }
+                                    if (!paidbulk.Contains("Paid") && !paidbulk.Contains("PAID") && paidbulk.Contains("due") && !paidbulk.Contains("Pay this bill") && !paidbulk.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        //amc.IsDelinquent = "No";
+                                        //amc.InstPaidDue1 = "Paid";
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        double amount = Convert.ToDouble(due[2].Replace("$", "").Trim());
+                                        if (Combine > amount)
+                                        {
+                                            amc.IsDelinquent = "No";
+                                            amc.InstPaidDue1 = "Due";
+                                            amc.Instamountpaid1 = due[2];
+                                        }
+                                        if (Combine < amount)
+                                        {
+                                            amc.IsDelinquent = "Yes";
+                                            amc.InstPaidDue1 = "Due";
+                                        }
+                                        amccount++;
+                                    }
+                                    if (paidbulk.Contains("Pay this bill") && !paidbulk.Contains("No taxes due"))
+                                    {
+                                        double amount = 0.00;
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        if (paidbulk.Contains("PLEASE NOTE"))
+                                        {
+                                            string dueamount = gc.Between(paidbulk, "Pay this bill:", "PLEASE NOTE");
+                                            amount = Convert.ToDouble(dueamount.Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        else
+                                        {
+                                            amount = Convert.ToDouble(paidbulk.Replace("Pay this bill:", "").Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        if (amount != 0)
+                                        {
+                                            if (Combine > amount)
+                                            {
+                                                amc.IsDelinquent = "No";
+                                                amc.InstPaidDue1 = "Due";
+                                                amc.Instamountpaid1 = "$" + Convert.ToString(amount);
+                                            }
+                                            if (Combine < amount)
+                                            {
+                                                amc.IsDelinquent = "Yes";
+                                                amc.InstPaidDue1 = "Due";
+                                            }
+                                        }
+                                        amccount++;
+                                    }
+                                    if (amc.IsDelinquent == "Yes")
+                                    {
+                                        gc.InsertAmrockTax(orderNumber, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                                    }
+
+                                    if (amc.IsDelinquent == "No")
+                                    {
+                                        gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+                                    }
+                                }
+                            }
+                            catch { }
+
+
 
                             ////Parcel Details
                             IWebElement ITaxSearchparcell = driver.FindElement(By.LinkText("Parcel details"));

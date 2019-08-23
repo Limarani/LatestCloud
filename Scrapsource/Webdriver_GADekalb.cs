@@ -52,9 +52,6 @@ namespace ScrapMaricopa.Scrapsource
                 try
                 {
                     StartTime = DateTime.Now.ToString("HH:mm:ss");
-                    // http://taxcommissioner.dekalbcountyga.gov/PropertyAppraisal/realSearch.asp
-                    // Second :  https://dekalbtax.org/property-information
-                    // https://propertyappraisal.dekalbcountyga.gov/search/commonsearch.aspx?mode=realprop
 
                     driver.Navigate().GoToUrl("https://propertyappraisal.dekalbcountyga.gov/search/commonsearch.aspx?mode=realprop");
                     try
@@ -70,17 +67,13 @@ namespace ScrapMaricopa.Scrapsource
                     if (searchType == "address")
                     {
                         driver.FindElement(By.Id("inpNo")).SendKeys(streetno);
-                        gc.CreatePdf_WOP(orderNumber, "InputPassed_Address Search NUmnber", driver, "GA", "DeKalb");
                         driver.FindElement(By.Id("inpStreet")).SendKeys(streetname);
-                        gc.CreatePdf_WOP(orderNumber, "InputPassed_Address Search st", driver, "GA", "DeKalb");
                         IWebElement DirectionWeb = driver.FindElement(By.Id("inpDir"));
                         SelectElement Staxselect = new SelectElement(DirectionWeb);
                         Staxselect.SelectByValue(direction.ToUpper().Trim());
-                        gc.CreatePdf_WOP(orderNumber, "InputPassed_Address Search Dir", driver, "GA", "DeKalb");
                         IWebElement SttypeWeb = driver.FindElement(By.Id("inpSuf"));
                         SelectElement Streetypeselect = new SelectElement(SttypeWeb);
                         Streetypeselect.SelectByValue(streettype.ToUpper().Trim());
-                        gc.CreatePdf_WOP(orderNumber, "InputPassed_Address Search Typ", driver, "GA", "DeKalb");
                         gc.CreatePdf_WOP(orderNumber, "InputPassed_Address Search", driver, "GA", "DeKalb");
                         driver.FindElement(By.Name("btSearch")).SendKeys(Keys.Enter);
                         gc.CreatePdf_WOP(orderNumber, "ResultGrid_AddressSearch", driver, "GA", "DeKalb");
@@ -124,9 +117,9 @@ namespace ScrapMaricopa.Scrapsource
                                         foreach (IWebElement row in tableRow)
                                         {
                                             rowTD = row.FindElements(By.TagName("td"));
-                                            if (rowTD.Count != 0)
+                                            if (rowTD.Count > 1 && !row.Text.Contains("Owner"))
                                             {
-                                                string multiOwnerData = rowTD[0].Text.Trim() + "~" + rowTD[2].Text.Trim();
+                                                string multiOwnerData = rowTD[3].Text.Trim() + "~" + rowTD[2].Text.Trim();
                                                 gc.insert_date(orderNumber, rowTD[1].Text.Trim(), 21, multiOwnerData, 1, DateTime.Now);
                                             }
                                         }
@@ -242,9 +235,9 @@ namespace ScrapMaricopa.Scrapsource
                                         foreach (IWebElement row in tableRow)
                                         {
                                             rowTD = row.FindElements(By.TagName("td"));
-                                            if (rowTD.Count != 0)
+                                            if (rowTD.Count > 1 && !row.Text.Contains("Owner"))
                                             {
-                                                string multiOwnerData = rowTD[0].Text.Trim() + "~" + rowTD[2].Text.Trim();
+                                                string multiOwnerData = rowTD[3].Text.Trim() + "~" + rowTD[2].Text.Trim();
                                                 gc.insert_date(orderNumber, rowTD[1].Text.Trim(), 21, multiOwnerData, 1, DateTime.Now);
                                             }
                                         }
@@ -300,6 +293,7 @@ namespace ScrapMaricopa.Scrapsource
 
                     driver.FindElement(By.LinkText("Residential Structure")).Click();
                     Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "Year Built", driver, "GA", "DeKalb");
                     string yeartable = driver.FindElement(By.Id("Residential Structure")).Text;
                     //property_address = driver.FindElement(By.XPath("/html/body/table[2]/tbody/tr/td/table[2]/tbody/tr[8]/td[2]/a")).Text.Trim();
                     year_built = gc.Between(yeartable, "Year Built", "Remodeled Year");
@@ -309,6 +303,7 @@ namespace ScrapMaricopa.Scrapsource
                     gc.insert_date(orderNumber, parcel_number, 20, insertProprty, 1, DateTime.Now);
                     driver.FindElement(By.LinkText("Profile")).Click();
                     Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "Exemptions details", driver, "GA", "DeKalb");
                     //Exemptions details....
                     try
                     {
@@ -334,6 +329,7 @@ namespace ScrapMaricopa.Scrapsource
                     //Appraised Values
                     driver.FindElement(By.LinkText("Value History")).Click();
                     Thread.Sleep(2000);
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "Appraised Values", driver, "GA", "DeKalb");
                     IWebElement AppraisedValuesTable = driver.FindElement(By.Id("Appraised Values"));
                     IList<IWebElement> AppraisedValuesRow = AppraisedValuesTable.FindElements(By.TagName("tr"));
                     IList<IWebElement> AppraisedValuestd;
@@ -367,25 +363,47 @@ namespace ScrapMaricopa.Scrapsource
 
                         }
                     }
-                    gc.CreatePdf(orderNumber, parcelNumber, "Property Detail and assessment detail", driver, "GA", "DeKalb");
-                    string currentwindow = driver.CurrentWindowHandle;
-                    driver.FindElement(By.Id("DTLNavigator_lbPrintAll")).Click();
-                    Thread.Sleep(9000);
-                    driver.SwitchTo().Window(driver.WindowHandles.Last());
-                    //driver.FindElement(By.XPath("//*[@id='frmMain']/table")).SendKeys(Keys.Escape);
-                    Thread.Sleep(2000);
-                    gc.CreatePdf(orderNumber, parcelNumber, "Summary Detail", driver, "GA", "DeKalb");
-                    driver.Close();
-                    AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
-                    driver.SwitchTo().Window(currentwindow);
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "Property Detail and assessment detail", driver, "GA", "DeKalb");
+                    //string currentwindow = driver.CurrentWindowHandle;
+                    //driver.FindElement(By.Id("DTLNavigator_lbPrintAll")).Click();
+                    //Thread.Sleep(9000);
+                    //driver.SwitchTo().Window(driver.WindowHandles.Last());
+                    ////driver.FindElement(By.XPath("//*[@id='frmMain']/table")).SendKeys(Keys.Escape);
+                    //Thread.Sleep(2000);
+                    //try
+                    //{
+                    //    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "Summary Detail", driver, "GA", "DeKalb");
+                    //}
+                    //catch { }
+                    //try
+                    //{
+                    //    gc.downloadfile(driver.Url, orderNumber, parcelNumber.Replace(" ", ""), "Summary Detail pdf", "GA", "DeKalb");
+                    //    Thread.Sleep(3000);
+                    //}
+                    //catch { }
+                    //driver.Close();
+                    //AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
+                    //driver.SwitchTo().Window(currentwindow);
                     //Tax details......
                     driver.Navigate().GoToUrl("https://taxcommissioner.dekalbcountyga.gov/TaxCommissioner/TCSearch.asp");
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "Tax site Load", driver, "GA", "DeKalb");
                     driver.FindElement(By.Id("Parcel")).SendKeys(parcelNumber.Trim());
-                    gc.CreatePdf(orderNumber, parcelNumber, "tax detail search", driver, "GA", "DeKalb");
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "tax detail search", driver, "GA", "DeKalb");
                     driver.FindElement(By.Name("Submit")).Click();
                     //driver.FindElement(By.XPath("/html/body/form/table/tbody/tr/td/div/table[3]/tbody/tr/td[1]/input")).SendKeys(Keys.Enter);
                     Thread.Sleep(3000);
-                    gc.CreatePdf(orderNumber, parcelNumber, "tax detail search result", driver, "GA", "DeKalb");
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "tax detail search result", driver, "GA", "DeKalb");
+                    try
+                    {
+                        IWebElement Nodata = driver.FindElement(By.XPath("/html/body/table/tbody/tr/td/p[2]"));
+                        if (Nodata.Text.Trim().Contains("you entered was not found"))
+                        {
+                            HttpContext.Current.Session["Nodata_GADekalb"] = "Yes";
+                            driver.Quit();
+                            return "Tax site No Data Found";
+                        }
+                    }
+                    catch { }
 
                     IWebElement Taxinfotable = driver.FindElement(By.XPath("//*[@id='printable']/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[1]/td/table/tbody"));
                     string pin_Number = driver.FindElement(By.XPath("//*[@id='printable']/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[1]/td/table/tbody/tr[3]/td[2]")).Text.Trim().Replace("Pin Number", "");
@@ -437,7 +455,6 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 total_Paid = TDTaxinfo[1].Text.Trim();
                                 amck.Instamountpaid1 = total_Paid;
-
                             }
                             if (row1.Text.Contains("Total Taxes Due"))
                             {
@@ -661,7 +678,7 @@ namespace ScrapMaricopa.Scrapsource
                     {
                         gc.InsertAmrockTax(orderNumber, amck.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amck.IsDelinquent);
                     }
-                    gc.CreatePdf(orderNumber, parcelNumber, "Tax Details", driver, "GA", "DeKalb");
+                    gc.CreatePdf(orderNumber, parcelNumber.Replace(" ", ""), "Tax Details", driver, "GA", "DeKalb");
                     try
                     {
                         driver.FindElement(By.XPath("/html/body/table[3]/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr[1]/td/table[2]/tbody/tr[1]/td[2]/form/input[3]")).SendKeys(Keys.Enter);
@@ -687,7 +704,7 @@ namespace ScrapMaricopa.Scrapsource
                                     url = "https://taxcommissioner.dekalbcountyga.gov/TaxCommissioner/" + url;
                                     //WebClient downloadTaxBills = new WebClient();
                                     //downloadTaxBills.DownloadFile(url, outputPath);
-                                    gc.downloadfile(url, orderNumber, parcelNumber, pdfName.Replace('/', '_'), "GA", "DeKalb");
+                                    gc.downloadfile(url, orderNumber, parcelNumber.Replace(" ", ""), pdfName.Replace('/', '_'), "GA", "DeKalb");
                                 }
                             }
                         }

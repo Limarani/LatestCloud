@@ -30,6 +30,7 @@ namespace ScrapMaricopa.Scrapsource
 {
     public class WebDriver_BrevardFL
     {
+        Amrock amc = new Amrock();
         IWebDriver driver;
         IList<IWebElement> taxPaymentdetails, taxPaymentAmountdetails, Itaxtd;
         List<string> strSecured = new List<string>();
@@ -71,7 +72,7 @@ namespace ScrapMaricopa.Scrapsource
             driverService.HideCommandPromptWindow = true;
             // driver = new PhantomJSDriver(); //ChromeDriver();
             // driver = new ChromeDriver();
-            using (driver = new PhantomJSDriver())
+            using (driver = new ChromeDriver()) //PhantomJSDriver
             {
                 try
                 {
@@ -177,7 +178,7 @@ namespace ScrapMaricopa.Scrapsource
                     else if (searchType == "parcel")
                     {
                         driver.FindElement(By.Id("txtPropertySearch_Pid")).SendKeys(parcelNumber);
-                        gc.CreatePdf(orderNumber, parcelNumber.Replace("-*",""), "Parcel Search", driver, "FL", "Brevard");
+                        gc.CreatePdf(orderNumber, parcelNumber.Replace("-*", ""), "Parcel Search", driver, "FL", "Brevard");
                         driver.FindElement(By.Id("btnPropertySearch_RealProperty_Go")).Click();
                         Thread.Sleep(3000);
                         gc.CreatePdf(orderNumber, parcelNumber.Replace("-*", ""), "Parcel Search Result", driver, "FL", "Brevard");
@@ -417,16 +418,29 @@ namespace ScrapMaricopa.Scrapsource
                     js.ExecuteScript("arguments[0].click();", element);
                     Thread.Sleep(4000);
                     gc.CreatePdf(orderNumber, accno, "Tax Search Result", driver, "FL", "Brevard");
-                    IWebElement ITaxSearch = driver.FindElement(By.LinkText("Full bill history"));
-                    string strITaxSearch = ITaxSearch.GetAttribute("href");
-                    driver.Navigate().GoToUrl(strITaxSearch);
-                    Thread.Sleep(3000);
+                    try
+                    {
+                        IWebElement ITaxSearch = driver.FindElement(By.LinkText("Full bill history"));
+                        string strITaxSearch = ITaxSearch.GetAttribute("href");
+                        driver.Navigate().GoToUrl(strITaxSearch);
+                        Thread.Sleep(3000);
+                    }
+                    catch { }
+                    try
+                    {
+                        IWebElement ITaxSearch1 = driver.FindElement(By.LinkText("View/Print full bill history"));
+                        string strITaxSearch1 = ITaxSearch1.GetAttribute("href");
+                        driver.Navigate().GoToUrl(strITaxSearch1);
+                        Thread.Sleep(3000);
+                    }
+                    catch { }
                     gc.CreatePdf(orderNumber, accno, "Full Bill History", driver, "FL", "Brevard");
                     IWebElement IBillHistorytable = driver.FindElement(By.XPath("//*[@id='content']/div[1]/table"));
                     IList<IWebElement> IBillHistoryRow = IBillHistorytable.FindElements(By.TagName("tr"));
                     IList<IWebElement> IBillHistoryTD;
                     IList<IWebElement> IBillHistoryTH;
                     int i = 0; int m = 0; int j = 0; int k = 0;
+                    int currentYear = 0;
                     foreach (IWebElement bill in IBillHistoryRow)
                     {
                         string billyear = "", inst = "", paidamount = "", receipt = "", effectivedate = "";
@@ -831,6 +845,10 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(3000);
                             //*[@id="content"]/div[1]/div[8]/div/div[1]                        
                             cctaxyear = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[8]/div/div[1]/div[2]")).Text.Trim().Replace("Real Estate", "").Replace("Print this bill (PDF)", "").Replace("\r\n", "");
+                            if (cctaxyear.Contains("Annual Bill") || cctaxyear.Contains("Annual bill"))
+                            {
+                                amc.TaxYear = GlobalClass.Before(cctaxyear, "Annual Bill").Trim();
+                            }
                             gc.CreatePdf(orderNumber, accno, "Tax Details" + cctaxyear, driver, "FL", "Brevard");
 
                             if (q == 0)
@@ -907,6 +925,10 @@ namespace ScrapMaricopa.Scrapsource
 
                             string currenttaxbulktext = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[8]/div/p")).Text;
                             combinedtaxamount = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[8]/div/p")).Text.Trim().Replace("Combined taxes and assessments: ", "");
+                            amc.Instamount1 = combinedtaxamount;
+
+
+
                             try
                             {
                                 string bulkgrosstax = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[8]/div/table[4]/tbody/tr/td[1]")).Text.Trim();
@@ -919,6 +941,7 @@ namespace ScrapMaricopa.Scrapsource
                                     string[] stringSeparators1 = new string[] { "\r\n" };
                                     string[] lines1 = ifpaidbulk.Split(stringSeparators1, StringSplitOptions.None);
                                     ifpaidby = lines1[0]; pleasepay = lines1[1];
+                                    amc.DiscountDate1 = ifpaidby;
                                     string single = cctaxyear + "~" + ifpaidby + "~" + pleasepay;
                                     gc.insert_date(orderNumber, accno, 1511, single, 1, DateTime.Now);
                                 }
@@ -955,6 +978,7 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                             }
                             catch { }
+
                             try
                             {
 
@@ -973,11 +997,82 @@ namespace ScrapMaricopa.Scrapsource
                                     if (currrtaxtableRowTD.Count != 0 && !rowid.Text.Contains("Account number"))
                                     {
                                         Account = currrtaxtableRowTD[0].Text; alterkey = currrtaxtableRowTD[1].Text; millagecode = currrtaxtableRowTD[3].Text;
+                                        amc.TaxId = accno;
                                     }
                                 }
 
                             }
                             catch { }
+
+                            try
+                            {
+                                if (currentYear < 1 && cctaxyear.Contains("Annual Bill"))
+                                {
+                                    string strstatus = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[6]")).Text;
+                                    string[] paiddue = strstatus.Split('\r');
+
+                                    if ((strstatus.Contains("Paid") || strstatus.Contains("PAID")) && !strstatus.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        amc.IsDelinquent = "No";
+                                        amc.InstPaidDue1 = "Paid";
+                                        amc.Instamountpaid1 = due[2];
+                                        currentYear++;
+                                    }
+                                    if (!strstatus.Contains("Paid") && !strstatus.Contains("PAID") && strstatus.Contains("due") && !strstatus.Contains("Pay this bill") && !strstatus.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        //amc.IsDelinquent = "No";
+                                        //amc.InstPaidDue1 = "Paid";
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        double amount = Convert.ToDouble(due[2].Replace("$", "").Trim());
+                                        if (Combine > amount)
+                                        {
+                                            amc.IsDelinquent = "No";
+                                            amc.InstPaidDue1 = "Due";
+                                            amc.Instamountpaid1 = due[2];
+                                        }
+                                        if (Combine < amount)
+                                        {
+                                            amc.IsDelinquent = "Yes";
+                                            amc.InstPaidDue1 = "Due";
+                                        }
+                                        currentYear++;
+                                    }
+                                    if (strstatus.Contains("Pay this bill") && !strstatus.Contains("No taxes due"))
+                                    {
+                                        double amount = 0.00;
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        if (strstatus.Contains("PLEASE NOTE"))
+                                        {
+                                            string dueamount = gc.Between(strstatus, "Pay this bill:", "PLEASE NOTE");
+                                            amount = Convert.ToDouble(dueamount.Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        else
+                                        {
+                                            amount = Convert.ToDouble(strstatus.Replace("Pay this bill:", "").Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        if (amount != 0)
+                                        {
+                                            if (Combine > amount)
+                                            {
+                                                amc.IsDelinquent = "No";
+                                                amc.InstPaidDue1 = "Due";
+                                                amc.Instamountpaid1 = "$" + Convert.ToString(amount);
+                                            }
+                                            if (Combine < amount)
+                                            {
+                                                amc.IsDelinquent = "Yes";
+                                                amc.InstPaidDue1 = "Due";
+                                            }
+                                        }
+
+                                        currentYear++;
+                                    }
+                                }
+                            }
+                            catch { }
+
                             try
                             {
 
@@ -1023,6 +1118,10 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(3000);
 
                             cctaxyear = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[1]/div[2]")).Text.Trim().Replace("Real Estate", "").Replace("Print this bill (PDF)", "").Replace("\r\n", "");
+                            if (cctaxyear.Contains("Annual Bill") || cctaxyear.Contains("Annual bill"))
+                            {
+                                amc.TaxYear = GlobalClass.Before(cctaxyear, "Annual Bill").Trim();
+                            }
                             gc.CreatePdf(orderNumber, accno, "Tax Details" + cctaxyear, driver, "FL", "Brevard");
 
                             if (q == 0)
@@ -1064,6 +1163,7 @@ namespace ScrapMaricopa.Scrapsource
                                     d++;
                                 }
 
+
                                 //Non Ad-Valorems
                                 try
                                 {
@@ -1099,6 +1199,8 @@ namespace ScrapMaricopa.Scrapsource
 
                             string currenttaxbulktext = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/p")).Text;
                             combinedtaxamount = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/p")).Text.Trim().Replace("Combined taxes and assessments: ", "");
+                            amc.Instamount1 = combinedtaxamount;
+
                             try
                             {
                                 string bulkgrosstax = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/table[4]/tbody/tr/td[1]")).Text.Trim();
@@ -1111,6 +1213,7 @@ namespace ScrapMaricopa.Scrapsource
                                     string[] stringSeparators1 = new string[] { "\r\n" };
                                     string[] lines1 = ifpaidbulk.Split(stringSeparators1, StringSplitOptions.None);
                                     ifpaidby = lines1[0]; pleasepay = lines1[1];
+                                    amc.DiscountDate1 = ifpaidby;
                                     string single = cctaxyear + "~" + ifpaidby + "~" + pleasepay;
                                     gc.insert_date(orderNumber, accno, 1511, single, 1, DateTime.Now);
                                 }
@@ -1135,6 +1238,7 @@ namespace ScrapMaricopa.Scrapsource
                                                     var IfpaySplit = IfPaidBy.Split('~');
                                                     IfPaidBy = IfpaySplit[0];
                                                     PlesePay = IfpaySplit[1];
+                                                    amc.DiscountDate1 = IfPaidBy;
                                                     DueDate = cctaxyear + "~" + IfPaidBy + "~" + PlesePay;
                                                     gc.insert_date(orderNumber, accno, 1511, DueDate, 1, DateTime.Now);
 
@@ -1165,11 +1269,91 @@ namespace ScrapMaricopa.Scrapsource
                                     if (currrtaxtableRowTD.Count != 0 && !rowid.Text.Contains("Account number"))
                                     {
                                         Account = currrtaxtableRowTD[0].Text; alterkey = currrtaxtableRowTD[1].Text; millagecode = currrtaxtableRowTD[3].Text;
+                                        amc.TaxId = Account;
                                     }
                                 }
 
                             }
                             catch { }
+
+                            try
+                            {
+                                if (currentYear < 1 && cctaxyear.Contains("Annual Bill"))
+                                {
+                                    string strstatus = driver.FindElement(By.XPath("//*[@id='content']/div[1]/div[7]/div/div[6]")).Text;
+                                    string[] paiddue = strstatus.Split('\r');
+
+                                    if ((strstatus.Contains("Paid") || strstatus.Contains("PAID")) && !strstatus.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        amc.IsDelinquent = "No";
+                                        amc.InstPaidDue1 = "Paid";
+                                        amc.Instamountpaid1 = due[2];
+                                        currentYear++;
+                                    }
+                                    if (!strstatus.Contains("Paid") && !strstatus.Contains("PAID") && strstatus.Contains("due") && !strstatus.Contains("Pay this bill") && !strstatus.Contains("No taxes due"))
+                                    {
+                                        string[] due = paiddue[0].Trim().Replace("\n", "").Replace("  ", " ").Split(' ');
+                                        //amc.IsDelinquent = "No";
+                                        //amc.InstPaidDue1 = "Paid";
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        double amount = Convert.ToDouble(due[2].Replace("$", "").Trim());
+                                        if (Combine > amount)
+                                        {
+                                            amc.IsDelinquent = "No";
+                                            amc.InstPaidDue1 = "Due";
+                                            amc.Instamountpaid1 = due[2];
+                                        }
+                                        if (Combine < amount)
+                                        {
+                                            amc.IsDelinquent = "Yes";
+                                            amc.InstPaidDue1 = "Due";
+                                        }
+                                        currentYear++;
+                                    }
+                                    if (strstatus.Contains("Pay this bill") && !strstatus.Contains("No taxes due"))
+                                    {
+                                        double amount = 0.00;
+                                        double Combine = Convert.ToDouble(combinedtaxamount.Replace("$", "").Trim());
+                                        if (strstatus.Contains("PLEASE NOTE"))
+                                        {
+                                            string dueamount = gc.Between(strstatus, "Pay this bill:", "PLEASE NOTE");
+                                            amount = Convert.ToDouble(dueamount.Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        else
+                                        {
+                                            amount = Convert.ToDouble(strstatus.Replace("Pay this bill:", "").Replace("$", "").Replace("\r\n", "").Trim());
+                                        }
+                                        if (amount != 0)
+                                        {
+                                            if (Combine > amount)
+                                            {
+                                                amc.IsDelinquent = "No";
+                                                amc.InstPaidDue1 = "Due";
+                                                amc.Instamountpaid1 = "$" + Convert.ToString(amount);
+                                            }
+                                            if (Combine < amount)
+                                            {
+                                                amc.IsDelinquent = "Yes";
+                                                amc.InstPaidDue1 = "Due";
+                                            }
+                                        }
+
+                                        currentYear++;
+                                    }
+                                    if (amc.IsDelinquent == "Yes")
+                                    {
+                                        gc.InsertAmrockTax(orderNumber, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                                    }
+
+                                    if (amc.IsDelinquent == "No")
+                                    {
+                                        gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+                                    }
+                                }
+                            }
+                            catch { }
+
                             try
                             {
 
@@ -1352,6 +1536,7 @@ namespace ScrapMaricopa.Scrapsource
                                     if (currrtaxtableRowTD.Count != 0 && !rowid.Text.Contains("Account number"))
                                     {
                                         Account = currrtaxtableRowTD[0].Text; alterkey = currrtaxtableRowTD[1].Text; millagecode = currrtaxtableRowTD[3].Text;
+                                        amc.TaxId = Account;
                                     }
                                 }
 
@@ -2121,13 +2306,13 @@ namespace ScrapMaricopa.Scrapsource
                         gc.AutoDownloadFile(orderNumber, Parcel_number, "FL", "Brevard", fileName);
                     }
                     catch { }
-                    
+
                     chDriver.Quit();
-            }
-            catch (Exception ex)
-            {
-                chDriver.Quit();
-            }
+                }
+                catch (Exception ex)
+                {
+                    chDriver.Quit();
+                }
             }
             catch (Exception ex)
             {

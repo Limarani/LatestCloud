@@ -252,15 +252,16 @@ namespace ScrapMaricopa.Scrapsource
                     }
 
                     Thread.Sleep(5000);
-
-                    strProperty = driver.FindElement(By.XPath("//*[@id='propdetail']/table/tbody/tr[2]/td/table/tbody")).Text;
+                    //*[@id="propdetail"]/div/div/table/tbody/tr[1]/td/span
+                    //*[@id="propdetail"]/div/div/table/tbody/tr[1]/td
+                    strProperty = driver.FindElement(By.XPath("//*[@id='propdetail']/div/div/table/tbody/tr[1]/td")).Text.Replace("Detail of", "");
                     // strParcelNumber = gc.Between(strProperty, "Parcel\r\nPIDN: ", "\r\nTax ID: ");
 
                     try
                     {
 
                         int i = 0;
-                        IWebElement tbmulti11 = driver.FindElement(By.XPath("//*[@id='propdetail']/table/tbody/tr[2]/td/table/tbody"));
+                        IWebElement tbmulti11 = driver.FindElement(By.XPath("//*[@id='propdetail']/div/div/table/tbody/tr[2]/td/table/tbody"));
                         IList<IWebElement> TRmulti11 = tbmulti11.FindElements(By.TagName("tr"));
                         IList<IWebElement> TDmulti11;
                         foreach (IWebElement row in TRmulti11)
@@ -330,20 +331,21 @@ namespace ScrapMaricopa.Scrapsource
 
                     try
                     {
-                        strYearBuilt = driver.FindElement(By.XPath("//*[@id='propdetail']/table/tbody/tr[3]/td/table/tbody/tr[2]/td[6]")).Text;
+
+                        strYearBuilt = driver.FindElement(By.XPath("//*[@id='propdetail']/div/div/table/tbody/tr[3]/td/table/tbody/tr[2]/td[6]")).Text;
 
                     }
                     catch (Exception ex) { }
                     try
                     {
-                        strYearBuilt = driver.FindElement(By.XPath("//*[@id='propdetail']/table/tbody/tr[4]/td/table/tbody/tr[2]/td[6]")).Text;
+                        strYearBuilt = driver.FindElement(By.XPath("//*[@id='propdetail']/div/div/table/tbody/tr[4]/td/table/tbody/tr[2]/td[6]")).Text;
 
                     }
                     catch { }
 
                     try
                     {
-                        IWebElement ILandTable = driver.FindElement(By.XPath("//*[@id='propdetail']/table/tbody/tr[3]/td/table/tbody"));
+                        IWebElement ILandTable = driver.FindElement(By.XPath("//*[@id='propdetail']/div/div/table/tbody/tr[3]/td/table/tbody"));
                         IList<IWebElement> ILandRow = ILandTable.FindElements(By.TagName("tr"));
                         IList<IWebElement> ILandTD;
                         foreach (IWebElement land in ILandRow)
@@ -376,8 +378,8 @@ namespace ScrapMaricopa.Scrapsource
                     AssessmentTime = DateTime.Now.ToString("HH:mm:ss");
 
                     gc.CreatePdf(orderNumber, strParcelNumber, "Tax Details Result", driver, "WY", "Laramie");
-
-                    IWebElement ITaxSearch = driver.FindElement(By.XPath("//*[@id='propdetail']/table/tbody/tr[2]/td/table/tbody/tr[3]/td[2]/a"));
+                    //*[@id="propdetail"]/div/div/table/tbody/tr[2]/td/table/tbody/tr[3]/td[2]
+                    IWebElement ITaxSearch = driver.FindElement(By.XPath("//*[@id='propdetail']/div/div/table/tbody/tr[2]/td/table/tbody/tr[3]/td[2]/a"));
                     string strTaxSearch = ITaxSearch.GetAttribute("href");
                     driver.Navigate().GoToUrl(strTaxSearch);
 
@@ -483,76 +485,80 @@ namespace ScrapMaricopa.Scrapsource
                     }
 
                     driver.Navigate().Back();
-
-                    IWebElement IPayOff = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_linkPayoff']/img"));
-                    IPayOff.Click();
-                    gc.CreatePdf(orderNumber, strParcelNumber, "Tax Pay Off Result", driver, "WY", "Laramie");
-
-                    driver.Navigate().Back();
-
-                    IWebElement IPayTaxes = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_linkPayTaxes']/img"));
-                    IPayTaxes.Click();
-                    gc.CreatePdf(orderNumber, strParcelNumber, "Tax Pay Taxes Result", driver, "WY", "Laramie");
                     try
                     {
-                        strCurrentYear = GlobalClass.After(driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_pnlDetail")).Text, "Current Tax Year: ");
-                    }
-                    catch { }
-                    try
-                    {
-                        strPayoffType = GlobalClass.Before(driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_lblUnpaidheader")).Text, "as of ");
-                        strPayoff = gc.Between(driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_lblUnpaidheader")).Text, "Total payoff amount as of ", ":");
-                        strPayoffAmount = driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_lblUnpaid")).Text;
-                    }
-                    catch { }
-                    try
-                    {
-                        strUnPaidType = driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_Label5")).Text;
-                    }
-                    catch { }
-                    IWebElement ITotalUnpaidTable = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_dgTotals']/tbody"));
-                    IList<IWebElement> ITotalUnpaidRow = ITotalUnpaidTable.FindElements(By.TagName("tr"));
-                    IList<IWebElement> ITotalUnpaidTD;
-                    foreach (IWebElement unpaid in ITotalUnpaidRow)
-                    {
-                        ITotalUnpaidTD = unpaid.FindElements(By.TagName("td"));
-                        if (ITotalUnpaidTD.Count != 0 && !unpaid.Text.Contains("Tax Year"))
+                        IWebElement IPayOff = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_linkPayoff']/img"));
+                        IPayOff.Click();
+                        gc.CreatePdf(orderNumber, strParcelNumber, "Tax Pay Off Result", driver, "WY", "Laramie");
+
+                        driver.Navigate().Back();
+
+                        IWebElement IPayTaxes = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_linkPayTaxes']/img"));
+                        IPayTaxes.Click();
+                        gc.CreatePdf(orderNumber, strParcelNumber, "Tax Pay Taxes Result", driver, "WY", "Laramie");
+                        try
                         {
-                            strUnpaidTaxYear = ITotalUnpaidTD[0].Text;
-                            strUnpaidAmount = ITotalUnpaidTD[1].Text;
-                            strUnpaidDiscount = ITotalUnpaidTD[2].Text;
-                            strUnpaidDue = ITotalUnpaidTD[3].Text;
+                            strCurrentYear = GlobalClass.After(driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_pnlDetail")).Text, "Current Tax Year: ");
+                        }
+                        catch { }
+                        try
+                        {
+                            strPayoffType = GlobalClass.Before(driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_lblUnpaidheader")).Text, "as of ");
+                            strPayoff = gc.Between(driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_lblUnpaidheader")).Text, "Total payoff amount as of ", ":");
+                            strPayoffAmount = driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_lblUnpaid")).Text;
+                        }
+                        catch { }
+                        try
+                        {
+                            strUnPaidType = driver.FindElement(By.Id("_ctl0_ContentPlaceHolder1_Label5")).Text;
+                        }
+                        catch { }
 
-                            string strTotalUnpaid = strUnPaidType.Replace(":", "") + "~" + strUnpaidTaxYear + "~" + "-" + "~" + "-" + "~" + "-" + "~" + strUnpaidAmount + "~" + "-" + "~" + "-" + "~" + strUnpaidDiscount + "~" + "-" + "~" + strUnpaidDue;
-                            gc.insert_date(orderNumber, strTaxParcel, 521, strTotalUnpaid, 1, DateTime.Now);
+                        IWebElement ITotalUnpaidTable = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_dgTotals']/tbody"));
+                        IList<IWebElement> ITotalUnpaidRow = ITotalUnpaidTable.FindElements(By.TagName("tr"));
+                        IList<IWebElement> ITotalUnpaidTD;
+                        foreach (IWebElement unpaid in ITotalUnpaidRow)
+                        {
+                            ITotalUnpaidTD = unpaid.FindElements(By.TagName("td"));
+                            if (ITotalUnpaidTD.Count != 0 && !unpaid.Text.Contains("Tax Year"))
+                            {
+                                strUnpaidTaxYear = ITotalUnpaidTD[0].Text;
+                                strUnpaidAmount = ITotalUnpaidTD[1].Text;
+                                strUnpaidDiscount = ITotalUnpaidTD[2].Text;
+                                strUnpaidDue = ITotalUnpaidTD[3].Text;
+
+                                string strTotalUnpaid = strUnPaidType.Replace(":", "") + "~" + strUnpaidTaxYear + "~" + "-" + "~" + "-" + "~" + "-" + "~" + strUnpaidAmount + "~" + "-" + "~" + "-" + "~" + strUnpaidDiscount + "~" + "-" + "~" + strUnpaidDue;
+                                gc.insert_date(orderNumber, strTaxParcel, 521, strTotalUnpaid, 1, DateTime.Now);
+                            }
+                        }
+
+                        string strTotalPayOff = strPayoffType + "~" + "-" + "~" + strPayoff + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + strPayoffAmount + "~" + "-";
+                        gc.insert_date(orderNumber, strTaxParcel, 521, strTotalPayOff, 1, DateTime.Now);
+
+                        IWebElement ITotalPayoffTable = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_dgPayoff']/tbody"));
+                        IList<IWebElement> ITotalPayoffRow = ITotalPayoffTable.FindElements(By.TagName("tr"));
+                        IList<IWebElement> ITotalPayoffTD;
+                        foreach (IWebElement payoff in ITotalPayoffRow)
+                        {
+                            ITotalPayoffTD = payoff.FindElements(By.TagName("td"));
+                            if (ITotalPayoffTD.Count != 0 && !payoff.Text.Contains("Tax Year"))
+                            {
+                                strPayTaxYear = ITotalPayoffTD[0].Text;
+                                strPayDueDate = ITotalPayoffTD[1].Text;
+                                strPaystatement = ITotalPayoffTD[2].Text;
+                                strPayHalf = ITotalPayoffTD[3].Text;
+                                strPayTaxAmount = ITotalPayoffTD[4].Text;
+                                strPayInterest = ITotalPayoffTD[5].Text;
+                                strPayPenalty = ITotalPayoffTD[6].Text;
+                                strPayDiscount = ITotalPayoffTD[7].Text;
+                                strPayTotalDue = ITotalPayoffTD[8].Text;
+
+                                string strPayOffDetails = strPayoffType + "~" + strPayTaxYear + "~" + strPayDueDate + "~" + strPaystatement + "~" + strPayHalf + "~" + strPayTaxAmount + "~" + strPayInterest + "~" + strPayPenalty + "~" + strPayDiscount + "~" + "-" + "~" + strPayTotalDue;
+                                gc.insert_date(orderNumber, strTaxParcel, 521, strPayOffDetails, 1, DateTime.Now);
+                            }
                         }
                     }
-
-                    string strTotalPayOff = strPayoffType + "~" + "-" + "~" + strPayoff + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + "-" + "~" + strPayoffAmount + "~" + "-";
-                    gc.insert_date(orderNumber, strTaxParcel, 521, strTotalPayOff, 1, DateTime.Now);
-
-                    IWebElement ITotalPayoffTable = driver.FindElement(By.XPath("//*[@id='_ctl0_ContentPlaceHolder1_dgPayoff']/tbody"));
-                    IList<IWebElement> ITotalPayoffRow = ITotalPayoffTable.FindElements(By.TagName("tr"));
-                    IList<IWebElement> ITotalPayoffTD;
-                    foreach (IWebElement payoff in ITotalPayoffRow)
-                    {
-                        ITotalPayoffTD = payoff.FindElements(By.TagName("td"));
-                        if (ITotalPayoffTD.Count != 0 && !payoff.Text.Contains("Tax Year"))
-                        {
-                            strPayTaxYear = ITotalPayoffTD[0].Text;
-                            strPayDueDate = ITotalPayoffTD[1].Text;
-                            strPaystatement = ITotalPayoffTD[2].Text;
-                            strPayHalf = ITotalPayoffTD[3].Text;
-                            strPayTaxAmount = ITotalPayoffTD[4].Text;
-                            strPayInterest = ITotalPayoffTD[5].Text;
-                            strPayPenalty = ITotalPayoffTD[6].Text;
-                            strPayDiscount = ITotalPayoffTD[7].Text;
-                            strPayTotalDue = ITotalPayoffTD[8].Text;
-
-                            string strPayOffDetails = strPayoffType + "~" + strPayTaxYear + "~" + strPayDueDate + "~" + strPaystatement + "~" + strPayHalf + "~" + strPayTaxAmount + "~" + strPayInterest + "~" + strPayPenalty + "~" + strPayDiscount + "~" + "-" + "~" + strPayTotalDue;
-                            gc.insert_date(orderNumber, strTaxParcel, 521, strPayOffDetails, 1, DateTime.Now);
-                        }
-                    }
+                    catch { }
 
                     try
                     {

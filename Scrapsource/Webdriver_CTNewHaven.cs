@@ -2099,6 +2099,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         string Propertyhead = "";
                         string Propertyresult = "";
+                        string Propertyresult1 = "";
 
                         IWebElement multitableElement1 = driver.FindElement(By.XPath("//*[@id='MainContent_grdSales']/tbody"));
                         IList<IWebElement> multitableRow1 = multitableElement1.FindElements(By.TagName("tr"));
@@ -2108,7 +2109,24 @@ namespace ScrapMaricopa.Scrapsource
                         {
                             multirowTH1 = row.FindElements(By.TagName("tH"));
                             multirowTD1 = row.FindElements(By.TagName("td"));
-                            if (multirowTD1.Count != 0 && multirowTD1[0].Text != " ")
+                            if (multirowTD1.Count != 0 && multirowTD1.Count == 4 && multirowTD1[0].Text != " ")
+                            {
+                                for (int i = 0; i < multirowTD1.Count; i++)
+                                {
+                                    Propertyresult1 += multirowTD1[i].Text + "~";
+                                }
+                                Propertyresult1 = Propertyresult1.TrimEnd('~');
+                                string[] splitproperty = Propertyresult1.Split('~');
+                                string pro1 = splitproperty[0].Trim();
+                                string pro2 = splitproperty[1].Trim();
+                                string pro3 = splitproperty[2].Trim();
+                                string pro4 = "";
+                                string pro5 = splitproperty[3].Trim();
+                                Propertyresult1 = pro1 + "~" + pro2 + "~" + pro3 + "~" + pro4 + "~" + pro5;
+                                gc.insert_date(orderNumber, assessment_id, 2177, Propertyresult1, 1, DateTime.Now);
+                                Propertyresult1 = "";
+                            }
+                            if (multirowTD1.Count != 0 && multirowTD1.Count == 5 && multirowTD1[0].Text != " ")
                             {
                                 for (int i = 0; i < multirowTD1.Count; i++)
                                 {
@@ -2118,7 +2136,22 @@ namespace ScrapMaricopa.Scrapsource
                                 gc.insert_date(orderNumber, assessment_id, 2177, Propertyresult, 1, DateTime.Now);
                                 Propertyresult = "";
                             }
-                            if (multirowTH1.Count != 0 && multirowTH1[0].Text != " ")
+                            if (multirowTH1.Count != 0 && multirowTH1.Count == 4 && multirowTH1[0].Text != " ")
+                            {
+                                for (int i = 0; i < multirowTH1.Count; i++)
+                                {
+
+                                    Propertyhead += multirowTH1[i].Text + "~";
+
+                                    Propertyhead = "";
+                                    Propertyhead = "Owner~Sale Price~Book & Page~Instrument~Sale Date";
+
+                                }
+                                Propertyhead = Propertyhead.TrimEnd('~');
+                                dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Propertyhead + "' where Id = '2177'");
+
+                            }
+                            if (multirowTH1.Count != 0 && multirowTH1.Count == 5 && multirowTH1[0].Text != " ")
                             {
                                 for (int i = 0; i < multirowTH1.Count; i++)
                                 {
@@ -2127,7 +2160,6 @@ namespace ScrapMaricopa.Scrapsource
                                 }
                                 Propertyhead = Propertyhead.TrimEnd('~');
                                 dbconn.ExecuteQuery("update data_field_master set Data_Fields_Text='" + Propertyhead + "' where Id = '2177'");
-
                             }
 
 
@@ -4163,7 +4195,16 @@ namespace ScrapMaricopa.Scrapsource
                         foreach (IWebElement property in IpropertyDetailsRow)
                         {
                             IpropertyDetailsTD = property.FindElements(By.TagName("td"));
-                            if (IpropertyDetailsTD.Count != 0 && !property.Text.Contains("Last Name / Company") && IpropertyDetailsTD[1].Text.ToUpper().Contains(ownername.ToUpper()) && IpropertyDetailsTD[3].Text.Contains("REAL"))
+                            if (IpropertyDetailsTD.Count != 0 && IpropertyDetailsRow.Count <= 2 && !property.Text.Contains("Last Name / Company") && property.Text.Contains(ownername) && property.Text.Contains("REAL ESTATE"))
+                            {
+                                IWebElement AddressClick = IpropertyDetailsTD[0].FindElement(By.TagName("a"));
+                                if (AddressClick.Text.Contains("show details"))
+                                {
+                                    string link = AddressClick.GetAttribute("href");
+                                    TaxPaymentLink.Add(link);
+                                }
+                            }
+                            if (IpropertyDetailsTD.Count != 0 && IpropertyDetailsRow.Count > 2 && !property.Text.Contains("Last Name / Company") && property.Text.Contains(ownername) && property.Text.Contains("REAL ESTATE"))
                             {
                                 IWebElement AddressClick = IpropertyDetailsTD[0].FindElement(By.TagName("a"));
                                 if (AddressClick.Text.Contains("show details"))

@@ -642,7 +642,7 @@ namespace ScrapMaricopa.Scrapsource
                                 Taxcount++;
                                 if (strURLParc != "")
                                 {
-                                    strParcelURL = "https://miamidade.county-taxes.com/public/real_estate/parcels/30-4008-036-0401?year=" + TaxcurrentYear;
+                                    strParcelURL = "https://miamidade.county-taxes.com/public/real_estate/parcels/" + parcelNumber.Trim() + "?year=" + TaxcurrentYear;
                                 }
                             }
                             if (TaxYear.Contains("Installment Bill") && Taxcount < 6)
@@ -666,7 +666,7 @@ namespace ScrapMaricopa.Scrapsource
 
                                 if (strURLParc != "")
                                 {
-                                    strParcelURL = "https://miamidade.county-taxes.com/public/real_estate/parcels/30-4008-036-0401?year=" + TaxcurrentYear + "&bill_id=" + strURLParc;
+                                    strParcelURL = "https://miamidade.county-taxes.com/public/real_estate/parcels/"  + parcelNumber.Trim() + "?year=" + TaxcurrentYear + "&bill_id=" + strURLParc;
                                 }
                             }
                         }

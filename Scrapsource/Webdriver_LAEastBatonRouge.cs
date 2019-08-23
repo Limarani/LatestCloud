@@ -38,6 +38,7 @@ namespace ScrapMaricopa.Scrapsource
         GlobalClass gc = new GlobalClass();
         MySqlParameter[] mParam;
         MySqlConnection con = new MySqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ToString());
+        Amrock amc = new Amrock();
 
         public string FTP_LAEastBatonRouge(string houseno, string sname, string sttype, string parcelNumber, string searchType, string orderNumber, string ownername, string directParcel)
         {
@@ -49,7 +50,7 @@ namespace ScrapMaricopa.Scrapsource
 
             var driverService = PhantomJSDriverService.CreateDefaultService();
             driverService.HideCommandPromptWindow = true;
-            using (driver = new PhantomJSDriver())
+            using (driver = new PhantomJSDriver())//PhantomJSDriver
             {
 
                 try
@@ -91,6 +92,8 @@ namespace ScrapMaricopa.Scrapsource
                         }
                     }
                     catch { }
+                    Thread.Sleep(2000);
+                    driver.SwitchTo().Frame(iframeElement);
                     //if (searchType == "address")
                     //{
                     //    //driver.Navigate().GoToUrl("http://www.ebrpa.org/PageDisplay.asp?p1=1503");
@@ -231,9 +234,6 @@ namespace ScrapMaricopa.Scrapsource
                     //}
                     if (searchType == "address")
                     {
-                        Thread.Sleep(2000);
-                        driver.SwitchTo().Frame(iframeElement);
-
                         driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/input[3]")).Click();
                         Thread.Sleep(2000);
                         driver.FindElement(By.XPath("//*[@id='ng-view']/div/form/div[2]/div/input[1]")).SendKeys(houseno);
@@ -431,6 +431,8 @@ namespace ScrapMaricopa.Scrapsource
                             gc.insert_date(orderNumber, outparcelno, 201, TaxDistributionDetails, 1, DateTime.Now);
                         }
                     }
+
+                    amc.TaxId = outparcelno;
                     //TaxInformation Details
                     driver.Navigate().GoToUrl("http://snstaxpayments.com/ebr");
                     Thread.Sleep(2000);
@@ -458,6 +460,7 @@ namespace ScrapMaricopa.Scrapsource
                             Check++;
                         }
                     }
+                    int amccount = 0;
                     foreach (string item in option)
                     {
                         var SelectAddress = driver.FindElement(By.Id("taxyear"));
@@ -485,6 +488,7 @@ namespace ScrapMaricopa.Scrapsource
 
                             Taxyear = driver.FindElement(By.XPath("/html/body/div[5]/div[2]/div/div/div[3]/div[2]")).Text;
                             Taxyear = WebDriverTest.After(Taxyear, "Tax Year");
+                            amc.TaxYear = Taxyear;
 
                             TaxPayer = driver.FindElement(By.XPath("/html/body/div[5]/div[2]/div/div/div[4]")).Text;
                             TaxPayer = WebDriverTest.Between(TaxPayer, "Taxpayer", "**** ").Replace("\r\n", " ").Trim();
@@ -493,13 +497,57 @@ namespace ScrapMaricopa.Scrapsource
                             IList<IWebElement> DivMaster = TBOpen.FindElements(By.TagName("div"));
                             foreach (IWebElement div in DivMaster)
                             {
-                                Taxes = DivMaster[0].Text;
-                                Interest = DivMaster[1].Text;
-                                Cost = DivMaster[2].Text;
-                                Other = DivMaster[3].Text;
-                                Paid = DivMaster[4].Text;
-                                Balance = DivMaster[5].Text;
+                                Taxes = DivMaster[0].Text.Trim();
+                                Interest = DivMaster[1].Text.Trim();
+                                Cost = DivMaster[2].Text.Trim();
+                                Other = DivMaster[3].Text.Trim();
+                                Paid = DivMaster[4].Text.Trim();
+                                Balance = DivMaster[5].Text.Trim();
                             }
+                            try
+                            {
+                                IWebElement ITaxsale = driver.FindElement(By.XPath("//*[@id='details']/div[5]"));
+                                if (ITaxsale.Text.Contains("Tax Sale Status: "))
+                                {
+                                    amc.IsDelinquent = "Yes";
+                                }
+                                double TaxesAmount = 0.00, InterestAmount = 0.00, CostAmount = 0.00, OtherAmount = 0.00, PaidAmount = 0.00, BalanceAmount = 0.00;
+
+                                TaxesAmount = Convert.ToDouble(Taxes.Replace("Taxes\r\n", "").Trim());
+                                InterestAmount = Convert.ToDouble(Interest.Replace("Interest\r\n", "").Trim());
+                                PaidAmount = Convert.ToDouble(Paid.Replace("Paid\r\n", "").Trim());
+                                CostAmount = Convert.ToDouble(Cost.Replace("Cost\r\n", "").Trim());
+                                OtherAmount = Convert.ToDouble(Other.Replace("Other\r\n", "").Trim());
+                                BalanceAmount = Convert.ToDouble(Balance.Replace("Balance\r\n", "").Trim());
+
+
+                                if (TaxesAmount != 0 && InterestAmount == 0 && CostAmount == 0 && OtherAmount == 0 && PaidAmount != 0 && BalanceAmount == 0)
+                                {
+                                    amc.Instamount1 = Taxes.Replace("Taxes\r\n", "").Trim();
+                                    amc.Instamountpaid1 = Paid.Replace("Paid\r\n", "").Trim();
+                                    amc.InstPaidDue1 = "Paid";
+                                    amc.IsDelinquent = "No";
+                                }
+                                else if (TaxesAmount != 0 && InterestAmount == 0 && CostAmount == 0 && OtherAmount == 0 && PaidAmount == 0 && BalanceAmount != 0 && TaxesAmount == BalanceAmount)
+                                {
+                                    amc.Instamount1 = Taxes.Replace("Taxes\r\n", "").Trim();
+                                    amc.Instamountpaid1 = Balance.Replace("Balance\r\n", "").Trim();
+                                    amc.InstPaidDue1 = "Due";
+                                    amc.IsDelinquent = "No";
+                                }
+                                else if (TaxesAmount != 0 && InterestAmount != 0 && ((CostAmount != 0 || CostAmount == 0) && (OtherAmount == 0 || OtherAmount != 0)) && PaidAmount == 0 && BalanceAmount != 0 && TaxesAmount < BalanceAmount)
+                                {
+                                    amc.IsDelinquent = "Yes";
+                                }
+                                else if (TaxesAmount != 0 && InterestAmount != 0 && ((CostAmount != 0 || CostAmount == 0) && (OtherAmount == 0 || OtherAmount != 0)) && PaidAmount != 0 && BalanceAmount == 0 && TaxesAmount < PaidAmount)
+                                {
+                                    amc.IsDelinquent = "Yes";
+                                }
+
+                            }
+                            catch { }
+
+
                             if (Interest.Replace("Interest\r\n", "") != "0.00" && Balance.Replace("Balance\r\n", "") != "0.00")
                             {
                                 Deliquent_Interest = Interest;
@@ -516,6 +564,21 @@ namespace ScrapMaricopa.Scrapsource
                             }
 
                             Legal_Description = driver.FindElement(By.XPath("//*[@id='details']/div[7]")).Text.Replace("Legal", "");
+
+                            if (amccount < 1)
+                            {
+                                if (amc.IsDelinquent == "Yes")
+                                {
+                                    gc.InsertAmrockTax(orderNumber, amc.TaxId, null, null, null, null, null, null, null, null, null, null, null, null, amc.IsDelinquent);
+                                    amccount++;
+                                }
+
+                                if (amc.IsDelinquent == "No")
+                                {
+                                    gc.InsertAmrockTax(orderNumber, amc.TaxId, amc.Instamount1, amc.Instamount2, amc.Instamount3, amc.Instamount4, amc.Instamountpaid1, amc.Instamountpaid2, amc.Instamountpaid3, amc.Instamountpaid4, amc.InstPaidDue1, amc.InstPaidDue2, amc.instPaidDue3, amc.instPaidDue4, amc.IsDelinquent);
+                                    amccount++;
+                                }
+                            }
 
                             //Tax History
                             IWebElement TBHistory = driver.FindElement(By.XPath("/html/body/div[5]/div[2]/div/div/div[9]/table/tbody"));

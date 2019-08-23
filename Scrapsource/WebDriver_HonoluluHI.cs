@@ -120,6 +120,8 @@ namespace ScrapMaricopa.Scrapsource
                             {
                                 Address = houseno + " " + Direction + " " + sname;
                             }
+                            sname = sname + " " + stype;
+                            sname = sname.Trim();
 
                             driver.FindElement(By.XPath("/html/body/form/table/tbody/tr/td[2]/table/tbody/tr[1]/td[2]/input")).SendKeys(houseno);
                             driver.FindElement(By.XPath("/html/body/form/table/tbody/tr/td[2]/table/tbody/tr[3]/td[2]/input")).SendKeys(Direction);

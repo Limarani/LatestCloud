@@ -432,7 +432,7 @@ namespace ScrapMaricopa.Scrapsource
                                             }
                                             catch { }
                                         }
-                                        else if (townshipcode == "14" || townshipcode == "25")
+                                        else if (townshipcode == "14" || townshipcode == "25" || townshipcode == "02")
                                         {
                                             IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
                                             hrefparcellink = Parcellinkw.GetAttribute("href");
@@ -775,6 +775,7 @@ namespace ScrapMaricopa.Scrapsource
                             address = address.Trim();
                             driver.FindElement(By.Id("pc-search-input")).Clear();
                             driver.FindElement(By.Id("pc-search-input")).SendKeys(address);
+                            Thread.Sleep(3000);
                             gc.CreatePdf_WOP(orderNumber, "Address search", driver, "CT", countynameCT);
                             driver.FindElement(By.XPath("//*[@id='plotplan-search']/button")).Click();
                             Thread.Sleep(4000);
@@ -1309,7 +1310,7 @@ namespace ScrapMaricopa.Scrapsource
                                             }
                                             catch { }
                                         }
-                                        else if (townshipcode == "14" || townshipcode == "25")
+                                        else if (townshipcode == "14" || townshipcode == "25" || townshipcode == "02")
                                         {
                                             IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
                                             hrefparcellink = Parcellinkw.GetAttribute("href");
@@ -2051,7 +2052,7 @@ namespace ScrapMaricopa.Scrapsource
                                             }
                                             catch { }
                                         }
-                                        else if (townshipcode == "14")
+                                        else if (townshipcode == "14"|| townshipcode == "02")
                                         {
                                             IWebElement Parcellinkw = AddressTD[2].FindElement(By.LinkText("Property Card"));
                                             hrefparcellink = Parcellinkw.GetAttribute("href");
@@ -3673,6 +3674,11 @@ namespace ScrapMaricopa.Scrapsource
                             uniqueidMap = parcelNumber;
                             assessment_id = uniqueidMap;
                         }
+                        if (parcelNumber.Length == 8)
+                        {
+                            uniqueidMap = parcelNumber;
+                            assessment_id = uniqueidMap;
+                        }
                         else
                         {
                             assessment_id = parcelNumber;
@@ -3858,7 +3864,7 @@ namespace ScrapMaricopa.Scrapsource
                     #region Zero Tax Link
                     if (countTax == "0")//Bridgeport
                     {
-                        if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08" || townshipcode == "13" || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
+                        if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08"  || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
                         {
                             IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
                             SelectElement sTaxSelect = new SelectElement(ITaxSelect);
@@ -3867,7 +3873,7 @@ namespace ScrapMaricopa.Scrapsource
                             driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
                             Thread.Sleep(3000);
                         }
-                        if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02")
+                        if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02" || townshipcode == "13")
                         {
                             string taxaddress = "";
                             IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
@@ -3968,7 +3974,7 @@ namespace ScrapMaricopa.Scrapsource
                             driver.FindElement(By.Id("sewerMenu")).Click();
                             Thread.Sleep(3000);
                             gc.CreatePdf(orderNumber, assessment_id, "sewer Menu click", driver, "CT", countynameCT);
-                            if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08" || townshipcode == "13" || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
+                            if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08"  || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
                             {
                                 IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
                                 SelectElement sTaxSelect = new SelectElement(ITaxSelect);
@@ -3979,7 +3985,7 @@ namespace ScrapMaricopa.Scrapsource
                                 driver.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
                                 Thread.Sleep(3000);
                             }
-                            if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02")
+                            if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02" || townshipcode == "13")
                             {
                                 string taxaddress = "";
                                 IWebElement ITaxSelect = driver.FindElement(By.Id("actionType"));
@@ -4291,7 +4297,7 @@ namespace ScrapMaricopa.Scrapsource
 
                             driver1.Navigate().GoToUrl(urlTax);
                             Thread.Sleep(2000);
-                            if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08" || townshipcode == "13" || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
+                            if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08" || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
                             {
                                 IWebElement ITaxSelect = driver1.FindElement(By.Id("actionType"));
                                 SelectElement sTaxSelect = new SelectElement(ITaxSelect);
@@ -4300,7 +4306,7 @@ namespace ScrapMaricopa.Scrapsource
                                 driver1.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
                                 Thread.Sleep(3000);
                             }
-                            if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02")
+                            if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02" || townshipcode == "13")
                             {
                                 string taxaddress = "";
                                 IWebElement ITaxSelect = driver1.FindElement(By.Id("actionType"));
@@ -4367,7 +4373,7 @@ namespace ScrapMaricopa.Scrapsource
                                 Thread.Sleep(2000);
                                 driver1.FindElement(By.Id("sewerMenu")).Click();
                                 Thread.Sleep(2000);
-                                if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08" || townshipcode == "13" || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
+                                if (townshipcode == "17" || townshipcode == "05" || townshipcode == "03" || townshipcode == "28" || townshipcode == "12" || townshipcode == "14" || townshipcode == "21" || townshipcode == "08"  || townshipcode == "20" || townshipcode == "29" || townshipcode == "04" || townshipcode == "07" || townshipcode == "10" || townshipcode == "16" || townshipcode == "18" || townshipcode == "23" || townshipcode == "25" || townshipcode == "06" || townshipcode == "09" || townshipcode == "11" || townshipcode == "19" || townshipcode == "22" || townshipcode == "27")
                                 {
                                     IWebElement ITaxSelect = driver1.FindElement(By.Id("actionType"));
                                     SelectElement sTaxSelect = new SelectElement(ITaxSelect);
@@ -4376,7 +4382,7 @@ namespace ScrapMaricopa.Scrapsource
                                     driver1.FindElement(By.Id("searchbtn4")).SendKeys(Keys.Enter);
                                     Thread.Sleep(3000);
                                 }
-                                if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02")
+                                if (townshipcode == "15" || townshipcode == "26" || townshipcode == "02" || townshipcode == "13")
                                 {
                                     string taxaddress = "";
                                     IWebElement ITaxSelect = driver1.FindElement(By.Id("actionType"));

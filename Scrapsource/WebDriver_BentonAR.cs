@@ -266,7 +266,7 @@ namespace ScrapMaricopa.Scrapsource
 
                         if (AherfProp.Count != 0 && AherfProp.Count == 2 && AherfProp[0].Text.Trim() != "" && !row.Text.Contains("Parcel Number:"))
                         {
-                            title += AherfProp[0].Text.Replace("\r\n", " ").Replace(":", "").Replace("?", "") + "~";
+                            title += AherfProp[0].Text.Replace("\r\n", " ").Replace(":", "").Replace("?", "").Replace("`", "") + "~";
                             value += AherfProp[1].Text.Replace("\r\n", " ").Replace(":", "").Replace("?", "").Replace("Map This Address", "") + "~";
                         }
                         if (AherfProp.Count != 0 && AherfProp.Count == 2 && AherfProp[0].Text.Trim() != "" && row.Text.Contains("Parcel Number:"))
@@ -441,7 +441,7 @@ namespace ScrapMaricopa.Scrapsource
                             Thread.Sleep(5000);
                             gc.CreatePdf(orderNumber, ParcelID, "Proof Of Payment2", driver, "AR", "Benton");
                             driver.SwitchTo().Window(current1);
-                            Thread.Sleep(3000);                            
+                            Thread.Sleep(3000);
                         }
                         catch { }
                         //Current Tax Details Table
@@ -479,7 +479,7 @@ namespace ScrapMaricopa.Scrapsource
                         }
                         catch { }
                         //Tax Information Details Table
-                        
+
                         try
                         {
                             string Taxtype = "", Taxdescription = "", District = "", Exempt = "", Assessedvalue = "", Taxowed = "", Taxpaid = "", Balance = "";
